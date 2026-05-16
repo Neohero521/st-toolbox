@@ -1130,6 +1130,413 @@ class KeyInfoMarker {
 
 const keyInfoMarker = new KeyInfoMarker();
 
+class PromptTemplateEngine {
+    constructor() {
+        this.templates = {
+            narrative: {
+                id: 'narrative',
+                name: '剧情推进',
+                category: '剧情',
+                description: '用于推动故事发展，制造戏剧冲突',
+                template: `【场景设定】
+{{current_scene}}
+
+【剧情目标】
+{{narrative_goal}}
+
+【用户输入】
+{{user_input}}
+
+请以{{character_name}}的身份，推进剧情发展，注意：
+1. 保持角色一致性
+2. 制造适当的戏剧冲突
+3. 为用户留下互动空间`,
+                variables: ['current_scene', 'narrative_goal', 'character_name', 'user_input']
+            },
+
+            combat: {
+                id: 'combat',
+                name: '战斗系统',
+                category: '互动',
+                description: '用于描述战斗场景和动作',
+                template: `【战斗场景】
+{{battle_scene}}
+
+【双方状态】
+我方：{{player_status}}
+敌方：{{enemy_status}}
+
+【战斗指令】
+{{player_action}}
+
+请描述战斗回合结果，包含：
+1. 行动结果
+2. 伤害计算
+3. 状态变化
+4. 敌方反击`,
+                variables: ['battle_scene', 'player_status', 'enemy_status', 'player_action']
+            },
+
+            romance: {
+                id: 'romance',
+                name: '角色互动',
+                category: '互动',
+                description: '用于角色之间的情感交流',
+                template: `【互动场景】
+{{interaction_scene}}
+
+【关系状态】
+{{relationship_status}}
+
+【氛围】
+{{atmosphere}}
+
+请以{{character_name}}的身份进行角色互动，体现：
+1. 符合角色性格的情感表达
+2. 与关系阶段相符的亲密度
+3. 细腻的心理描写`,
+                variables: ['interaction_scene', 'relationship_status', 'atmosphere', 'character_name']
+            },
+
+            mystery: {
+                id: 'mystery',
+                name: '解谜环节',
+                category: '剧情',
+                description: '用于设计谜题和线索',
+                template: `【谜题背景】
+{{mystery_background}}
+
+【已知线索】
+{{known_clues}}
+
+【当前探索】
+{{current_exploration}}
+
+请设计解谜环节：
+1. 提供新的线索暗示
+2. 保持适当的难度
+3. 不直接给出答案`,
+                variables: ['mystery_background', 'known_clues', 'current_exploration']
+            },
+
+            description: {
+                id: 'description',
+                name: '场景描写',
+                category: '描写',
+                description: '用于详细描述环境和场景',
+                template: `【描写类型】
+{{description_type}}
+
+【场景要素】
+{{scene_elements}}
+
+【情绪基调】
+{{emotional_tone}}
+
+请进行{{description_type}}描写，要求：
+1. 细节丰富，身临其境
+2. 符合{{emotional_tone}}的情绪基调
+3. 使用感官描写（视觉、听觉、嗅觉等）
+4. 自然融入场景要素`,
+                variables: ['description_type', 'scene_elements', 'emotional_tone']
+            },
+
+            dialogue: {
+                id: 'dialogue',
+                name: '对话生成',
+                category: '对话',
+                description: '用于生成角色对话',
+                template: `【对话场景】
+{{dialogue_scene}}
+
+【对话双方】
+{{speaker_a}}：{{speaker_a_personality}}
+{{speaker_b}}：{{speaker_b_personality}}
+
+【对话主题】
+{{dialogue_topic}}
+
+【对话目的】
+{{dialogue_purpose}}
+
+请生成{{speaker_a}}和{{speaker_b}}之间的对话，要求：
+1. 符合各自的性格设定
+2. 自然流畅，避免过于书面化
+3. 体现对话主题和目的
+4. 包含适当的动作描写`,
+                variables: ['dialogue_scene', 'speaker_a', 'speaker_a_personality', 'speaker_b', 'speaker_b_personality', 'dialogue_topic', 'dialogue_purpose']
+            },
+
+            action: {
+                id: 'action',
+                name: '动作描写',
+                category: '描写',
+                description: '用于描写角色动作和行为',
+                template: `【动作主体】
+{{action_subject}}
+
+【动作类型】
+{{action_type}}
+
+【动作背景】
+{{action_context}}
+
+【情绪状态】
+{{emotional_state}}
+
+请描写{{action_subject}}的{{action_type}}，要求：
+1. 动作细节清晰
+2. 融入{{emotional_state}}的情绪
+3. 符合{{action_context}}的背景
+4. 使用生动的动词和形容词`,
+                variables: ['action_subject', 'action_type', 'action_context', 'emotional_state']
+            }
+        };
+
+        this.customTemplates = this.loadCustomTemplates();
+    }
+
+    loadCustomTemplates() {
+        const saved = localStorage.getItem('st-toolbox-custom-templates');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveCustomTemplates() {
+        localStorage.setItem('st-toolbox-custom-templates', JSON.stringify(this.customTemplates));
+    }
+
+    getAllTemplates() {
+        return {
+            builtIn: Object.values(this.templates),
+            custom: this.customTemplates
+        };
+    }
+
+    getTemplateById(id) {
+        return this.templates[id] || this.customTemplates.find(t => t.id === id);
+    }
+
+    getTemplatesByCategory(category) {
+        const builtIn = Object.values(this.templates).filter(t => t.category === category);
+        const custom = this.customTemplates.filter(t => t.category === category);
+        return [...builtIn, ...custom];
+    }
+
+    getCategories() {
+        const categories = new Set();
+        Object.values(this.templates).forEach(t => categories.add(t.category));
+        this.customTemplates.forEach(t => categories.add(t.category));
+        return Array.from(categories);
+    }
+
+    fillTemplate(templateId, variableValues = {}) {
+        const template = this.getTemplateById(templateId);
+        if (!template) return null;
+
+        let filled = template.template;
+        
+        for (const [key, value] of Object.entries(variableValues)) {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            filled = filled.replace(regex, value || `[请填写${key}]`);
+        }
+
+        return {
+            templateId: template.id,
+            templateName: template.name,
+            filled: filled
+        };
+    }
+
+    injectToInput(templateId, variableValues = {}) {
+        const result = this.fillTemplate(templateId, variableValues);
+        if (!result) return;
+
+        const textarea = getMessageInput();
+        if (!textarea.length) return;
+
+        const current = textarea.val() || '';
+        textarea.val(current + (current ? '\n\n' : '') + result.filled);
+        textarea.focus();
+        
+        toastr.success(`已插入模板：${result.templateName}`, '提示词模板');
+    }
+
+    createCustomTemplate(templateData) {
+        const newTemplate = {
+            id: `custom_${Date.now()}`,
+            ...templateData,
+            isCustom: true
+        };
+        
+        this.customTemplates.push(newTemplate);
+        this.saveCustomTemplates();
+        
+        return newTemplate;
+    }
+
+    deleteCustomTemplate(templateId) {
+        const index = this.customTemplates.findIndex(t => t.id === templateId);
+        if (index > -1) {
+            this.customTemplates.splice(index, 1);
+            this.saveCustomTemplates();
+            return true;
+        }
+        return false;
+    }
+
+    showTemplateSelector() {
+        const allTemplates = this.getAllTemplates();
+        const categories = this.getCategories();
+
+        let categoriesHtml = categories.map(cat => {
+            const templates = allTemplates.builtIn.filter(t => t.category === cat);
+            const customTemplates = allTemplates.custom.filter(t => t.category === cat);
+            const allCatTemplates = [...templates, ...customTemplates];
+
+            if (allCatTemplates.length === 0) return '';
+
+            return `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin: 0 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">${cat}</h4>
+                    <div style="display: grid; gap: 8px;">
+                        ${allCatTemplates.map(t => `
+                            <div onclick="promptEngine.showTemplatePanel('${t.id}')" style="
+                                background: rgba(255, 255, 255, 0.03);
+                                border: 1px solid rgba(99, 102, 241, 0.2);
+                                border-radius: 8px;
+                                padding: 12px;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            " onmouseover="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.borderColor='rgba(99, 102, 241, 0.5)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.03)'; this.style.borderColor='rgba(99, 102, 241, 0.2)';">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #fff; font-size: 14px; font-weight: 500;">${t.name}</span>
+                                    ${t.isCustom ? '<span style="padding: 2px 6px; background: rgba(139, 92, 246, 0.3); border-radius: 3px; color: rgba(255, 255, 255, 0.7); font-size: 10px;">自定义</span>' : ''}
+                                </div>
+                                <p style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin: 6px 0 0 0;">${t.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const panelHtml = `
+<div class="template-selector" style="
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(20, 20, 30, 0.98); border: 2px solid rgba(99, 102, 241, 0.6);
+    border-radius: 12px; padding: 20px; min-width: 600px; max-width: 800px;
+    max-height: 80vh; overflow-y: auto; z-index: 10002;
+    backdrop-filter: blur(16px); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+">
+    <h3 style="color: #fff; margin: 0 0 16px 0; font-size: 18px;">提示词模板库</h3>
+    ${categoriesHtml}
+    <button onclick="document.querySelector('.template-selector')?.remove()" style="
+        position: absolute; top: 10px; right: 10px; background: none; border: none; color: rgba(255, 255, 255, 0.5);
+        font-size: 20px; cursor: pointer;
+    ">X</button>
+</div>
+<div class="template-overlay" onclick="document.querySelector('.template-selector')?.remove()" style="
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 10001;
+"></div>`;
+
+        document.body.insertAdjacentHTML('beforeend', panelHtml);
+    }
+
+    showTemplatePanel(templateId) {
+        const template = this.getTemplateById(templateId);
+        if (!template) return;
+
+        document.querySelector('.template-selector')?.remove();
+
+        let variablesHtml = template.variables.map(v => `
+            <div style="margin-bottom: 12px;">
+                <label style="color: rgba(255, 255, 255, 0.7); font-size: 12px; display: block; margin-bottom: 6px;">${v}：</label>
+                <textarea id="var_${v}" rows="2" placeholder="请输入${v}..." style="
+                    width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px;
+                    color: rgba(255, 255, 255, 0.9); font-size: 13px; box-sizing: border-box;
+                    resize: vertical;
+                "></textarea>
+            </div>
+        `).join('');
+
+        const panelHtml = `
+<div class="template-panel" style="
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(20, 20, 30, 0.98); border: 2px solid rgba(99, 102, 241, 0.6);
+    border-radius: 12px; padding: 20px; min-width: 500px; max-width: 700px;
+    max-height: 85vh; overflow-y: auto; z-index: 10003;
+    backdrop-filter: blur(16px); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+">
+    <h3 style="color: #fff; margin: 0 0 16px 0; font-size: 18px;">${template.name}</h3>
+    <p style="color: rgba(255, 255, 255, 0.6); font-size: 13px; margin: 0 0 16px 0;">${template.description}</p>
+    
+    <div style="margin-bottom: 16px;">
+        <h4 style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin: 0 0 12px 0;">填写变量</h4>
+        ${variablesHtml}
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+        <h4 style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin: 0 0 12px 0;">模板预览</h4>
+        <div id="template-preview" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto;">
+            <pre style="color: rgba(255, 255, 255, 0.8); font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin: 0;">${template.template}</pre>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <button onclick="promptEngine.updatePreview('${templateId}')" style="
+            flex: 1; padding: 10px; background: rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 6px; color: white; cursor: pointer;
+        ">更新预览</button>
+        <button onclick="promptEngine.confirmAndInject('${templateId}')" style="
+            flex: 1; padding: 10px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
+            border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 6px; color: white; cursor: pointer;
+        ">插入到输入框</button>
+    </div>
+    
+    <button onclick="document.querySelector('.template-panel')?.remove()" style="
+        position: absolute; top: 10px; right: 10px; background: none; border: none; color: rgba(255, 255, 255, 0.5);
+        font-size: 20px; cursor: pointer;
+    ">X</button>
+</div>
+<div class="template-panel-overlay" onclick="document.querySelector('.template-panel')?.remove()" style="
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 10002;
+"></div>`;
+
+        document.body.insertAdjacentHTML('beforeend', panelHtml);
+    }
+
+    updatePreview(templateId) {
+        const template = this.getTemplateById(templateId);
+        if (!template) return;
+
+        let preview = template.template;
+        
+        template.variables.forEach(v => {
+            const value = document.getElementById(`var_${v}`)?.value || `[${v}]`;
+            const regex = new RegExp(`{{${v}}}`, 'g');
+            preview = preview.replace(regex, value);
+        });
+
+        document.getElementById('template-preview').innerHTML = `<pre style="color: rgba(255, 255, 255, 0.8); font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin: 0;">${preview}</pre>`;
+    }
+
+    confirmAndInject(templateId) {
+        const template = this.getTemplateById(templateId);
+        if (!template) return;
+
+        const variableValues = {};
+        template.variables.forEach(v => {
+            variableValues[v] = document.getElementById(`var_${v}`)?.value || '';
+        });
+
+        this.injectToInput(templateId, variableValues);
+        document.querySelector('.template-panel')?.remove();
+    }
+}
+
+const promptEngine = new PromptTemplateEngine();
+
 jQuery(async () => {
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
     $("#extensions_settings").append(settingsHtml);
@@ -1158,6 +1565,9 @@ jQuery(async () => {
     </button>
     <button id="toolbox_mark_btn" class="toolbox-btn" title="标记和检索重要信息">
         <span class="btn-text">标记</span>
+    </button>
+    <button id="toolbox_template_btn" class="toolbox-btn" title="提示词模板引擎">
+        <span class="btn-text">模板</span>
     </button>
     <div class="toolbox-divider"></div>
     <button id="toolbox_upper_btn" class="toolbox-btn" title="将选中文本转为大写">
@@ -1198,6 +1608,7 @@ jQuery(async () => {
     $("#toolbox_anchor_btn").on("click", () => anchorInjector.showCharacterInfo());
     $("#toolbox_state_btn").on("click", () => stateTracker.showMiniPanel());
     $("#toolbox_mark_btn").on("click", () => keyInfoMarker.showSearchPanel());
+    $("#toolbox_template_btn").on("click", () => promptEngine.showTemplateSelector());
     $("#toolbox_upper_btn").on("click", convertToUppercase);
     $("#toolbox_lower_btn").on("click", convertToLowercase);
     $("#toolbox_trim_btn").on("click", trimWhitespace);
