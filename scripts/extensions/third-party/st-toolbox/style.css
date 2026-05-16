@@ -1,3 +1,6 @@
+/* Tool extension styles */
+
+/* Settings panel styles - matching template pattern */
 .toolbox-extension-settings .inline-drawer-header {
     cursor: pointer;
 }
@@ -6,20 +9,21 @@
     padding: 10px;
 }
 
-.toolbox-tool-block {
+.toolbox-extension-block {
     display: flex;
     align-items: center;
     margin-bottom: 8px;
 }
 
-.toolbox-tool-block input[type="checkbox"] {
+.toolbox-extension-block input[type="checkbox"] {
     margin-right: 8px;
 }
 
-.toolbox-tool-block label {
+.toolbox-extension-block label {
     color: var(--SmartThemeEmColor, #ccc);
 }
 
+/* Toolbar styles - fixed above input box */
 #toolbox_toolbar {
     display: flex;
     align-items: center;
@@ -33,7 +37,7 @@
     border-radius: 4px;
     order: 2;
     opacity: 0.7;
-    transition: 0.3s;
+    transition: opacity 0.3s;
 }
 
 #toolbox_toolbar:hover {
@@ -55,7 +59,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: 0.3s;
+    transition: all 0.3s;
     padding: 0 6px;
 }
 
@@ -68,6 +72,7 @@
     transform: scale(0.95);
 }
 
+/* Mobile responsive styles */
 @media (max-width: 768px) {
     #toolbox_toolbar {
         padding: 5px 5px;

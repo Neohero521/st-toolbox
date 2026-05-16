@@ -44,16 +44,17 @@ async function loadSettings() {
 
         const settings = extension_settings[extensionName];
 
-        $("#enable_toolbox").prop("checked", settings.enabled);
+        // ✅ 模板写法：需要 trigger("input") 来触发事件
+        $("#enable_toolbox").prop("checked", settings.enabled).trigger("input");
 
         const tools = settings.tools;
-        $("#tool_timestamp").prop("checked", tools.timestamp !== false);
-        $("#tool_datetime").prop("checked", tools.datetime !== false);
-        $("#tool_copy_last").prop("checked", tools.copyLast !== false);
-        $("#tool_clear_input").prop("checked", tools.clearInput !== false);
-        $("#tool_uppercase").prop("checked", tools.uppercase === true);
-        $("#tool_lowercase").prop("checked", tools.lowercase === true);
-        $("#tool_trim").prop("checked", tools.trimWhitespace !== false);
+        $("#tool_timestamp").prop("checked", tools.timestamp !== false).trigger("input");
+        $("#tool_datetime").prop("checked", tools.datetime !== false).trigger("input");
+        $("#tool_copy_last").prop("checked", tools.copyLast !== false).trigger("input");
+        $("#tool_clear_input").prop("checked", tools.clearInput !== false).trigger("input");
+        $("#tool_uppercase").prop("checked", tools.uppercase === true).trigger("input");
+        $("#tool_lowercase").prop("checked", tools.lowercase === true).trigger("input");
+        $("#tool_trim").prop("checked", tools.trimWhitespace !== false).trigger("input");
 
         updateToolVisibility();
         log("设置加载完成");
