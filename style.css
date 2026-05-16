@@ -1,5 +1,6 @@
 /* ===================================
    智慧屏风格工具箱 - Smart Toolbox
+   手机图标布局 + 横向滑动
    =================================== */
 
 /* 玻璃态基础效果 */
@@ -12,113 +13,178 @@
 }
 
 /* ===================================
-   工具栏主体 - 智慧屏风格
+   工具栏主体 - 横向滚动容器
    =================================== */
 #toolbox_toolbar {
-    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin: 12px auto;
-    width: calc(100% - 24px);
-    min-height: 70px;
-    padding: 16px 20px;
-    gap: 10px;
+    margin: 8px auto;
+    width: calc(100% - 20px);
+    padding: 10px 12px;
+    gap: 6px;
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.15) 0%,
+        rgba(139, 92, 246, 0.15) 50%,
+        rgba(236, 72, 153, 0.15) 100%
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 2px solid;
+    border-image: linear-gradient(
+        90deg,
+        rgba(168, 85, 247, 0.8),
+        rgba(236, 72, 153, 0.8),
+        rgba(168, 85, 247, 0.8)
+    ) 1;
     border-radius: 20px;
-    overflow: hidden;
+    box-shadow: 
+        0 8px 32px rgba(99, 102, 241, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0.95;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: relative;
 }
 
-/* 水波纹动态背景层 */
-#toolbox_toolbar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 80%, rgba(236, 72, 153, 0.25) 0%, transparent 50%);
-    z-index: 0;
-    animation: water-wave 8s ease-in-out infinite;
+/* 隐藏滚动条 */
+#toolbox_toolbar::-webkit-scrollbar {
+    display: none;
 }
 
-/* 半透明覆盖层 */
+/* 水波纹背景效果 */
+#toolbox_toolbar::before,
 #toolbox_toolbar::after {
     content: '';
     position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(168, 85, 247, 0.15) 0%,
+        transparent 70%
+    );
+    animation: wave-ripple 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+#toolbox_toolbar::before {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    left: -50px;
+    animation-delay: 0s;
+}
+
+#toolbox_toolbar::after {
+    width: 250px;
+    height: 250px;
+    bottom: -80px;
+    right: -30px;
+    animation-delay: -4s;
+}
+
+/* 模糊覆盖层 */
+.toolbox-blur-overlay {
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(15, 15, 25, 0.4);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    z-index: 1;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(1px);
+    pointer-events: none;
+    border-radius: 18px;
 }
 
-/* 边框脉冲效果 */
+/* 边框脉冲动画 */
+@keyframes border-pulse {
+    0%, 100% {
+        border-image: linear-gradient(
+            90deg,
+            rgba(168, 85, 247, 0.6),
+            rgba(236, 72, 153, 0.6),
+            rgba(168, 85, 247, 0.6)
+        ) 1;
+        box-shadow: 
+            0 8px 32px rgba(99, 102, 241, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+            0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        border-image: linear-gradient(
+            90deg,
+            rgba(236, 72, 153, 0.9),
+            rgba(168, 85, 247, 0.9),
+            rgba(236, 72, 153, 0.9)
+        ) 1;
+        box-shadow: 
+            0 8px 40px rgba(236, 72, 153, 0.3),
+            0 0 20px rgba(168, 85, 247, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+}
+
 #toolbox_toolbar {
-    border: 2px solid transparent;
-    background-clip: padding-box, border-box;
-    background-origin: padding-box, border-box;
-    background-image: 
-        linear-gradient(135deg, rgba(15, 15, 25, 0.4) 0%, rgba(15, 15, 25, 0.6) 100%),
-        linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6), rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
-    background-size: 100% 100%, 300% 300%;
     animation: border-pulse 4s ease-in-out infinite;
 }
 
-/* 悬停时增强效果 */
-#toolbox_toolbar:hover {
-    opacity: 1;
-    transform: translateY(-2px);
-    box-shadow: 
-        0 16px 48px rgba(99, 102, 241, 0.25),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-        0 8px 24px rgba(0, 0, 0, 0.35);
+/* 水波纹动画 */
+@keyframes wave-ripple {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.6;
+    }
+    25% {
+        transform: scale(1.1) rotate(5deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(0.95) rotate(-3deg);
+        opacity: 0.5;
+    }
+    75% {
+        transform: scale(1.05) rotate(2deg);
+        opacity: 0.7;
+    }
 }
 
-/* 工具栏标题（发光效果） */
-#toolbox_toolbar > span:first-of-type {
-    position: relative;
-    z-index: 2;
-    font-size: 20px;
-    margin-right: 12px;
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
-    animation: icon-glow 3s ease-in-out infinite;
+#toolbox_toolbar:hover {
+    opacity: 1;
 }
 
 /* ===================================
-   工具按钮 - 现代科技风格
+   手机图标按钮 - 垂直排列
    =================================== */
 .toolbox-btn {
     position: relative;
-    z-index: 2;
-    min-width: 52px;
-    height: 44px;
-    padding: 0 16px;
-    font-size: 18px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.92);
+    min-width: 56px;
+    width: 56px;
+    height: auto;
+    padding: 6px 4px;
+    font-size: 0;
     background: linear-gradient(
         145deg,
         rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.06) 100%
+        rgba(255, 255, 255, 0.05) 100%
     );
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
 }
 
 /* 按钮发光效果 */
@@ -147,23 +213,46 @@
 .toolbox-btn:hover {
     background: linear-gradient(
         145deg,
-        rgba(99, 102, 241, 0.45) 0%,
-        rgba(139, 92, 246, 0.35) 100%
+        rgba(168, 85, 247, 0.35) 0%,
+        rgba(236, 72, 153, 0.25) 100%
     );
-    border-color: rgba(99, 102, 241, 0.6);
+    border-color: rgba(168, 85, 247, 0.5);
     box-shadow: 
-        0 0 24px rgba(99, 102, 241, 0.35),
-        0 6px 16px rgba(0, 0, 0, 0.25);
+        0 0 20px rgba(168, 85, 247, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.2);
     transform: translateY(-3px) scale(1.03);
-    color: white;
 }
 
 /* 按钮点击效果 */
 .toolbox-btn:active {
-    transform: translateY(0) scale(0.97);
+    transform: translateY(0) scale(0.98);
     box-shadow: 
-        0 0 12px rgba(99, 102, 241, 0.25),
-        0 3px 8px rgba(0, 0, 0, 0.25);
+        0 0 10px rgba(168, 85, 247, 0.2),
+        0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮图标 - 上面 */
+.toolbox-btn .btn-icon {
+    font-size: 22px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: transform 0.2s ease;
+}
+
+.toolbox-btn:hover .btn-icon {
+    transform: scale(1.1);
+}
+
+/* 按钮文字 - 下面 */
+.toolbox-btn .btn-text {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 /* 按钮点击波纹效果 */
@@ -174,7 +263,7 @@
     left: 50%;
     width: 0;
     height: 0;
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
@@ -182,39 +271,42 @@
 }
 
 .toolbox-btn.clicked::after {
-    width: 240px;
-    height: 240px;
+    width: 150px;
+    height: 150px;
     opacity: 0;
 }
 
-/* 按钮文字样式 */
-.toolbox-btn .btn-text {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.6px;
+/* ===================================
+   功能分组标签
+   =================================== */
+.toolbox-group-label {
+    font-size: 9px;
+    color: rgba(168, 85, 247, 0.8);
     text-transform: uppercase;
-}
-
-/* 按钮图标样式 */
-.toolbox-btn .btn-icon {
-    font-size: 16px;
+    letter-spacing: 1px;
+    padding: 0 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-weight: 600;
 }
 
 /* ===================================
    分隔线
    =================================== */
 .toolbox-divider {
-    position: relative;
-    z-index: 2;
     width: 1px;
-    height: 34px;
+    height: 40px;
     background: linear-gradient(
         to bottom,
         transparent,
-        rgba(255, 255, 255, 0.3),
+        rgba(255, 255, 255, 0.2),
         transparent
     );
-    margin: 0 8px;
+    margin: 0 4px;
+    flex-shrink: 0;
 }
 
 /* ===================================
@@ -227,137 +319,80 @@
 .toolbox-extension-settings .inline-drawer-header {
     background: linear-gradient(
         135deg,
-        rgba(99, 102, 241, 0.22) 0%,
-        rgba(139, 92, 246, 0.22) 100%
+        rgba(99, 102, 241, 0.2) 0%,
+        rgba(139, 92, 246, 0.2) 100%
     );
-    padding: 14px 18px;
-    border-radius: 14px;
+    padding: 12px 16px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1.5px solid rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .toolbox-extension-settings .inline-drawer-header:hover {
     background: linear-gradient(
         135deg,
-        rgba(99, 102, 241, 0.35) 0%,
-        rgba(139, 92, 246, 0.35) 100%
+        rgba(99, 102, 241, 0.3) 0%,
+        rgba(139, 92, 246, 0.3) 100%
     );
-    border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
 }
 
 .toolbox-extension-settings .inline-drawer-header b {
     color: rgba(255, 255, 255, 0.95);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .toolbox-extension-settings .inline-drawer-content {
-    padding: 18px;
-    background: rgba(20, 20, 30, 0.65);
-    border-radius: 0 0 14px 14px;
-    border: 1.5px solid rgba(99, 102, 241, 0.18);
+    padding: 16px;
+    background: rgba(30, 30, 40, 0.6);
+    border-radius: 0 0 12px 12px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
     border-top: none;
 }
 
 .toolbox-extension_block {
     display: flex;
     align-items: center;
-    margin-bottom: 14px;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
     transition: all 0.2s ease;
 }
 
 .toolbox-extension_block:hover {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(99, 102, 241, 0.08);
 }
 
 .toolbox-extension_block input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
-    margin-right: 14px;
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
     accent-color: #6366f1;
     cursor: pointer;
 }
 
 .toolbox-extension_block label {
-    color: rgba(255, 255, 255, 0.88);
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
     cursor: pointer;
     flex: 1;
 }
 
 .toolbox-extension_block .sysHR {
     border: none;
-    height: 1.5px;
+    height: 1px;
     background: linear-gradient(
         to right,
         transparent,
-        rgba(99, 102, 241, 0.4),
+        rgba(99, 102, 241, 0.3),
         transparent
     );
-    margin: 18px 0;
-}
-
-/* ===================================
-   动画效果
-   =================================== */
-
-/* 边框脉冲动画 */
-@keyframes border-pulse {
-    0%, 100% {
-        background-position: 100% 100%, 0% 0%;
-        box-shadow: 
-            0 12px 40px rgba(99, 102, 241, 0.15),
-            0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-            0 4px 12px rgba(0, 0, 0, 0.25);
-    }
-    50% {
-        background-position: 0% 0%, 100% 100%;
-        box-shadow: 
-            0 16px 48px rgba(99, 102, 241, 0.25),
-            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-            0 6px 16px rgba(0, 0, 0, 0.35),
-            0 0 30px rgba(99, 102, 241, 0.2);
-    }
-}
-
-/* 水波纹动画 */
-@keyframes water-wave {
-    0% {
-        transform: scale(1) rotate(0deg);
-        opacity: 0.8;
-    }
-    25% {
-        transform: scale(1.05) rotate(5deg);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.02) rotate(-3deg);
-        opacity: 0.9;
-    }
-    75% {
-        transform: scale(1.08) rotate(2deg);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 0.8;
-    }
-}
-
-/* 图标发光动画 */
-@keyframes icon-glow {
-    0%, 100% {
-        filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
-    }
-    50% {
-        filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.9)) drop-shadow(0 0 32px rgba(139, 92, 246, 0.6));
-    }
+    margin: 16px 0;
 }
 
 /* ===================================
@@ -365,32 +400,26 @@
    =================================== */
 @media (max-width: 768px) {
     #toolbox_toolbar {
-        flex-wrap: wrap;
-        padding: 14px 14px;
-        gap: 8px;
-        min-height: 80px;
+        padding: 8px 10px;
+        gap: 5px;
     }
     
     .toolbox-btn {
-        min-width: 48px;
-        height: 42px;
-        font-size: 16px;
+        min-width: 50px;
+        width: 50px;
+        padding: 5px 3px;
+    }
+    
+    .toolbox-btn .btn-icon {
+        font-size: 20px;
     }
     
     .toolbox-btn .btn-text {
+        font-size: 9px;
+    }
+    
+    .toolbox-group-label {
         display: none;
-    }
-    
-    .toolbox-divider {
-        display: none;
-    }
-    
-    .toolbox-extension_block {
-        padding: 10px 14px;
-    }
-    
-    .toolbox-extension_block label {
-        font-size: 13px;
     }
 }
 
@@ -399,19 +428,22 @@
    =================================== */
 @media (prefers-color-scheme: light) {
     #toolbox_toolbar {
-        background-image: 
-            linear-gradient(135deg, rgba(240, 240, 245, 0.5) 0%, rgba(230, 230, 240, 0.6) 100%),
-            linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5), rgba(236, 72, 153, 0.5), rgba(99, 102, 241, 0.5));
-    }
-    
-    #toolbox_toolbar::after {
-        background: rgba(245, 245, 250, 0.4);
+        background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.08) 0%,
+            rgba(139, 92, 246, 0.08) 50%,
+            rgba(236, 72, 153, 0.08) 100%
+        );
+        border-color: rgba(99, 102, 241, 0.2);
     }
     
     .toolbox-btn {
-        color: rgba(0, 0, 0, 0.82);
-        background: rgba(255, 255, 255, 0.7);
-        border-color: rgba(99, 102, 241, 0.25);
-        text-shadow: none;
+        color: rgba(0, 0, 0, 0.8);
+        background: rgba(255, 255, 255, 0.6);
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+    
+    .toolbox-btn .btn-text {
+        color: rgba(0, 0, 0, 0.8);
     }
 }
