@@ -39,15 +39,15 @@ async function loadSettings() {
     if (Object.keys(extension_settings[extensionName]).length === 0) {
         Object.assign(extension_settings[extensionName], defaultSettings);
     }
-    
+
     const settings = extension_settings[extensionName];
     $("#enable_toolbox").prop("checked", settings.enabled).trigger("input");
-    
+
     const tools = settings.tools;
     Object.keys(tools).forEach(tool => {
         $(`#tool_${tool}`).prop("checked", tools[tool] !== false).trigger("input");
     });
-    
+
     updateToolVisibility();
 }
 
@@ -56,7 +56,7 @@ function updateToolVisibility() {
     Object.keys(tools).forEach(tool => {
         $(`#toolbox_${tool}_btn`).toggle(tools[tool] !== false);
     });
-    
+
     if (!extension_settings[extensionName].enabled) {
         $("#toolbox_toolbar").hide();
     } else {
@@ -76,7 +76,7 @@ function getCurrentCharacter() {
 function insertTextToInput(text) {
     const textarea = getMessageInput();
     if (!textarea.length) return;
-    
+
     const startPos = textarea.prop("selectionStart");
     const endPos = textarea.prop("selectionEnd");
     const currentText = textarea.val() || "";
@@ -120,14 +120,14 @@ function injectCharacterAnchor() {
         showToast("未检测到角色");
         return;
     }
-    
+
     let anchorText = "\n\n【角色锚点】\n";
     anchorText += `身份：${character.name}\n`;
     if (character.description) anchorText += `设定：${character.description}\n`;
     if (character.personality) anchorText += `性格：${character.personality}\n`;
     if (character.scenario) anchorText += `场景：${character.scenario}\n`;
     anchorText += "\n*请严格遵守以上角色设定*\n";
-    
+
     insertTextToInput(anchorText);
     showToast("角色锚点已注入");
 }
@@ -141,29 +141,29 @@ function detectOOC() {
         showToast("聊天记录不足");
         return;
     }
-    
+
     const lastMessages = context.chat.slice(-3).filter(m => !m.is_user);
     if (lastMessages.length === 0) {
         showToast("未找到AI回复");
         return;
     }
-    
+
     const lastReply = lastMessages[lastMessages.length - 1].mes;
     const character = getCurrentCharacter();
-    
+
     const indicators = [
         { pattern: /^\s*以下是|以下是对|作为AI|我是一个|我可以帮|I am an AI|I'm an AI/i, issue: "明确声明自己是AI" },
         { pattern: /不能|无法|我没有|我没有办法|I cannot|I can't|I don't have/i, issue: "表达AI能力限制" },
         { pattern: /抱歉|对不起|很抱歉|Apology|sorry/i, issue: "过度道歉" }
     ];
-    
+
     let issues = [];
     indicators.forEach(ind => {
         if (ind.pattern.test(lastReply)) {
             issues.push(ind.issue);
         }
     });
-    
+
     if (issues.length > 0) {
         const fixText = `\n\n【角色修正提示】\n请避免：${issues.join('、')}。\n继续保持${character?.name || '角色'}的身份和性格。\n`;
         insertTextToInput(fixText);
@@ -182,7 +182,7 @@ function updateCharacterStatus() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     const lastMessages = context.chat.slice(-5).filter(m => !m.is_user);
     const emotionKeywords = {
         "开心": ["笑", "高兴", "开心", "愉快", "happy", "joy"],
@@ -191,10 +191,10 @@ function updateCharacterStatus() {
         "害羞": ["脸红", "害羞", "不好意思", "shy", "embarrassed"],
         "惊讶": ["惊讶", "震惊", "没想到", "surprised", "shocked"]
     };
-    
+
     let detectedEmotion = "平静";
     let maxCount = 0;
-    
+
     emotionKeywords.forEach((keywords, emotion) => {
         const count = lastMessages.reduce((sum, msg) => {
             return sum + keywords.filter(kw => msg.mes.includes(kw)).length;
@@ -204,9 +204,9 @@ function updateCharacterStatus() {
             detectedEmotion = emotion;
         }
     });
-    
+
     characterState.emotion = detectedEmotion;
-    
+
     const statusText = `\n\n【当前状态】\n情绪：${characterState.emotion}\n关系值：${characterState.relationship}\n任务进度：${characterState.taskProgress}%\n`;
     insertTextToInput(statusText);
     showToast(`状态已更新：${detectedEmotion}`);
@@ -221,20 +221,20 @@ function generateContextSummary() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     const chat = context.chat;
     const recentMessages = chat.slice(-10);
-    
+
     let summary = "\n\n【上下文摘要】\n";
     summary += `对话轮次：${recentMessages.length}\n`;
     summary += "关键内容：\n";
-    
+
     recentMessages.forEach((msg, i) => {
         const role = msg.is_user ? "用户" : "AI";
         const preview = msg.mes.substring(0, 50);
         summary += `${i + 1}. [${role}] ${preview}...\n`;
     });
-    
+
     insertTextToInput(summary);
     showToast("上下文摘要已生成");
 }
@@ -248,24 +248,24 @@ function markImportantInfo() {
         textarea.prop("selectionStart"),
         textarea.prop("selectionEnd")
     );
-    
+
     if (!selectedText || selectedText.length < 3) {
         showToast("请先选中文本");
         return;
     }
-    
+
     const mark = {
         text: selectedText,
         timestamp: new Date().toISOString(),
         tag: "重要"
     };
-    
+
     markedInfo.push(mark);
-    
+
     const markedText = `【${mark.tag}】${selectedText}`;
     const currentText = textarea.val();
     textarea.val(currentText.replace(selectedText, markedText));
-    
+
     showToast(`已标记：${selectedText.substring(0, 20)}...`);
 }
 
@@ -274,7 +274,7 @@ function insertMarkedInfo() {
         showToast("暂无标记信息");
         return;
     }
-    
+
     const latestMark = markedInfo[markedInfo.length - 1];
     const text = `\n\n【重要信息回溯】\n${latestMark.text}\n`;
     insertTextToInput(text);
@@ -290,11 +290,11 @@ function manageBranches() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     const branchText = "\n\n【对话分支】\n";
     const branchCount = context.chat.filter(m => m.swipe_id !== undefined).length || 1;
     const branchInfo = `当前分支数：${branchCount}\n`;
-    
+
     insertTextToInput(branchText + branchInfo);
     showToast(`检测到 ${branchCount} 个分支`);
 }
@@ -313,10 +313,10 @@ const defaultTemplates = {
 function insertTemplate() {
     const templateNames = Object.keys(defaultTemplates);
     const templateText = "\n\n【提示词模板】\n";
-    const templatesList = templateNames.map((name, i) => 
+    const templatesList = templateNames.map((name, i) =>
         `${i + 1}. ${name}：${defaultTemplates[name]}`
     ).join("\n");
-    
+
     insertTextToInput(templateText + templatesList + "\n请选择要使用的模板类型。");
     showToast("模板列表已插入");
 }
@@ -330,17 +330,17 @@ function setupBatchSend() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     showToast("批量发送模式：请在输入框输入多条消息，使用|分隔");
-    
+
     const textarea = getMessageInput();
     const currentText = textarea.val();
-    
+
     if (currentText.includes('|')) {
         const messages = currentText.split('|').map(m => m.trim()).filter(m => m);
         batchQueue = messages;
         textarea.val("");
-        
+
         let index = 0;
         const sendNext = () => {
             if (index < batchQueue.length) {
@@ -357,7 +357,7 @@ function setupBatchSend() {
                 showToast("批量发送完成");
             }
         };
-        
+
         sendNext();
     }
 }
@@ -368,29 +368,29 @@ function setupBatchSend() {
 function optimizePrompt() {
     const textarea = getMessageInput();
     const text = textarea.val();
-    
+
     if (!text || text.length < 10) {
         showToast("提示词太短，无需优化");
         return;
     }
-    
+
     let optimized = text;
-    
+
     if (!text.startsWith('【') && !text.startsWith('[')) {
         optimized = `【核心指令】\n${text}`;
     }
-    
+
     if (!text.includes('*') && !text.includes('（')) {
         const withAction = prompt("是否添加动作描写？输入描述或直接发送");
         if (withAction && withAction.trim()) {
             optimized = `*${withAction}*\n${optimized}`;
         }
     }
-    
+
     if (!text.includes('。\n') && text.length > 50) {
         optimized += "\n\n请详细回复，保持角色一致。";
     }
-    
+
     textarea.val(optimized);
     showToast("提示词已优化");
 }
@@ -404,10 +404,10 @@ function generateScene() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     const lastMessages = context.chat.slice(-5);
     const text = lastMessages.map(m => m.mes).join(" ");
-    
+
     const sceneKeywords = {
         "咖啡馆": ["咖啡", "喝", "坐", "店"],
         "森林": ["森林", "树", "鸟", "自然"],
@@ -415,10 +415,10 @@ function generateScene() {
         "室内": ["房间", "房子", "家里", "室内"],
         "海边": ["海", "沙滩", "浪", "海风"]
     };
-    
+
     let detectedScene = "未知场景";
     let maxCount = 0;
-    
+
     sceneKeywords.forEach((keywords, scene) => {
         const count = keywords.filter(kw => text.includes(kw)).length;
         if (count > maxCount) {
@@ -426,7 +426,7 @@ function generateScene() {
             detectedScene = scene;
         }
     });
-    
+
     const sceneText = `\n\n【场景设定】\n当前场景：${detectedScene}\n请描述这个场景的详细环境、氛围和光线。`;
     insertTextToInput(sceneText);
     showToast(`检测到场景：${detectedScene}`);
@@ -441,7 +441,7 @@ function scheduleCharacter() {
         showToast("当前不是群聊模式");
         return;
     }
-    
+
     const scheduleText = "\n\n【角色调度】\n请按以下顺序让角色发言：\n1. 先让角色A发言\n2. 然后角色B回应\n3. 最后角色C总结";
     insertTextToInput(scheduleText);
     showToast("角色调度提示已插入");
@@ -456,17 +456,17 @@ function exportChat() {
         showToast("无法获取聊天上下文");
         return;
     }
-    
+
     const chat = context.chat;
     let exportText = "【聊天记录导出】\n\n";
-    
+
     chat.forEach(msg => {
         const role = msg.is_user ? "用户" : "AI";
         const name = msg.name || role;
         const time = msg.send_date || "";
         exportText += `[${time}] ${name}：\n${msg.mes}\n\n`;
     });
-    
+
     const blob = new Blob([exportText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -474,7 +474,7 @@ function exportChat() {
     a.download = `chat_export_${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     showToast("聊天记录已导出");
 }
 
@@ -484,85 +484,89 @@ function exportChat() {
 jQuery(async () => {
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
     $("#extensions_settings").append(settingsHtml);
-    
+
     const toolbarHtml = `
 <div id="toolbox_toolbar" style="display: none;">
+    <span>⚡</span>
+    <div class="toolbox-wave-3"></div>
+    <div class="toolbox-blur-overlay"></div>
+
     <button id="toolbox_anchor_btn" class="toolbox-btn" title="角色设定锚点注入">
         <span class="btn-icon">⚓</span>
         <span class="btn-text">锚点</span>
     </button>
-    
+
     <div class="toolbox-divider"></div>
-    
+
     <button id="toolbox_ooc_btn" class="toolbox-btn" title="OOC检测与修正">
         <span class="btn-icon">🔍</span>
         <span class="btn-text">检测</span>
     </button>
-    
+
     <button id="toolbox_status_btn" class="toolbox-btn" title="角色状态追踪">
         <span class="btn-icon">📊</span>
         <span class="btn-text">状态</span>
     </button>
-    
+
     <div class="toolbox-divider"></div>
-    
+
     <button id="toolbox_summary_btn" class="toolbox-btn" title="上下文摘要">
         <span class="btn-icon">📝</span>
         <span class="btn-text">摘要</span>
     </button>
-    
+
     <button id="toolbox_mark_btn" class="toolbox-btn" title="标记重要信息">
         <span class="btn-icon">🏷️</span>
         <span class="btn-text">标记</span>
     </button>
-    
+
     <button id="toolbox_branch_btn" class="toolbox-btn" title="分支管理">
         <span class="btn-icon">🌳</span>
         <span class="btn-text">分支</span>
     </button>
-    
+
     <div class="toolbox-divider"></div>
-    
+
     <button id="toolbox_template_btn" class="toolbox-btn" title="提示词模板">
         <span class="btn-icon">📋</span>
         <span class="btn-text">模板</span>
     </button>
-    
+
     <button id="toolbox_batch_btn" class="toolbox-btn" title="批量发送">
         <span class="btn-icon">📨</span>
         <span class="btn-text">批量</span>
     </button>
-    
+
     <button id="toolbox_optimize_btn" class="toolbox-btn" title="提示词优化">
         <span class="btn-icon">✨</span>
         <span class="btn-text">优化</span>
     </button>
-    
+
     <div class="toolbox-divider"></div>
-    
+
     <button id="toolbox_scene_btn" class="toolbox-btn" title="场景生成">
         <span class="btn-icon">🎬</span>
         <span class="btn-text">场景</span>
     </button>
-    
+
     <button id="toolbox_character_btn" class="toolbox-btn" title="角色调度">
         <span class="btn-icon">🎭</span>
         <span class="btn-text">调度</span>
     </button>
-    
+
     <div class="toolbox-divider"></div>
-    
+
     <button id="toolbox_export_btn" class="toolbox-btn" title="导出聊天">
         <span class="btn-icon">💾</span>
         <span class="btn-text">导出</span>
     </button>
 </div>`;
-    
+
     const sendForm = $("#send_form");
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
     }
-    
+
     // 绑定事件
     $("#enable_toolbox").on("input", (e) => {
         const checked = Boolean($(e.target).prop("checked"));
@@ -570,7 +574,7 @@ jQuery(async () => {
         saveSettingsDebounced();
         updateToolVisibility();
     });
-    
+
     // 工具开关
     Object.keys(defaultSettings.tools).forEach(tool => {
         $(`#tool_${tool}`).on("input", (e) => {
@@ -580,7 +584,7 @@ jQuery(async () => {
             updateToolVisibility();
         });
     });
-    
+
     // 功能按钮绑定
     $("#toolbox_anchor_btn").on("click", injectCharacterAnchor);
     $("#toolbox_ooc_btn").on("click", detectOOC);
@@ -594,6 +598,6 @@ jQuery(async () => {
     $("#toolbox_scene_btn").on("click", generateScene);
     $("#toolbox_character_btn").on("click", scheduleCharacter);
     $("#toolbox_export_btn").on("click", exportChat);
-    
+
     loadSettings();
 });

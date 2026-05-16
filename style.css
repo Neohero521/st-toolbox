@@ -1,6 +1,5 @@
 /* ===================================
    智慧屏风格工具箱 - Smart Toolbox
-   手机图标布局 + 横向滑动
    =================================== */
 
 /* 玻璃态基础效果 */
@@ -13,15 +12,17 @@
 }
 
 /* ===================================
-   工具栏主体 - 横向滚动容器
+   工具栏主体 - 智慧屏风格
    =================================== */
 #toolbox_toolbar {
     display: flex;
     align-items: center;
+    justify-content: center;
     margin: 8px auto;
     width: calc(100% - 20px);
-    padding: 10px 12px;
-    gap: 6px;
+    padding: 10px 16px;
+    min-height: 70px;
+    gap: 8px;
     background: linear-gradient(
         135deg,
         rgba(99, 102, 241, 0.15) 0%,
@@ -89,6 +90,25 @@
     animation-delay: -4s;
 }
 
+/* 第三个水波纹效果 */
+.toolbox-wave-3 {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(236, 72, 153, 0.12) 0%,
+        transparent 70%
+    );
+    animation: wave-ripple 8s ease-in-out infinite;
+    animation-delay: -2s;
+    pointer-events: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 /* 模糊覆盖层 */
 .toolbox-blur-overlay {
     position: absolute;
@@ -100,6 +120,7 @@
     backdrop-filter: blur(1px);
     pointer-events: none;
     border-radius: 18px;
+    z-index: 1;
 }
 
 /* 边框脉冲动画 */
@@ -159,15 +180,36 @@
     opacity: 1;
 }
 
+/* ⚡ 发光图标 */
+#toolbox_toolbar > span:first-child {
+    font-size: 24px;
+    margin-right: 8px;
+    animation: glow-pulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.8));
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.6));
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 16px rgba(255, 204, 0, 1)) drop-shadow(0 0 24px rgba(255, 153, 0, 0.5));
+        transform: scale(1.1);
+    }
+}
+
 /* ===================================
    手机图标按钮 - 垂直排列
    =================================== */
 .toolbox-btn {
     position: relative;
-    min-width: 56px;
-    width: 56px;
+    min-width: 52px;
+    width: 52px;
     height: auto;
-    padding: 6px 4px;
+    padding: 8px 4px;
     font-size: 0;
     background: linear-gradient(
         145deg,
@@ -175,16 +217,17 @@
         rgba(255, 255, 255, 0.05) 100%
     );
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 /* 按钮发光效果 */
@@ -233,7 +276,7 @@
 
 /* 按钮图标 - 上面 */
 .toolbox-btn .btn-icon {
-    font-size: 22px;
+    font-size: 24px;
     line-height: 1;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     transition: transform 0.2s ease;
@@ -245,7 +288,7 @@
 
 /* 按钮文字 - 下面 */
 .toolbox-btn .btn-text {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
     text-transform: uppercase;
@@ -277,36 +320,20 @@
 }
 
 /* ===================================
-   功能分组标签
-   =================================== */
-.toolbox-group-label {
-    font-size: 9px;
-    color: rgba(168, 85, 247, 0.8);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 0 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    font-weight: 600;
-}
-
-/* ===================================
    分隔线
    =================================== */
 .toolbox-divider {
     width: 1px;
-    height: 40px;
+    height: 44px;
     background: linear-gradient(
         to bottom,
         transparent,
-        rgba(255, 255, 255, 0.2),
+        rgba(255, 255, 255, 0.25),
         transparent
     );
-    margin: 0 4px;
+    margin: 0 6px;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 /* ===================================
@@ -400,14 +427,15 @@
    =================================== */
 @media (max-width: 768px) {
     #toolbox_toolbar {
-        padding: 8px 10px;
-        gap: 5px;
+        min-height: 60px;
+        padding: 8px 12px;
+        gap: 6px;
     }
     
     .toolbox-btn {
-        min-width: 50px;
-        width: 50px;
-        padding: 5px 3px;
+        min-width: 48px;
+        width: 48px;
+        padding: 6px 3px;
     }
     
     .toolbox-btn .btn-icon {
@@ -418,8 +446,12 @@
         font-size: 9px;
     }
     
-    .toolbox-group-label {
-        display: none;
+    .toolbox-divider {
+        height: 36px;
+    }
+    
+    #toolbox_toolbar > span:first-child {
+        font-size: 20px;
     }
 }
 
