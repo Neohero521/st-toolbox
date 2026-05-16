@@ -28,6 +28,24 @@
             </div>
             <hr class="sysHR" />
             <div class="toolbox-extension_block flex-container">
+                <input id="tool_character_anchor" type="checkbox" />
+                <label for="tool_character_anchor">角色设定锚点注入器</label>
+            </div>
+            <div class="toolbox-extension_block flex-container" style="flex-direction: column; align-items: stretch;">
+                <label for="tool_custom_keywords" style="margin-bottom: 6px;">自定义锚点关键词（每行一个）：</label>
+                <textarea id="tool_custom_keywords" rows="3" style="
+                    width: 100%; 
+                    background: rgba(255, 255, 255, 0.05); 
+                    border: 1px solid rgba(99, 102, 241, 0.3); 
+                    border-radius: 6px; 
+                    color: rgba(255, 255, 255, 0.9); 
+                    padding: 8px; 
+                    font-size: 12px;
+                    resize: vertical;
+                " placeholder="例如：&#10;绝对不能暴露身份&#10;保持神秘感&#10;禁止暴力行为"></textarea>
+            </div>
+            <hr class="sysHR" />
+            <div class="toolbox-extension_block flex-container">
                 <input id="tool_uppercase" type="checkbox" />
                 <label for="tool_uppercase">转为大写按钮</label>
             </div>
