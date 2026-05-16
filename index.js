@@ -344,7 +344,7 @@ class CharacterAnchorInjector {
     backdrop-filter: blur(20px);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 ">
-    <h3 style="color: #fff; margin: 0 0 20px 0; font-size: 20px;">📌 ${charInfo.name} - 角色信息</h3>
+    <h3 style="color: #fff; margin: 0 0 20px 0; font-size: 20px;">角色信息 - ${charInfo.name}</h3>
     <div style="color: rgba(255, 255, 255, 0.9); line-height: 1.6;">
         <div style="margin-bottom: 16px;">
             <strong style="color: #6366f1;">性格特点：</strong>
@@ -376,7 +376,7 @@ class CharacterAnchorInjector {
     <button onclick="this.closest('.anchor-info-panel').remove()" style="
         position: absolute; top: 12px; right: 12px; background: none; border: none; color: rgba(255, 255, 255, 0.6);
         font-size: 24px; cursor: pointer; line-height: 1;
-    ">×</button>
+    ">X</button>
 </div>
 <div class="anchor-overlay" onclick="document.querySelector('.anchor-info-panel')?.remove()" style="
     position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 9999;
@@ -820,50 +820,353 @@ class CharacterStateTracker {
 
 const stateTracker = new CharacterStateTracker();
 
+class KeyInfoMarker {
+    constructor() {
+        this.storageKey = 'st-toolbox-marked-info';
+        this.tags = ['剧情', '道具', '人物', '约定', '任务', '世界观'];
+    }
+
+    loadMarkedInfo() {
+        const saved = localStorage.getItem(this.storageKey);
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveMarkedInfo(data) {
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+    }
+
+    markText(text, tags = [], note = '') {
+        const marked = {
+            id: Date.now(),
+            text: text,
+            tags: tags,
+            note: note,
+            chatId: getContext().chatId || 'default',
+            timestamp: new Date().toISOString()
+        };
+
+        const all = this.loadMarkedInfo();
+        all.push(marked);
+        this.saveMarkedInfo(all);
+
+        toastr.success('已标记为重要信息', '标记');
+        return marked;
+    }
+
+    markSelection() {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+        
+        if (!selectedText) {
+            toastr.warning('请先选中要标记的文本', '标记');
+            return;
+        }
+
+        this.showMarkDialog(selectedText);
+    }
+
+    showMarkDialog(selectedText) {
+        const dialogHtml = `
+<div class="mark-dialog" style="
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(20, 20, 30, 0.98); border: 2px solid rgba(99, 102, 241, 0.6);
+    border-radius: 12px; padding: 20px; min-width: 400px; z-index: 10002;
+    backdrop-filter: blur(16px); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+">
+    <h3 style="color: #fff; margin: 0 0 16px 0; font-size: 16px;">标记重要信息</h3>
+    
+    <div style="color: rgba(255, 255, 255, 0.7); font-size: 12px; margin-bottom: 8px;">选中的文本：</div>
+    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 10px; margin-bottom: 16px; max-height: 100px; overflow-y: auto;">
+        <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 13px; line-height: 1.5;">${selectedText}</p>
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+        <label style="color: rgba(255, 255, 255, 0.7); font-size: 12px; display: block; margin-bottom: 6px;">选择标签：</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${this.tags.map(tag => `
+                <label style="cursor: pointer;">
+                    <input type="checkbox" class="mark-tag-checkbox" value="${tag}" style="margin-right: 4px;">
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 4px; color: rgba(255, 255, 255, 0.8); font-size: 12px;">${tag}</span>
+                </label>
+            `).join('')}
+        </div>
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+        <label style="color: rgba(255, 255, 255, 0.7); font-size: 12px; display: block; margin-bottom: 6px;">备注（可选）：</label>
+        <input type="text" id="mark-note-input" placeholder="添加备注信息..." style="
+            width: 100%; padding: 8px 12px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px;
+            color: rgba(255, 255, 255, 0.9); font-size: 13px; box-sizing: border-box;
+        ">
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <button onclick="
+            const checkedBoxes = document.querySelectorAll('.mark-tag-checkbox:checked');
+            const selectedTags = Array.from(checkedBoxes).map(cb => cb.value);
+            const note = document.getElementById('mark-note-input').value;
+            keyInfoMarker.markText(\`${selectedText.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, selectedTags, note);
+            document.querySelector('.mark-dialog')?.remove();
+        " style="
+            flex: 1; padding: 10px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
+            border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 6px; color: white; cursor: pointer;
+        ">确认标记</button>
+        <button onclick="document.querySelector('.mark-dialog')?.remove()" style="
+            flex: 1; padding: 10px; background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer;
+        ">取消</button>
+    </div>
+    
+    <button onclick="document.querySelector('.mark-dialog')?.remove()" style="
+        position: absolute; top: 10px; right: 10px; background: none; border: none; color: rgba(255, 255, 255, 0.5);
+        font-size: 20px; cursor: pointer;
+    ">X</button>
+</div>
+<div class="mark-overlay" onclick="document.querySelector('.mark-dialog')?.remove()" style="
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 10001;
+"></div>`;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHtml);
+    }
+
+    search(keyword) {
+        const all = this.loadMarkedInfo();
+        const currentChatId = getContext().chatId || 'default';
+        
+        return all.filter(item => 
+            item.chatId === currentChatId && (
+                item.text.includes(keyword) || 
+                item.note.includes(keyword) ||
+                item.tags.some(tag => tag.includes(keyword))
+            )
+        );
+    }
+
+    getCurrentChatMarks() {
+        const all = this.loadMarkedInfo();
+        const currentChatId = getContext().chatId || 'default';
+        return all.filter(item => item.chatId === currentChatId);
+    }
+
+    deleteMark(markId) {
+        const all = this.loadMarkedInfo();
+        const filtered = all.filter(item => item.id !== markId);
+        this.saveMarkedInfo(filtered);
+        toastr.success('已删除标记', '标记');
+    }
+
+    exportToWorldInfo(markId) {
+        const marked = this.loadMarkedInfo().find(m => m.id === markId);
+        if (!marked) return false;
+
+        const worldEntry = {
+            key: marked.text.substring(0, 50),
+            content: marked.text,
+            type: 'flag',
+            constant: false,
+            selective: true,
+            order: 999,
+            comment: marked.note || marked.tags.join(', ')
+        };
+
+        toastr.success('已导出到世界书', '标记');
+        return worldEntry;
+    }
+
+    formatForInjection(marked) {
+        return `[重要标记 - ${marked.tags.join('/')}] ${marked.text}${marked.note ? ` (备注: ${marked.note})` : ''}`;
+    }
+
+    showSearchPanel() {
+        const currentMarks = this.getCurrentChatMarks();
+        
+        const panelHtml = `
+<div class="search-panel" style="
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(20, 20, 30, 0.98); border: 2px solid rgba(99, 102, 241, 0.6);
+    border-radius: 12px; padding: 20px; min-width: 500px; max-width: 700px; 
+    max-height: 70vh; overflow-y: auto; z-index: 10002;
+    backdrop-filter: blur(16px); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+">
+    <h3 style="color: #fff; margin: 0 0 16px 0; font-size: 16px;">标记信息检索</h3>
+    
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <input type="text" id="mark-search-input" placeholder="输入关键词搜索..." style="
+            flex: 1; padding: 10px 12px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px;
+            color: rgba(255, 255, 255, 0.9); font-size: 13px;
+        ">
+        <button onclick="keyInfoMarker.doSearch()" style="
+            padding: 10px 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
+            border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 6px; color: white; cursor: pointer;
+        ">搜索</button>
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+        <label style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">标签筛选：</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+            ${this.tags.map(tag => `
+                <button onclick="keyInfoMarker.filterByTag('${tag}')" class="tag-filter-btn" style="
+                    padding: 4px 12px; background: rgba(99, 102, 241, 0.15);
+                    border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 4px;
+                    color: rgba(255, 255, 255, 0.8); font-size: 12px; cursor: pointer;
+                ">${tag}</button>
+            `).join('')}
+            <button onclick="keyInfoMarker.showAllMarks()" class="tag-filter-btn" style="
+                padding: 4px 12px; background: rgba(99, 102, 241, 0.3);
+                border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 4px;
+                color: white; font-size: 12px; cursor: pointer;
+            ">全部</button>
+        </div>
+    </div>
+    
+    <div id="mark-results" style="max-height: 400px; overflow-y: auto;">
+        ${this.renderMarksList(currentMarks)}
+    </div>
+    
+    <button onclick="document.querySelector('.search-panel')?.remove()" style="
+        position: absolute; top: 10px; right: 10px; background: none; border: none; color: rgba(255, 255, 255, 0.5);
+        font-size: 20px; cursor: pointer;
+    ">X</button>
+</div>
+<div class="search-overlay" onclick="document.querySelector('.search-panel')?.remove()" style="
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 10001;
+"></div>`;
+
+        document.body.insertAdjacentHTML('beforeend', panelHtml);
+
+        document.getElementById('mark-search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.doSearch();
+            }
+        });
+    }
+
+    renderMarksList(marks) {
+        if (marks.length === 0) {
+            return '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">暂无标记信息</p>';
+        }
+
+        return marks.map(mark => `
+            <div style="
+                background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 8px; padding: 12px; margin-bottom: 10px;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        ${mark.tags.map(t => `
+                            <span style="padding: 2px 8px; background: rgba(99, 102, 241, 0.2); border-radius: 3px; color: rgba(255, 255, 255, 0.7); font-size: 11px;">${t}</span>
+                        `).join('')}
+                    </div>
+                    <span style="color: rgba(255, 255, 255, 0.4); font-size: 10px;">${new Date(mark.timestamp).toLocaleDateString()}</span>
+                </div>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 13px; margin: 0 0 6px 0; line-height: 1.5;">${mark.text}</p>
+                ${mark.note ? `<p style="color: rgba(255, 255, 255, 0.5); font-size: 11px; margin: 0 0 8px 0; font-style: italic;">备注: ${mark.note}</p>` : ''}
+                <div style="display: flex; gap: 6px;">
+                    <button onclick="keyInfoMarker.injectMark(${mark.id})" style="
+                        padding: 6px 12px; background: rgba(99, 102, 241, 0.3);
+                        border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 4px;
+                        color: white; font-size: 11px; cursor: pointer;
+                    ">插入</button>
+                    <button onclick="keyInfoMarker.copyMark(${mark.id})" style="
+                        padding: 6px 12px; background: rgba(16, 185, 129, 0.3);
+                        border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 4px;
+                        color: white; font-size: 11px; cursor: pointer;
+                    ">复制</button>
+                    <button onclick="keyInfoMarker.deleteMark(${mark.id}); keyInfoMarker.showSearchPanel();" style="
+                        padding: 6px 12px; background: rgba(239, 68, 68, 0.3);
+                        border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 4px;
+                        color: white; font-size: 11px; cursor: pointer;
+                    ">删除</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    doSearch() {
+        const keyword = document.getElementById('mark-search-input').value.trim();
+        const results = keyword ? this.search(keyword) : this.getCurrentChatMarks();
+        document.getElementById('mark-results').innerHTML = this.renderMarksList(results);
+    }
+
+    filterByTag(tag) {
+        const all = this.getCurrentChatMarks();
+        const filtered = all.filter(m => m.tags.includes(tag));
+        document.getElementById('mark-results').innerHTML = this.renderMarksList(filtered);
+    }
+
+    showAllMarks() {
+        const all = this.getCurrentChatMarks();
+        document.getElementById('mark-results').innerHTML = this.renderMarksList(all);
+    }
+
+    injectMark(markId) {
+        const marked = this.loadMarkedInfo().find(m => m.id === markId);
+        if (!marked) return;
+
+        const formatted = this.formatForInjection(marked);
+        const textarea = getMessageInput();
+        if (!textarea.length) return;
+
+        const current = textarea.val() || '';
+        textarea.val(current + (current ? '\n\n' : '') + formatted);
+        textarea.focus();
+
+        document.querySelector('.search-panel')?.remove();
+        toastr.success('已插入标记信息', '标记');
+    }
+
+    copyMark(markId) {
+        const marked = this.loadMarkedInfo().find(m => m.id === markId);
+        if (!marked) return;
+
+        const formatted = this.formatForInjection(marked);
+        navigator.clipboard.writeText(formatted).then(() => {
+            toastr.success('已复制到剪贴板', '标记');
+        });
+    }
+}
+
+const keyInfoMarker = new KeyInfoMarker();
+
 jQuery(async () => {
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
     $("#extensions_settings").append(settingsHtml);
     
     const toolbarHtml = `
 <div id="toolbox_toolbar" style="display: none;">
-    <span>⚡</span>
-    <button id="toolbox_timestamp_btn" class="toolbox-btn" title="插入时间戳 [HH:MM:SS]">
-        <span class="btn-icon">🕐</span>
+    <button id="toolbox_timestamp_btn" class="toolbox-btn" title="插入当前时间戳">
         <span class="btn-text">时间</span>
     </button>
     <button id="toolbox_datetime_btn" class="toolbox-btn" title="插入完整日期时间">
-        <span class="btn-icon">📅</span>
         <span class="btn-text">日期</span>
     </button>
     <button id="toolbox_copy_btn" class="toolbox-btn" title="复制上一条AI消息">
-        <span class="btn-icon">📋</span>
         <span class="btn-text">复制</span>
     </button>
     <div class="toolbox-divider"></div>
     <button id="toolbox_clear_btn" class="toolbox-btn" title="清空输入框">
-        <span class="btn-icon">🗑</span>
         <span class="btn-text">清空</span>
     </button>
     <div class="toolbox-divider"></div>
     <button id="toolbox_anchor_btn" class="toolbox-btn" title="角色设定锚点注入器">
-        <span class="btn-icon">⚓</span>
         <span class="btn-text">锚点</span>
     </button>
     <button id="toolbox_state_btn" class="toolbox-btn" title="角色状态追踪面板">
-        <span class="btn-icon">🎭</span>
         <span class="btn-text">状态</span>
+    </button>
+    <button id="toolbox_mark_btn" class="toolbox-btn" title="标记和检索重要信息">
+        <span class="btn-text">标记</span>
     </button>
     <div class="toolbox-divider"></div>
     <button id="toolbox_upper_btn" class="toolbox-btn" title="将选中文本转为大写">
-        <span class="btn-icon">🔠</span>
         <span class="btn-text">大写</span>
     </button>
     <button id="toolbox_lower_btn" class="toolbox-btn" title="将选中文本转为小写">
-        <span class="btn-icon">🔡</span>
         <span class="btn-text">小写</span>
     </button>
     <button id="toolbox_trim_btn" class="toolbox-btn" title="去除文本首尾空格">
-        <span class="btn-icon">✂</span>
         <span class="btn-text">去空格</span>
     </button>
 </div>`;
@@ -894,6 +1197,7 @@ jQuery(async () => {
     $("#toolbox_clear_btn").on("click", clearInputField);
     $("#toolbox_anchor_btn").on("click", () => anchorInjector.showCharacterInfo());
     $("#toolbox_state_btn").on("click", () => stateTracker.showMiniPanel());
+    $("#toolbox_mark_btn").on("click", () => keyInfoMarker.showSearchPanel());
     $("#toolbox_upper_btn").on("click", convertToUppercase);
     $("#toolbox_lower_btn").on("click", convertToLowercase);
     $("#toolbox_trim_btn").on("click", trimWhitespace);
