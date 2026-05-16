@@ -1,20 +1,17 @@
-import { extension_settings, getContext, loadExtensionSettings } from "../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
+import { extension_settings, getContext } from '../../../extensions.js';
+import { saveSettingsDebounced } from '../../../../script.js';
 
-const extensionName = "st-toolbox";
+const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const extensionSettings = extension_settings[extensionName];
 const defaultSettings = {
     enabled: true,
     tools: {
-        timestamp: true,
-        datetime: true,
-        copyLast: true,
-        clearInput: true,
-        uppercase: false,
-        lowercase: false,
-        trimWhitespace: true
-    }
+        quickTemplate: true,
+        charPreview: true,
+        formatText: true,
+        emojiLibrary: true,
+        tempWorldInfo: true,
+    },
 };
 
 async function loadSettings() {
@@ -22,51 +19,42 @@ async function loadSettings() {
     if (Object.keys(extension_settings[extensionName]).length === 0) {
         Object.assign(extension_settings[extensionName], defaultSettings);
     }
-    
-    if (!extension_settings[extensionName].tools) {
-        extension_settings[extensionName].tools = defaultSettings.tools;
-    }
-    
+
     const settings = extension_settings[extensionName];
-    
-    $("#enable_toolbox").prop("checked", settings.enabled).trigger("input");
-    
+    $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
+
     const tools = settings.tools;
-    $("#tool_timestamp").prop("checked", tools.timestamp !== false).trigger("input");
-    $("#tool_datetime").prop("checked", tools.datetime !== false).trigger("input");
-    $("#tool_copy_last").prop("checked", tools.copyLast !== false).trigger("input");
-    $("#tool_clear_input").prop("checked", tools.clearInput !== false).trigger("input");
-    $("#tool_uppercase").prop("checked", tools.uppercase === true).trigger("input");
-    $("#tool_lowercase").prop("checked", tools.lowercase === true).trigger("input");
-    $("#tool_trim").prop("checked", tools.trimWhitespace !== false).trigger("input");
-    
+    $('#tool_quick_template').prop('checked', tools.quickTemplate !== false).trigger('input');
+    $('#tool_char_preview').prop('checked', tools.charPreview !== false).trigger('input');
+    $('#tool_format_text').prop('checked', tools.formatText !== false).trigger('input');
+    $('#tool_emoji_library').prop('checked', tools.emojiLibrary !== false).trigger('input');
+    $('#tool_temp_worldinfo').prop('checked', tools.tempWorldInfo !== false).trigger('input');
+
     updateToolVisibility();
 }
 
 function updateToolVisibility() {
-    const tools = extension_settings[extensionName].tools;
-    
-    $("#toolbox_timestamp_btn").toggle(tools.timestamp !== false);
-    $("#toolbox_datetime_btn").toggle(tools.datetime !== false);
-    $("#toolbox_copy_btn").toggle(tools.copyLast !== false);
-    $("#toolbox_clear_btn").toggle(tools.clearInput !== false);
-    $("#toolbox_upper_btn").toggle(tools.uppercase === true);
-    $("#toolbox_lower_btn").toggle(tools.lowercase === true);
-    $("#toolbox_trim_btn").toggle(tools.trimWhitespace !== false);
-    
-    const allHidden = !tools.timestamp && !tools.datetime && !tools.copyLast && 
-                     !tools.clearInput && !tools.uppercase && !tools.lowercase && 
-                     !tools.trimWhitespace;
-    
-    if (allHidden || !extension_settings[extensionName].enabled) {
-        $("#toolbox_toolbar").hide();
+    const settings = extension_settings[extensionName];
+    const tools = settings.tools;
+
+    $('#toolbox_quick_template_btn').toggle(tools.quickTemplate !== false);
+    $('#toolbox_char_preview_btn').toggle(tools.charPreview !== false);
+    $('#toolbox_format_text_btn').toggle(tools.formatText !== false);
+    $('#toolbox_emoji_library_btn').toggle(tools.emojiLibrary !== false);
+    $('#toolbox_temp_worldinfo_btn').toggle(tools.tempWorldInfo !== false);
+
+    const allHidden = !tools.quickTemplate && !tools.charPreview && !tools.formatText &&
+                      !tools.emojiLibrary && !tools.tempWorldInfo;
+
+    if (allHidden || !settings.enabled) {
+        $('#toolbox_toolbar').hide();
     } else {
-        $("#toolbox_toolbar").show();
+        $('#toolbox_toolbar').show();
     }
 }
 
 function onEnableInput(event) {
-    const value = Boolean($(event.target).prop("checked"));
+    const value = Boolean($(event.target).prop('checked'));
     extension_settings[extensionName].enabled = value;
     saveSettingsDebounced();
     updateToolVisibility();
@@ -74,7 +62,7 @@ function onEnableInput(event) {
 
 function onToolVisibilityChange(toolKey) {
     return function(event) {
-        const checked = Boolean($(event.target).prop("checked"));
+        const checked = Boolean($(event.target).prop('checked'));
         extension_settings[extensionName].tools[toolKey] = checked;
         saveSettingsDebounced();
         updateToolVisibility();
@@ -82,182 +70,178 @@ function onToolVisibilityChange(toolKey) {
 }
 
 function getMessageInput() {
-    return $("#send_textarea, #prompt_textarea").first();
+    return $('#send_textarea, #prompt_textarea').first();
 }
 
-function insertTimestamp() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const startPos = textarea.prop("selectionStart");
-    const endPos = textarea.prop("selectionEnd");
-    const text = textarea.val() || "";
-    const now = new Date();
-    const timestamp = `[${now.toLocaleTimeString()}]`;
-    const newText = text.substring(0, startPos) + timestamp + text.substring(endPos);
-    textarea.val(newText);
-    textarea.focus();
+// 1. 快捷预设文本
+function insertQuickTemplate() {
+    const input = getMessageInput();
+    if (!input.length) return;
+
+    const templates = [
+        '*微笑着看着你*',
+        '*轻轻地点头*',
+        '*思考片刻后说道*',
+        '*好奇地歪着头*',
+        '*缓步走向你*',
+        '*突然笑出声*',
+        '*惊讶地睁大眼睛*',
+        '继续...',
+        '接下来会发生什么？',
+        '你觉得呢？',
+    ];
+
+    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    const startPos = input.prop('selectionStart');
+    const endPos = input.prop('selectionEnd');
+    const currentText = input.val() || '';
+    const newText = currentText.substring(0, startPos) + randomTemplate + currentText.substring(endPos);
+
+    input.val(newText);
+    input.focus();
 }
 
-function insertDatetime() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const startPos = textarea.prop("selectionStart");
-    const endPos = textarea.prop("selectionEnd");
-    const text = textarea.val() || "";
-    const now = new Date();
-    const datetime = now.toLocaleString();
-    const newText = text.substring(0, startPos) + datetime + text.substring(endPos);
-    textarea.val(newText);
-    textarea.focus();
-}
-
-function copyLastMessage() {
-    if (!extension_settings[extensionName].enabled) return;
+// 2. 角色卡片快速预览
+function showCharPreview() {
     const context = getContext();
-    if (!context || !context.chat) {
-        toastr.warning("没有找到聊天记录");
+    if (!context || !context.name) {
         return;
     }
 
-    const messages = context.chat.filter(m => m.is_user === false && m.mes);
-    if (messages.length === 0) {
-        toastr.warning("没有找到上一条消息");
+    const input = getMessageInput();
+    if (!input.length) return;
+
+    const charName = context.name;
+    const charDescription = context.description ? context.description.substring(0, 100) : '暂无描述';
+    const preview = `【${charName}】\n${charDescription}...`;
+
+    const currentText = input.val() || '';
+    if (currentText.includes(preview)) {
         return;
     }
 
-    const lastMessage = messages[messages.length - 1].mes;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const cursorPos = textarea.prop("selectionStart");
-    const text = textarea.val() || "";
-    const newText = text.substring(0, cursorPos) + lastMessage + text.substring(cursorPos);
-    textarea.val(newText);
-    textarea.focus();
+    input.val(preview + '\n\n' + currentText);
+    input.focus();
 }
 
-function clearInputField() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    textarea.val("");
-    textarea.focus();
-}
+// 3. 文本格式化工具
+function formatText() {
+    const input = getMessageInput();
+    if (!input.length) return;
 
-function convertToUppercase() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const startPos = textarea.prop("selectionStart");
-    const endPos = textarea.prop("selectionEnd");
-    const text = textarea.val() || "";
+    let text = input.val() || '';
 
-    if (startPos === endPos) {
-        textarea.val(text.toUpperCase());
-    } else {
-        const selectedText = text.substring(startPos, endPos);
-        const newText = text.substring(0, startPos) + selectedText.toUpperCase() + text.substring(endPos);
-        textarea.val(newText);
+    if (!text) return;
+
+    text = text.trim();
+    text = text.replace(/\r\n/g, '\n');
+    text = text.replace(/\n{3,}/g, '\n\n');
+
+    if (!text.startsWith('*') && !text.startsWith('"') && text.length > 0) {
+        const actionFormats = [
+            `*${text}*`,
+            `"${text}"`,
+            text,
+        ];
+        const randomFormat = actionFormats[Math.floor(Math.random() * actionFormats.length)];
+        text = randomFormat;
     }
-    textarea.focus();
+
+    input.val(text);
+    input.focus();
 }
 
-function convertToLowercase() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const startPos = textarea.prop("selectionStart");
-    const endPos = textarea.prop("selectionEnd");
-    const text = textarea.val() || "";
+// 4. 表情/表情符号库
+function insertEmoji() {
+    const input = getMessageInput();
+    if (!input.length) return;
 
-    if (startPos === endPos) {
-        textarea.val(text.toLowerCase());
-    } else {
-        const selectedText = text.substring(startPos, endPos);
-        const newText = text.substring(0, startPos) + selectedText.toLowerCase() + text.substring(endPos);
-        textarea.val(newText);
-    }
-    textarea.focus();
+    const emojis = [
+        '😊', '😄', '🥰', '😎', '🤔',
+        '😮', '😢', '😡', '😍', '🤗',
+        '✨', '💫', '🌟', '❤️', '💕',
+        '👍', '👋', '🙏', '🎉', '🎊',
+    ];
+
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const startPos = input.prop('selectionStart');
+    const endPos = input.prop('selectionEnd');
+    const currentText = input.val() || '';
+    const newText = currentText.substring(0, startPos) + randomEmoji + currentText.substring(endPos);
+
+    input.val(newText);
+    input.focus();
 }
 
-function trimWhitespace() {
-    if (!extension_settings[extensionName].enabled) return;
-    const textarea = getMessageInput();
-    if (!textarea.length) return;
-    
-    const text = textarea.val() || "";
-    textarea.val(text.trim());
-    textarea.focus();
+// 5. 临时世界信息
+function insertTempWorldInfo() {
+    const input = getMessageInput();
+    if (!input.length) return;
+
+    const tempInfos = [
+        '（当前场景：咖啡厅）',
+        '（时间：傍晚）',
+        '（天气：下雨）',
+        '（心情：开心）',
+        '（注意：角色有些害羞）',
+    ];
+
+    const randomInfo = tempInfos[Math.floor(Math.random() * tempInfos.length)];
+    const currentText = input.val() || '';
+    const newText = randomInfo + '\n' + currentText;
+
+    input.val(newText);
+    input.focus();
 }
 
-jQuery(async () => {
+jQuery(async function() {
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-    $("#extensions_settings").append(settingsHtml);
-    
+    $('#extensions_settings').append(settingsHtml);
+
     const toolbarHtml = `
 <div id="toolbox_toolbar" style="display: none;">
     <span>⚡</span>
-    <button id="toolbox_timestamp_btn" class="toolbox-btn" title="插入时间戳 [HH:MM:SS]">
-        <span class="btn-icon">🕐</span>
-        <span class="btn-text">时间</span>
+    <button id="toolbox_quick_template_btn" class="toolbox-btn" title="快捷预设 - 插入常用对话模板">
+        <span class="btn-icon">📝</span>
+        <span class="btn-text">预设</span>
     </button>
     <div class="toolbox-divider"></div>
-    <button id="toolbox_datetime_btn" class="toolbox-btn" title="插入完整日期时间">
-        <span class="btn-icon">📅</span>
-        <span class="btn-text">日期</span>
+    <button id="toolbox_char_preview_btn" class="toolbox-btn" title="角色预览 - 查看当前角色信息">
+        <span class="btn-icon">🎭</span>
+        <span class="btn-text">角色</span>
     </button>
-    <button id="toolbox_copy_btn" class="toolbox-btn" title="复制上一条AI消息">
-        <span class="btn-icon">📋</span>
-        <span class="btn-text">复制</span>
-    </button>
-    <div class="toolbox-divider"></div>
-    <button id="toolbox_clear_btn" class="toolbox-btn" title="清空输入框">
-        <span class="btn-icon">🗑</span>
-        <span class="btn-text">清空</span>
+    <button id="toolbox_format_text_btn" class="toolbox-btn" title="格式化 - 自动格式化文本">
+        <span class="btn-icon">✨</span>
+        <span class="btn-text">格式</span>
     </button>
     <div class="toolbox-divider"></div>
-    <button id="toolbox_upper_btn" class="toolbox-btn" title="将选中文本转为大写">
-        <span class="btn-icon">🔠</span>
-        <span class="btn-text">大写</span>
+    <button id="toolbox_emoji_library_btn" class="toolbox-btn" title="表情库 - 插入随机表情">
+        <span class="btn-icon">😊</span>
+        <span class="btn-text">表情</span>
     </button>
-    <button id="toolbox_lower_btn" class="toolbox-btn" title="将选中文本转为小写">
-        <span class="btn-icon">🔡</span>
-        <span class="btn-text">小写</span>
-    </button>
-    <button id="toolbox_trim_btn" class="toolbox-btn" title="去除文本首尾空格">
-        <span class="btn-icon">✂</span>
-        <span class="btn-text">去空格</span>
+    <button id="toolbox_temp_worldinfo_btn" class="toolbox-btn" title="临时信息 - 插入临时场景设定">
+        <span class="btn-icon">📖</span>
+        <span class="btn-text">场景</span>
     </button>
 </div>`;
-    
-    const sendForm = $("#send_form");
+
+    const sendForm = $('#send_form');
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
     }
-    
-    $("#enable_toolbox").on("input", onEnableInput);
-    $("#tool_timestamp").on("input", onToolVisibilityChange("timestamp"));
-    $("#tool_datetime").on("input", onToolVisibilityChange("datetime"));
-    $("#tool_copy_last").on("input", onToolVisibilityChange("copyLast"));
-    $("#tool_clear_input").on("input", onToolVisibilityChange("clearInput"));
-    $("#tool_uppercase").on("input", onToolVisibilityChange("uppercase"));
-    $("#tool_lowercase").on("input", onToolVisibilityChange("lowercase"));
-    $("#tool_trim").on("input", onToolVisibilityChange("trimWhitespace"));
 
-    $("#toolbox_timestamp_btn").on("click", insertTimestamp);
-    $("#toolbox_datetime_btn").on("click", insertDatetime);
-    $("#toolbox_copy_btn").on("click", copyLastMessage);
-    $("#toolbox_clear_btn").on("click", clearInputField);
-    $("#toolbox_upper_btn").on("click", convertToUppercase);
-    $("#toolbox_lower_btn").on("click", convertToLowercase);
-    $("#toolbox_trim_btn").on("click", trimWhitespace);
+    $('#enable_toolbox').on('input', onEnableInput);
+    $('#tool_quick_template').on('input', onToolVisibilityChange('quickTemplate'));
+    $('#tool_char_preview').on('input', onToolVisibilityChange('charPreview'));
+    $('#tool_format_text').on('input', onToolVisibilityChange('formatText'));
+    $('#tool_emoji_library').on('input', onToolVisibilityChange('emojiLibrary'));
+    $('#tool_temp_worldinfo').on('input', onToolVisibilityChange('tempWorldInfo'));
+
+    $('#toolbox_quick_template_btn').on('click', insertQuickTemplate);
+    $('#toolbox_char_preview_btn').on('click', showCharPreview);
+    $('#toolbox_format_text_btn').on('click', formatText);
+    $('#toolbox_emoji_library_btn').on('click', insertEmoji);
+    $('#toolbox_temp_worldinfo_btn').on('click', insertTempWorldInfo);
 
     loadSettings();
 });
