@@ -202,14 +202,38 @@ jQuery(async () => {
     $("#extensions_settings").append(settingsHtml);
     
     const toolbarHtml = `
-<div id="toolbox_toolbar" class="qr--buttons qr--color" style="display: flex; align-items: center; justify-content: center; margin: 5px auto; width: 100%; padding: 2px 10px;">
-    <button id="toolbox_timestamp_btn" class="menu_button interactable" title="插入时间戳">🕐</button>
-    <button id="toolbox_datetime_btn" class="menu_button interactable" title="插入日期时间">📅</button>
-    <button id="toolbox_copy_btn" class="menu_button interactable" title="复制上一条AI消息">📋</button>
-    <button id="toolbox_clear_btn" class="menu_button interactable" title="清空输入框">🗑</button>
-    <button id="toolbox_upper_btn" class="menu_button interactable" title="转为大写">ABC</button>
-    <button id="toolbox_lower_btn" class="menu_button interactable" title="转为小写">abc</button>
-    <button id="toolbox_trim_btn" class="menu_button interactable" title="去除首尾空格">✂</button>
+<div id="toolbox_toolbar" style="display: none;">
+    <button id="toolbox_timestamp_btn" class="toolbox-btn" title="插入时间戳 [HH:MM:SS]">
+        <span class="btn-icon">🕐</span>
+        <span class="btn-text">时间</span>
+    </button>
+    <div class="toolbox-divider"></div>
+    <button id="toolbox_datetime_btn" class="toolbox-btn" title="插入完整日期时间">
+        <span class="btn-icon">📅</span>
+        <span class="btn-text">日期</span>
+    </button>
+    <button id="toolbox_copy_btn" class="toolbox-btn" title="复制上一条AI消息">
+        <span class="btn-icon">📋</span>
+        <span class="btn-text">复制</span>
+    </button>
+    <div class="toolbox-divider"></div>
+    <button id="toolbox_clear_btn" class="toolbox-btn" title="清空输入框">
+        <span class="btn-icon">🗑</span>
+        <span class="btn-text">清空</span>
+    </button>
+    <div class="toolbox-divider"></div>
+    <button id="toolbox_upper_btn" class="toolbox-btn" title="将选中文本转为大写">
+        <span class="btn-icon">🔠</span>
+        <span class="btn-text">大写</span>
+    </button>
+    <button id="toolbox_lower_btn" class="toolbox-btn" title="将选中文本转为小写">
+        <span class="btn-icon">🔡</span>
+        <span class="btn-text">小写</span>
+    </button>
+    <button id="toolbox_trim_btn" class="toolbox-btn" title="去除文本首尾空格">
+        <span class="btn-icon">✂</span>
+        <span class="btn-text">去空格</span>
+    </button>
 </div>`;
     
     const sendForm = $("#send_form");

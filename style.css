@@ -1,38 +1,347 @@
-/* 工具箱扩展样式 */
+/* ===================================
+   智慧屏风格工具箱 - Smart Toolbox
+   =================================== */
 
-/* 设置面板样式 */
-.toolbox-extension-settings .inline-drawer-header {
+/* 玻璃态基础效果 */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ===================================
+   工具栏主体 - 智慧屏风格
+   =================================== */
+#toolbox_toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px auto;
+    width: calc(100% - 20px);
+    padding: 12px 16px;
+    gap: 8px;
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.15) 0%,
+        rgba(139, 92, 246, 0.15) 50%,
+        rgba(236, 72, 153, 0.15) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(99, 102, 241, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.95;
+}
+
+#toolbox_toolbar:hover {
+    opacity: 1;
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.25) 0%,
+        rgba(139, 92, 246, 0.25) 50%,
+        rgba(236, 72, 153, 0.25) 100%
+    );
+    box-shadow: 
+        0 12px 40px rgba(99, 102, 241, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+/* 工具栏标题（可选） */
+#toolbox_toolbar::before {
+    content: '⚡';
+    font-size: 16px;
+    margin-right: 8px;
+    filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.5));
+}
+
+/* ===================================
+   工具按钮 - 现代科技风格
+   =================================== */
+.toolbox-btn {
+    position: relative;
+    min-width: 42px;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 按钮发光效果 */
+.toolbox-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+}
+
+.toolbox-btn:hover::before {
+    transform: translateX(100%);
+}
+
+/* 按钮悬停效果 */
+.toolbox-btn:hover {
+    background: linear-gradient(
+        145deg,
+        rgba(99, 102, 241, 0.4) 0%,
+        rgba(139, 92, 246, 0.3) 100%
+    );
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 
+        0 0 20px rgba(99, 102, 241, 0.3),
+        0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px) scale(1.02);
+    color: white;
+}
+
+/* 按钮点击效果 */
+.toolbox-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 
+        0 0 10px rgba(99, 102, 241, 0.2),
+        0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮点击波纹效果 */
+.toolbox-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+}
+
+.toolbox-btn.clicked::after {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+}
+
+/* 按钮文字样式 */
+.toolbox-btn .btn-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* 按钮图标样式 */
+.toolbox-btn .btn-icon {
+    font-size: 14px;
+}
+
+/* ===================================
+   分隔线
+   =================================== */
+.toolbox-divider {
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    margin: 0 6px;
+}
+
+/* ===================================
+   设置面板样式
+   =================================== */
+.toolbox-extension-settings {
+    margin: 0;
+}
+
+.toolbox-extension-settings .inline-drawer-header {
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.2) 0%,
+        rgba(139, 92, 246, 0.2) 100%
+    );
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.toolbox-extension-settings .inline-drawer-header:hover {
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.3) 0%,
+        rgba(139, 92, 246, 0.3) 100%
+    );
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+.toolbox-extension-settings .inline-drawer-header b {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 14px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .toolbox-extension-settings .inline-drawer-content {
-    padding: 10px;
+    padding: 16px;
+    background: rgba(30, 30, 40, 0.6);
+    border-radius: 0 0 12px 12px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-top: none;
 }
 
 .toolbox-extension_block {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.toolbox-extension_block:hover {
+    background: rgba(99, 102, 241, 0.08);
 }
 
 .toolbox-extension_block input[type="checkbox"] {
-    margin-right: 8px;
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    accent-color: #6366f1;
+    cursor: pointer;
 }
 
-/* 工具栏样式 */
+.toolbox-extension_block label {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.toolbox-extension_block .sysHR {
+    border: none;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(99, 102, 241, 0.3),
+        transparent
+    );
+    margin: 16px 0;
+}
+
+/* ===================================
+   动画效果
+   =================================== */
+@keyframes toolbox-pulse {
+    0%, 100% {
+        box-shadow: 
+            0 8px 32px rgba(99, 102, 241, 0.15),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+    50% {
+        box-shadow: 
+            0 8px 32px rgba(99, 102, 241, 0.25),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 0 20px rgba(99, 102, 241, 0.1);
+    }
+}
+
 #toolbox_toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 5px auto;
-    width: 100%;
-    padding: 5px 10px;
-    gap: 5px;
+    animation: toolbox-pulse 4s ease-in-out infinite;
 }
 
-#toolbox_toolbar .menu_button {
-    min-width: 36px;
-    height: 30px;
-    padding: 0 8px;
-    font-size: 14px;
+/* ===================================
+   响应式设计
+   =================================== */
+@media (max-width: 768px) {
+    #toolbox_toolbar {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        gap: 6px;
+    }
+    
+    .toolbox-btn {
+        min-width: 38px;
+        height: 34px;
+        font-size: 14px;
+    }
+    
+    .toolbox-btn .btn-text {
+        display: none;
+    }
+    
+    .toolbox-divider {
+        display: none;
+    }
+    
+    .toolbox-extension_block {
+        padding: 8px 12px;
+    }
+    
+    .toolbox-extension_block label {
+        font-size: 12px;
+    }
+}
+
+/* ===================================
+   深色/浅色主题适配
+   =================================== */
+@media (prefers-color-scheme: light) {
+    #toolbox_toolbar {
+        background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.08) 0%,
+            rgba(139, 92, 246, 0.08) 50%,
+            rgba(236, 72, 153, 0.08) 100%
+        );
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+    
+    .toolbox-btn {
+        color: rgba(0, 0, 0, 0.8);
+        background: rgba(255, 255, 255, 0.6);
+        border-color: rgba(99, 102, 241, 0.2);
+    }
 }
