@@ -203,6 +203,7 @@ jQuery(async () => {
     
     const toolbarHtml = `
 <div id="toolbox_toolbar" style="display: none;">
+    <span>⚡</span>
     <button id="toolbox_timestamp_btn" class="toolbox-btn" title="插入时间戳 [HH:MM:SS]">
         <span class="btn-icon">🕐</span>
         <span class="btn-text">时间</span>
