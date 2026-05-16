@@ -6,12 +6,12 @@ const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: true,
     tools: {
-        actionFormat: true,
-        quoteFormat: true,
-        copyLast: true,
-        clearRegen: true,
-        systemPrompt: true,
-        chatStats: true,
+        clearInput: true,
+        quickSwipe: true,
+        editLast: true,
+        slashCommand: true,
+        sysPrompt: true,
+        charInfo: true,
     },
 };
 
@@ -25,12 +25,12 @@ async function loadSettings() {
     $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
 
     const tools = settings.tools;
-    $('#tool_action_format').prop('checked', tools.actionFormat !== false).trigger('input');
-    $('#tool_quote_format').prop('checked', tools.quoteFormat !== false).trigger('input');
-    $('#tool_copy_last').prop('checked', tools.copyLast !== false).trigger('input');
-    $('#tool_clear_regen').prop('checked', tools.clearRegen !== false).trigger('input');
-    $('#tool_system_prompt').prop('checked', tools.systemPrompt !== false).trigger('input');
-    $('#tool_chat_stats').prop('checked', tools.chatStats !== false).trigger('input');
+    $('#tool_clear_input').prop('checked', tools.clearInput !== false).trigger('input');
+    $('#tool_quick_swipe').prop('checked', tools.quickSwipe !== false).trigger('input');
+    $('#tool_edit_last').prop('checked', tools.editLast !== false).trigger('input');
+    $('#tool_slash_command').prop('checked', tools.slashCommand !== false).trigger('input');
+    $('#tool_sys_prompt').prop('checked', tools.sysPrompt !== false).trigger('input');
+    $('#tool_char_info').prop('checked', tools.charInfo !== false).trigger('input');
 
     updateToolVisibility();
 }
@@ -39,15 +39,15 @@ function updateToolVisibility() {
     const settings = extension_settings[extensionName];
     const tools = settings.tools;
 
-    $('#toolbox_action_format_btn').toggle(tools.actionFormat !== false);
-    $('#toolbox_quote_format_btn').toggle(tools.quoteFormat !== false);
-    $('#toolbox_copy_last_btn').toggle(tools.copyLast !== false);
-    $('#toolbox_clear_regen_btn').toggle(tools.clearRegen !== false);
-    $('#toolbox_system_prompt_btn').toggle(tools.systemPrompt !== false);
-    $('#toolbox_chat_stats_btn').toggle(tools.chatStats !== false);
+    $('#toolbox_clear_input_btn').toggle(tools.clearInput !== false);
+    $('#toolbox_quick_swipe_btn').toggle(tools.quickSwipe !== false);
+    $('#toolbox_edit_last_btn').toggle(tools.editLast !== false);
+    $('#toolbox_slash_command_btn').toggle(tools.slashCommand !== false);
+    $('#toolbox_sys_prompt_btn').toggle(tools.sysPrompt !== false);
+    $('#toolbox_char_info_btn').toggle(tools.charInfo !== false);
 
-    const allHidden = !tools.actionFormat && !tools.quoteFormat && !tools.copyLast &&
-                      !tools.clearRegen && !tools.systemPrompt && !tools.chatStats;
+    const allHidden = !tools.clearInput && !tools.quickSwipe && !tools.editLast &&
+                      !tools.slashCommand && !tools.sysPrompt && !tools.charInfo;
 
     if (allHidden || !settings.enabled) {
         $('#toolbox_toolbar').hide();
@@ -76,127 +76,108 @@ function getMessageInput() {
     return $('#send_textarea, #prompt_textarea').first();
 }
 
-// 1. 动作格式包裹
-function wrapAction() {
-    const input = getMessageInput();
-    if (!input.length) return;
-
-    const startPos = input.prop('selectionStart');
-    const endPos = input.prop('selectionEnd');
-    const currentText = input.val() || '';
-
-    if (startPos === endPos) {
-        input.val(currentText + '*');
-        input.prop('selectionStart', startPos + 1);
-        input.prop('selectionEnd', startPos + 1);
-    } else {
-        const selectedText = currentText.substring(startPos, endPos);
-        const newText = currentText.substring(0, startPos) + '*' + selectedText + '*' + currentText.substring(endPos);
-        input.val(newText);
-    }
-    input.focus();
-}
-
-// 2. 对话格式包裹
-function wrapQuote() {
-    const input = getMessageInput();
-    if (!input.length) return;
-
-    const startPos = input.prop('selectionStart');
-    const endPos = input.prop('selectionEnd');
-    const currentText = input.val() || '';
-
-    if (startPos === endPos) {
-        input.val(currentText + '"');
-        input.prop('selectionStart', startPos + 1);
-        input.prop('selectionEnd', startPos + 1);
-    } else {
-        const selectedText = currentText.substring(startPos, endPos);
-        const newText = currentText.substring(0, startPos) + '"' + selectedText + '"' + currentText.substring(endPos);
-        input.val(newText);
-    }
-    input.focus();
-}
-
-// 3. 复制上一条AI消息
-function copyLastMessage() {
-    const input = getMessageInput();
-    if (!input.length) return;
-
-    const context = getContext();
-    if (!context || !context.chat || context.chat.length === 0) {
-        return;
-    }
-
-    const messages = context.chat.filter(m => m.is_user === false && m.mes);
-    if (messages.length === 0) {
-        return;
-    }
-
-    const lastMessage = messages[messages.length - 1].mes;
-    input.val(lastMessage);
-    input.focus();
-}
-
-// 4. 清空并准备重新生成
-function clearAndRegen() {
+// 1. 快速清空输入框
+function clearInput() {
     const input = getMessageInput();
     if (!input.length) return;
 
     input.val('');
     input.focus();
+}
 
-    const regenBtn = $('#regen');
-    if (regenBtn.length) {
-        regenBtn.click();
+// 2. 快速Swipe（切换回复）
+function quickSwipe() {
+    const swipeBtn = $('.swipe_right');
+    if (swipeBtn.length) {
+        swipeBtn.click();
+    } else {
+        const altBtn = $('.swipe_alt');
+        if (altBtn.length) {
+            altBtn.click();
+        }
     }
 }
 
-// 5. 插入系统提示
+// 3. 编辑上一条回复
+function editLast() {
+    const context = getContext();
+    if (!context || !context.chat || context.chat.length === 0) {
+        return;
+    }
+
+    const messages = context.chat.filter(m => !m.is_user && m.mes);
+    if (messages.length === 0) {
+        return;
+    }
+
+    const lastMessage = messages[messages.length - 1].mes;
+    const input = getMessageInput();
+    if (!input.length) return;
+
+    input.val(lastMessage);
+    input.focus();
+}
+
+// 4. 常用Slash命令
+function insertSlashCommand() {
+    const input = getMessageInput();
+    if (!input.length) return;
+
+    const commands = [
+        '/continue',
+        '/retry',
+        '/impersonate',
+        '/system ',
+        '/memory ',
+        '/roll ',
+    ];
+
+    const randomCommand = commands[Math.floor(Math.random() * commands.length)];
+    const currentText = input.val() || '';
+    input.val(currentText + randomCommand);
+    input.focus();
+}
+
+// 5. 系统提示快捷插入
 function insertSystemPrompt() {
     const input = getMessageInput();
     if (!input.length) return;
 
-    const systemPrompts = [
-        '[System: Continue the scene naturally.]',
-        '[System: Be descriptive and detailed.]',
-        '[System: Keep responses concise.]',
-        '[System: Advance the plot.]',
-        '[System: Focus on character emotions.]',
+    const prompts = [
+        '[Continue the scene.]',
+        '[Be more descriptive.]',
+        '[Stay in character.]',
+        '[Advance the plot.]',
+        '[Focus on dialogue.]',
     ];
 
-    const randomPrompt = systemPrompts[Math.floor(Math.random() * systemPrompts.length)];
+    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     const currentText = input.val() || '';
-    const newText = currentText ? randomPrompt + '\n\n' + currentText : randomPrompt;
-
+    const newText = currentText ? currentText + '\n' + randomPrompt : randomPrompt;
     input.val(newText);
     input.focus();
 }
 
-// 6. 显示聊天统计
-function showChatStats() {
-    const input = getMessageInput();
-    if (!input.length) return;
-
+// 6. 快速查看角色信息
+function showCharInfo() {
     const context = getContext();
-    if (!context || !context.chat) {
+    if (!context || !context.name) {
         return;
     }
 
-    const totalMessages = context.chat.length;
-    const userMessages = context.chat.filter(m => m.is_user).length;
-    const aiMessages = context.chat.filter(m => !m.is_user).length;
-    const charName = context.name || '角色';
+    const input = getMessageInput();
+    if (!input.length) return;
 
-    const stats = `📊 聊天统计\n` +
-                  `━━━━━━━━━━━━━━━━━━\n` +
-                  `总消息数: ${totalMessages}\n` +
-                  `用户消息: ${userMessages}\n` +
-                  `${charName}消息: ${aiMessages}\n` +
-                  `━━━━━━━━━━━━━━━━━━`;
+    const charName = context.name;
+    const charDesc = context.description ? context.description.substring(0, 150) : '无描述';
+    const charPersona = context.personality ? context.personality.substring(0, 100) : '无个性设定';
+
+    const info = `【${charName}】\n` +
+                `描述: ${charDesc}${context.description && context.description.length > 150 ? '...' : ''}\n` +
+                `个性: ${charPersona}${context.personality && context.personality.length > 100 ? '...' : ''}`;
 
     const currentText = input.val() || '';
-    input.val(currentText ? currentText + '\n\n' + stats : stats);
+    input.val(currentText ? currentText + '\n\n' + info : info);
     input.focus();
 }
 
@@ -207,31 +188,31 @@ jQuery(async function() {
     const toolbarHtml = `
 <div id="toolbox_toolbar" style="display: none;">
     <span>⚡</span>
-    <button id="toolbox_action_format_btn" class="toolbox-btn" title="动作格式 - 用*包裹选中文本">
-        <span class="btn-icon">*</span>
-        <span class="btn-text">动作</span>
+    <button id="toolbox_clear_input_btn" class="toolbox-btn" title="清空 - 一键清空输入框">
+        <span class="btn-icon">🗑️</span>
+        <span class="btn-text">清空</span>
     </button>
-    <button id="toolbox_quote_format_btn" class="toolbox-btn" title="对话格式 - 用\"包裹选中文本">
-        <span class="btn-icon">"</span>
-        <span class="btn-text">对话</span>
-    </button>
-    <div class="toolbox-divider"></div>
-    <button id="toolbox_copy_last_btn" class="toolbox-btn" title="复制上条 - 复制AI最后一条回复">
-        <span class="btn-icon">📋</span>
-        <span class="btn-text">复制</span>
-    </button>
-    <button id="toolbox_clear_regen_btn" class="toolbox-btn" title="清空重发 - 清空输入框并重新生成">
+    <button id="toolbox_quick_swipe_btn" class="toolbox-btn" title="Swipe - 快速切换AI回复">
         <span class="btn-icon">🔄</span>
-        <span class="btn-text">重发</span>
+        <span class="btn-text">Swipe</span>
     </button>
     <div class="toolbox-divider"></div>
-    <button id="toolbox_system_prompt_btn" class="toolbox-btn" title="系统提示 - 插入快捷系统指令">
+    <button id="toolbox_edit_last_btn" class="toolbox-btn" title="编辑 - 编辑上一条AI回复">
+        <span class="btn-icon">✏️</span>
+        <span class="btn-text">编辑</span>
+    </button>
+    <button id="toolbox_slash_command_btn" class="toolbox-btn" title="命令 - 插入常用Slash命令">
+        <span class="btn-icon">/</span>
+        <span class="btn-text">命令</span>
+    </button>
+    <div class="toolbox-divider"></div>
+    <button id="toolbox_sys_prompt_btn" class="toolbox-btn" title="系统 - 插入系统提示词">
         <span class="btn-icon">⚙️</span>
         <span class="btn-text">系统</span>
     </button>
-    <button id="toolbox_chat_stats_btn" class="toolbox-btn" title="聊天统计 - 显示当前聊天统计信息">
-        <span class="btn-icon">📊</span>
-        <span class="btn-text">统计</span>
+    <button id="toolbox_char_info_btn" class="toolbox-btn" title="角色 - 查看角色信息">
+        <span class="btn-icon">🎭</span>
+        <span class="btn-text">角色</span>
     </button>
 </div>`;
 
@@ -241,19 +222,19 @@ jQuery(async function() {
     }
 
     $('#enable_toolbox').on('input', onEnableInput);
-    $('#tool_action_format').on('input', onToolVisibilityChange('actionFormat'));
-    $('#tool_quote_format').on('input', onToolVisibilityChange('quoteFormat'));
-    $('#tool_copy_last').on('input', onToolVisibilityChange('copyLast'));
-    $('#tool_clear_regen').on('input', onToolVisibilityChange('clearRegen'));
-    $('#tool_system_prompt').on('input', onToolVisibilityChange('systemPrompt'));
-    $('#tool_chat_stats').on('input', onToolVisibilityChange('chatStats'));
+    $('#tool_clear_input').on('input', onToolVisibilityChange('clearInput'));
+    $('#tool_quick_swipe').on('input', onToolVisibilityChange('quickSwipe'));
+    $('#tool_edit_last').on('input', onToolVisibilityChange('editLast'));
+    $('#tool_slash_command').on('input', onToolVisibilityChange('slashCommand'));
+    $('#tool_sys_prompt').on('input', onToolVisibilityChange('sysPrompt'));
+    $('#tool_char_info').on('input', onToolVisibilityChange('charInfo'));
 
-    $('#toolbox_action_format_btn').on('click', wrapAction);
-    $('#toolbox_quote_format_btn').on('click', wrapQuote);
-    $('#toolbox_copy_last_btn').on('click', copyLastMessage);
-    $('#toolbox_clear_regen_btn').on('click', clearAndRegen);
-    $('#toolbox_system_prompt_btn').on('click', insertSystemPrompt);
-    $('#toolbox_chat_stats_btn').on('click', showChatStats);
+    $('#toolbox_clear_input_btn').on('click', clearInput);
+    $('#toolbox_quick_swipe_btn').on('click', quickSwipe);
+    $('#toolbox_edit_last_btn').on('click', editLast);
+    $('#toolbox_slash_command_btn').on('click', insertSlashCommand);
+    $('#toolbox_sys_prompt_btn').on('click', insertSystemPrompt);
+    $('#toolbox_char_info_btn').on('click', showCharInfo);
 
     loadSettings();
 });
