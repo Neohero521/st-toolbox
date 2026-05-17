@@ -1,50 +1,25 @@
 /* ST Toolbox - Smart Touch Panel Style */
 
-/* 强制清除所有可能的间隙 */
-#send_form,
-#send_form * {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 确保工具栏紧贴输入框 */
-#toolbox-toolbar {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-#toolbox-toolbar + #send_form {
-    margin-top: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-top: none !important;
-}
-
 #toolbox-toolbar {
     position: relative;
-    width: 100%;
     background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
     border: 2px solid rgba(139, 92, 246, 0.5);
     border-radius: 16px;
-    padding: 10px 14px;
-    margin: 0;
+    padding: 12px 16px;
+    margin-bottom: 12px;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
-    box-sizing: border-box;
-    flex-shrink: 0;
 }
 
 .toolbox-status {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
     border-bottom: 1px solid rgba(139, 92, 246, 0.2);
 }
 
@@ -71,20 +46,20 @@
 
 .toolbox-buttons {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
     align-items: center;
 }
 
 .toolbox-main-btn {
     flex: 1;
-    min-width: 90px;
-    padding: 10px 14px;
+    min-width: 100px;
+    padding: 12px 16px;
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.15));
     border: 1.5px solid rgba(139, 92, 246, 0.4);
-    border-radius: 10px;
+    border-radius: 12px;
     color: rgba(255, 255, 255, 0.95);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -122,9 +97,9 @@
 }
 
 .toolbox-content {
-    margin-top: 10px;
+    margin-top: 12px;
     overflow: hidden;
-    max-height: 320px;
+    max-height: 500px;
     overflow-y: auto;
     animation: expandIn 0.3s ease-out;
 }
@@ -132,16 +107,18 @@
 @keyframes expandIn {
     from {
         opacity: 0;
+        transform: translateY(-8px);
         max-height: 0;
     }
     to {
         opacity: 1;
-        max-height: 320px;
+        transform: translateY(0);
+        max-height: 600px;
     }
 }
 
 .toolbox-content-section {
-    padding: 10px;
+    padding: 16px;
 }
 
 .toolbox-content-header {
@@ -612,60 +589,155 @@
 }
 
 .toolbox-current-state {
+    margin-bottom: 16px;
+}
+
+.toolbox-emotion-display {
+    background: rgba(30, 30, 60, 0.7);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.toolbox-emotion-main {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    background: rgba(30, 30, 60, 0.5);
-    border-radius: 8px;
-    border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.toolbox-emotion-badge {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 700;
+.toolbox-emotion-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(148, 163, 184, 0.8);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
+.toolbox-emotion-value {
+    font-size: 16px;
+    font-weight: 700;
+}
+
 .toolbox-emotion-history {
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .toolbox-emotion-timeline {
     display: flex;
-    flex-wrap: wrap;
     gap: 6px;
+    margin-top: 10px;
 }
 
-.toolbox-timeline-badge {
-    padding: 4px 10px;
-    border-radius: 4px;
+.toolbox-timeline-item {
+    flex: 1;
+    background: rgba(30, 30, 60, 0.6);
+    border-radius: 6px;
+    padding: 10px 8px;
+    text-align: center;
+    border-top: 3px solid;
+}
+
+.toolbox-timeline-emotion {
     font-size: 11px;
     font-weight: 600;
+    color: rgba(226, 232, 240, 0.85);
 }
 
 .toolbox-custom-fields {
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.toolbox-field-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.toolbox-field-input input {
+    flex: 1;
+    padding: 10px 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1.5px solid rgba(51, 65, 85, 0.6);
+    border-radius: 8px;
+    color: rgba(226, 232, 240, 0.9);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.toolbox-field-input input:focus {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
+}
+
+.toolbox-field-input button {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.6), rgba(99, 102, 241, 0.5));
+    border: 1.5px solid rgba(139, 92, 246, 0.5);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toolbox-field-input button:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(99, 102, 241, 0.7));
+    transform: translateY(-1px);
 }
 
 .toolbox-custom-fields-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.toolbox-field-badge {
-    padding: 4px 10px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 4px;
-    font-size: 11px;
+.toolbox-custom-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(30, 30, 60, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 8px;
+}
+
+.toolbox-field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(148, 163, 184, 0.9);
+}
+
+.toolbox-field-value {
+    flex: 1;
+    margin-left: 10px;
+    font-size: 13px;
     color: rgba(226, 232, 240, 0.9);
+}
+
+.toolbox-remove-field {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 5px;
+    color: rgba(248, 113, 113, 0.9);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+.toolbox-remove-field:hover {
+    background: rgba(239, 68, 68, 0.3);
 }
 
 /* Scrollbar Styling */
