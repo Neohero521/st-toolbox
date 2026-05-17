@@ -49,25 +49,20 @@ function getCurrentCharacterData() {
         const context = getContext();
         logInfo('getContext() called, context keys:', Object.keys(context));
         
-        // 尝试多种方式获取当前角色
         let character = null;
         
-        // 方式 1: 尝试使用 context.character
         if (context.character) {
             character = context.character;
             logInfo('Got character via context.character');
         }
-        // 方式 2: 尝试使用 context.characters 和 context.characterId
         else if (context.characters && context.characterId !== undefined) {
             character = context.characters[context.characterId];
             logInfo('Got character via context.characters[characterId]');
         }
-        // 方式 3: 尝试 context.selectedCharacter
         else if (context.selectedCharacter) {
             character = context.selectedCharacter;
             logInfo('Got character via context.selectedCharacter');
         }
-        // 方式 4: 尝试使用 context.name (可能是旧版本)
         else if (context.name) {
             character = context;
             logInfo('Got character via context (direct)');
@@ -75,13 +70,11 @@ function getCurrentCharacterData() {
         
         if (!character) {
             logInfo('All character access methods failed');
-            logInfo('context:', JSON.stringify(context, (k, v) => typeof v === 'object' ? '[Object]' : v, 2));
             return null;
         }
         
         logInfo('Got character:', character.name);
         
-        // 尝试获取角色数据，兼容不同的数据结构
         const charData = character.data || character;
         
         return {
@@ -91,7 +84,6 @@ function getCurrentCharacterData() {
             scenario: charData.scenario || '',
             first_mes: charData.first_mes || '',
             avatar: character.avatar || charData.avatar || '',
-            // 原始角色对象
             raw: character,
         };
     } catch (e) {
@@ -512,7 +504,7 @@ function renderAnchorContent() {
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">设定锚点注入器</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">返回</span>
             </div>
             
             ${character && character.name ? `
@@ -549,7 +541,7 @@ function renderAnchorContent() {
                     ${userKeywords.map((kw, i) => `
                         <span class="toolbox-keyword-tag">
                             ${kw}
-                            <button class="toolbox-keyword-remove" data-index="${i}">×</button>
+                            <button class="toolbox-keyword-remove" data-index="${i}">x</button>
                         </span>
                     `).join('')}
                 </div>
@@ -573,7 +565,7 @@ function renderOocContent() {
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">OOC 实时检测</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">返回</span>
             </div>
             
             ${result.characterInfo ? `
@@ -655,7 +647,7 @@ function renderStateContent() {
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">角色状态追踪</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">返回</span>
             </div>
             
             <div class="toolbox-current-state">
@@ -694,7 +686,7 @@ function renderStateContent() {
                         <div class="toolbox-custom-field">
                             <span class="toolbox-field-label">${key}</span>
                             <span class="toolbox-field-value">${states.customFields[key]}</span>
-                            <button class="toolbox-remove-field" data-field="${key}">×</button>
+                            <button class="toolbox-remove-field" data-field="${key}">x</button>
                         </div>
                     `).join('')}
                 </div>
@@ -836,9 +828,9 @@ function updateToolVisibility() {
     const allHidden = !tools.anchorInject && !tools.oocDetect && !tools.charState;
 
     if (allHidden || !settings.enabled) {
-        $('#toolbox-toolbar').hide();
+        $('#toolbox-container').hide();
     } else {
-        $('#toolbox-toolbar').show();
+        $('#toolbox-container').show();
     }
 }
 
@@ -865,7 +857,7 @@ function updateToolbarStatus() {
     const statusEl = $('#toolbox-char-name');
     if (statusEl.length) {
         if (appState.currentCharacter) {
-            statusEl.text(`✓ ${appState.currentCharacter.name}`);
+            statusEl.text(`已加载: ${appState.currentCharacter.name}`);
             statusEl.css('color', 'rgba(74, 222, 128, 0.95)');
         } else {
             statusEl.text('未加载角色');
@@ -924,24 +916,26 @@ jQuery(async function() {
         return;
     }
 
-    const toolbarHtml = `
-        <div id="toolbox-toolbar" style="display: none;">
-            <div id="toolbox-status" class="toolbox-status">
-                <span id="toolbox-char-name" class="toolbox-char-status">未加载角色</span>
+    const containerHtml = `
+        <div id="toolbox-container" style="display: none;">
+            <div id="toolbox-toolbar">
+                <div id="toolbox-status" class="toolbox-status">
+                    <span id="toolbox-char-name" class="toolbox-char-status">未加载角色</span>
+                </div>
+                <div class="toolbox-buttons">
+                    <button id="toolbox-anchor-btn" class="toolbox-main-btn">锚点</button>
+                    <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
+                    <button id="toolbox-state-btn" class="toolbox-main-btn">状态</button>
+                </div>
             </div>
-            <div class="toolbox-buttons">
-                <button id="toolbox-anchor-btn" class="toolbox-main-btn">锚点</button>
-                <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
-                <button id="toolbox-state-btn" class="toolbox-main-btn">状态</button>
-            </div>
+            <div id="toolbox-expanded" class="toolbox-expanded-panel"></div>
         </div>
-        <div id="toolbox-expanded" style="display: none;"></div>
     `;
 
     const sendForm = $('#send_form');
     if (sendForm.length) {
-        sendForm.before(toolbarHtml);
-        logInfo('Toolbar added to DOM');
+        sendForm.before(containerHtml);
+        logInfo('Toolbar container added to DOM');
     } else {
         logError('#send_form not found');
         return;
@@ -963,7 +957,6 @@ jQuery(async function() {
             logInfo('eventSource is available');
             logInfo('Available event types:', Object.keys(event_types));
             
-            // 注册所有可能的相关事件
             const events = [
                 'CHAT_CHANGED',
                 'MESSAGE_RECEIVED',
@@ -973,7 +966,6 @@ jQuery(async function() {
                 'GROUP_CHANGED'
             ];
             
-            // 尝试注册多个事件
             events.forEach(eventName => {
                 if (event_types[eventName]) {
                     if (eventName === 'CHAT_CHANGED') {
@@ -999,9 +991,8 @@ jQuery(async function() {
 
     logInfo('Checking initial character immediately...');
     tryLoadCharacter();
-    updateToolbarStatus(); // 立即更新状态显示
+    updateToolbarStatus();
 
-    // 使用轮询机制，多次尝试加载角色
     const retryIntervals = [500, 1500, 3000, 5000, 8000];
     retryIntervals.forEach((delay, index) => {
         setTimeout(() => {
