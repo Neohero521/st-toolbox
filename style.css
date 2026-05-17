@@ -615,8 +615,8 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-.toolbox-ooc-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+.toolbox-conflict-forbidden {
+    font-size: 12px;
+    color: rgba(248, 113, 113, 0.9);
+    margin-top: 6px;
 }
