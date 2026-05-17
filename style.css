@@ -11,6 +11,12 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
+    height: 400px;
+    min-height: 400px;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .toolbox-status {
@@ -20,6 +26,7 @@
     margin-bottom: 8px;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    flex-shrink: 0;
 }
 
 .toolbox-char-status {
@@ -48,6 +55,7 @@
     gap: 10px;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .toolbox-main-btn {
@@ -96,8 +104,9 @@
 }
 
 .toolbox-content {
-    margin-top: 12px;
-    max-height: 350px;
+    margin-top: 10px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
