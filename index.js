@@ -1,4 +1,4 @@
-import { extension_settings, getContext } from '../../../extensions.js';
+import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
 const extensionName = 'st-toolbox';
@@ -29,6 +29,7 @@ let appState = {
 
 let lastChatLength = 0;
 let lastCharacterName = '';
+let isInitialized = false;
 
 function logInfo(message, data = null) {
     if (data) {
@@ -73,6 +74,8 @@ function getCurrentCharacter() {
 }
 
 function extractCorePoints(character) {
+    if (!character) return [];
+    
     const points = [];
     
     const sources = [
@@ -102,6 +105,8 @@ function extractCorePoints(character) {
 }
 
 function generateWeightedAnchor(character, mode = 'temporary') {
+    if (!character) return '';
+    
     const corePoints = extractCorePoints(character);
     const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
     
@@ -841,6 +846,8 @@ function onToolVisibilityChange(toolKey) {
 
 function startMonitoring() {
     setInterval(() => {
+        if (!isInitialized) return;
+        
         try {
             const context = getContext();
             if (!context) return;
@@ -867,8 +874,15 @@ function startMonitoring() {
     }, 1000);
 }
 
-jQuery(async function() {
+jQuery(async () => {
     logInfo('开始初始化扩展');
+    
+    try {
+        await loadExtensionSettings();
+        logInfo('loadExtensionSettings 完成');
+    } catch (e) {
+        logError('loadExtensionSettings 失败', e);
+    }
     
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
@@ -910,6 +924,9 @@ jQuery(async function() {
     
     await loadSettings();
     
+    isInitialized = true;
+    logInfo('扩展初始化完成');
+    
     startMonitoring();
     logInfo('启动角色和对话监控');
     
@@ -921,6 +938,4 @@ jQuery(async function() {
     }
     
     window.toggleTab = toggleTab;
-    
-    logInfo('扩展初始化完成');
 });
