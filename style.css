@@ -4,8 +4,8 @@
     position: relative;
     background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
     border: 2px solid rgba(139, 92, 246, 0.5);
-    border-radius: 16px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 8px 12px;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -122,6 +122,25 @@
     padding-bottom: 8px;
     margin-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbox-back-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toolbox-back-btn:hover {
+    background: rgba(139, 92, 246, 0.4);
+    border-color: rgba(139, 92, 246, 0.6);
 }
 
 .toolbox-page-title {
@@ -239,6 +258,17 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
+}
+
+.toolbox-no-char {
+    padding: 12px;
+    text-align: center;
+    color: rgba(148, 163, 184, 0.7);
+    font-size: 12px;
+    background: rgba(30, 30, 60, 0.5);
+    border: 1px dashed rgba(100, 116, 139, 0.4);
+    border-radius: 6px;
+    margin: auto 0;
 }
 
 @keyframes expandIn {

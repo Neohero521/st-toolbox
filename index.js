@@ -47,51 +47,49 @@ function logError(message, error = null) {
 function getCurrentCharacterData() {
     try {
         const context = getContext();
-        logInfo('getContext() called, context keys:', Object.keys(context));
         
-        // 尝试多种方式获取当前角色
+        // SillyTavern官方方式获取当前角色
         let character = null;
+        let charData = null;
         
-        // 方式 1: 尝试使用 context.character
-        if (context.character) {
-            character = context.character;
-            logInfo('Got character via context.character');
-        }
-        // 方式 2: 尝试使用 context.characters 和 context.characterId
-        else if (context.characters && context.characterId !== undefined) {
+        // 方式1: 尝试 context.characters[context.characterId] - 最常见的方式
+        if (context.characterId !== undefined && context.characters) {
             character = context.characters[context.characterId];
-            logInfo('Got character via context.characters[characterId]');
-        }
-        // 方式 3: 尝试 context.selectedCharacter
-        else if (context.selectedCharacter) {
-            character = context.selectedCharacter;
-            logInfo('Got character via context.selectedCharacter');
-        }
-        // 方式 4: 尝试使用 context.name (可能是旧版本)
-        else if (context.name) {
-            character = context;
-            logInfo('Got character via context (direct)');
+            if (character) {
+                charData = character.data || character;
+                logInfo('Got character via characters[characterId]', character.name);
+            }
         }
         
-        if (!character) {
-            logInfo('All character access methods failed');
-            logInfo('context:', JSON.stringify(context, (k, v) => typeof v === 'object' ? '[Object]' : v, 2));
+        // 方式2: 尝试 context.character (新API)
+        if (!character && context.character) {
+            character = context.character;
+            charData = character.data || character;
+            logInfo('Got character via context.character', character.name);
+        }
+        
+        // 方式3: 尝试 context.selectedCharacter
+        if (!character && context.selectedCharacter) {
+            character = context.selectedCharacter;
+            charData = character.data || character;
+            logInfo('Got character via selectedCharacter', character.name);
+        }
+        
+        if (!character || !character.name) {
+            logInfo('No character found');
             return null;
         }
         
-        logInfo('Got character:', character.name);
-        
-        // 尝试获取角色数据，兼容不同的数据结构
-        const charData = character.data || character;
-        
         return {
-            name: character.name || charData.name || 'Unknown',
+            name: character.name,
             description: charData.description || '',
             personality: charData.personality || '',
             scenario: charData.scenario || '',
             first_mes: charData.first_mes || '',
+            mes_example: charData.mes_example || '',
+            world_info: charData.world_info || '',
             avatar: character.avatar || charData.avatar || '',
-            // 原始角色对象
+            charId: context.characterId,
             raw: character,
         };
     } catch (e) {
@@ -487,6 +485,14 @@ function toggleTab(tab) {
     }
 }
 
+function goBack() {
+    appState.expandedTab = null;
+    const container = $('#toolbox-content');
+    const buttons = $('.toolbox-buttons');
+    container.html('');
+    buttons.show();
+}
+
 function renderExpandedContent() {
     const container = $('#toolbox-content');
     if (!appState.expandedTab) {
@@ -520,27 +526,30 @@ function renderAnchorContent() {
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
-                <span class="toolbox-page-title">${character?.name || '未加载角色'}</span>
+                <button class="toolbox-back-btn" onclick="window.goBack()">← 返回</button>
+                <span class="toolbox-page-title">锚点</span>
             </div>
             <div class="toolbox-page-body">
-                <div class="toolbox-page-section">
-                    <span class="toolbox-label">核心设定</span>
-                    <div class="toolbox-page-text">
-                        ${corePoints.length > 0 ? corePoints.slice(0, 2).map(p => `<p>${p}</p>`).join('') : '<span class="toolbox-empty">无核心设定</span>'}
+                ${character && character.name ? `
+                    <div class="toolbox-page-section">
+                        <span class="toolbox-label">核心设定</span>
+                        <div class="toolbox-page-text">
+                            ${corePoints.length > 0 ? corePoints.slice(0, 2).map(p => `<p>${p}</p>`).join('') : '<span class="toolbox-empty">无核心设定</span>'}
+                        </div>
                     </div>
-                </div>
-                <div class="toolbox-page-section">
-                    <span class="toolbox-label">模式</span>
-                    <div class="toolbox-mode-buttons">
-                        <button class="toolbox-mode-btn ${mode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时</button>
-                        <button class="toolbox-mode-btn ${mode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续</button>
-                        <button class="toolbox-mode-btn ${mode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急</button>
+                    <div class="toolbox-page-section">
+                        <span class="toolbox-label">模式</span>
+                        <div class="toolbox-mode-buttons">
+                            <button class="toolbox-mode-btn ${mode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时</button>
+                            <button class="toolbox-mode-btn ${mode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续</button>
+                            <button class="toolbox-mode-btn ${mode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急</button>
+                        </div>
                     </div>
-                </div>
-                <div class="toolbox-page-actions">
-                    <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入</button>
-                    <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制</button>
-                </div>
+                    <div class="toolbox-page-actions">
+                        <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入</button>
+                        <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制</button>
+                    </div>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
             </div>
         </div>
     `;
@@ -554,26 +563,29 @@ function renderOocContent() {
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
-                <span class="toolbox-page-title">${result.characterInfo?.name || '未加载角色'}</span>
+                <button class="toolbox-back-btn" onclick="window.goBack()">← 返回</button>
+                <span class="toolbox-page-title">检测</span>
             </div>
             <div class="toolbox-page-body">
-                <div class="toolbox-page-section">
-                    <span class="toolbox-label">阈值</span>
-                    <div class="toolbox-threshold-row">
-                        <input type="range" id="toolbox-ooc-threshold" min="0.1" max="1" step="0.1" value="${threshold}" />
-                        <span class="toolbox-threshold-value">${threshold}</span>
-                    </div>
-                </div>
-                <button id="toolbox-run-ooc" class="toolbox-primary-btn">检测</button>
-                ${result.conflicts.length > 0 ? `
-                    <div class="toolbox-conflict-preview">
-                        <span class="toolbox-label">冲突 (${result.conflicts.length})</span>
-                        <div class="toolbox-page-text">
-                            ${result.conflicts.slice(0, 2).map(c => `<p>${c.message}</p>`).join('')}
+                ${result.characterInfo ? `
+                    <div class="toolbox-page-section">
+                        <span class="toolbox-label">阈值</span>
+                        <div class="toolbox-threshold-row">
+                            <input type="range" id="toolbox-ooc-threshold" min="0.1" max="1" step="0.1" value="${threshold}" />
+                            <span class="toolbox-threshold-value">${threshold}</span>
                         </div>
-                        ${suggestions.length > 0 ? `<button id="toolbox-fix-ooc" class="toolbox-primary-btn">修正</button>` : ''}
                     </div>
-                ` : '<div class="toolbox-no-conflict">未检测到冲突</div>'}
+                    <button id="toolbox-run-ooc" class="toolbox-primary-btn">检测</button>
+                    ${result.conflicts.length > 0 ? `
+                        <div class="toolbox-conflict-preview">
+                            <span class="toolbox-label">冲突 (${result.conflicts.length})</span>
+                            <div class="toolbox-page-text">
+                                ${result.conflicts.slice(0, 2).map(c => `<p>${c.message}</p>`).join('')}
+                            </div>
+                            ${suggestions.length > 0 ? `<button id="toolbox-fix-ooc" class="toolbox-primary-btn">修正</button>` : ''}
+                        </div>
+                    ` : '<div class="toolbox-no-conflict">未检测到冲突</div>'}
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
             </div>
         </div>
     `;
@@ -588,19 +600,22 @@ function renderStateContent() {
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
-                <span class="toolbox-page-title">${character?.name || '未知角色'}</span>
+                <button class="toolbox-back-btn" onclick="window.goBack()">← 返回</button>
+                <span class="toolbox-page-title">状态</span>
             </div>
             <div class="toolbox-page-body">
-                <div class="toolbox-emotion-row">
-                    <span class="toolbox-label">情绪</span>
-                    <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
-                </div>
-                ${states.emotionHistory.length > 1 ? `
-                    <div class="toolbox-timeline-mini">
-                        ${states.emotionHistory.slice(-4).map(e => `<span class="toolbox-timeline-dot" style="background: ${emotionColors[e.emotion]}"></span>`).join('')}
+                ${character && character.name ? `
+                    <div class="toolbox-emotion-row">
+                        <span class="toolbox-label">情绪</span>
+                        <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
                     </div>
-                ` : ''}
-                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入</button>
+                    ${states.emotionHistory.length > 1 ? `
+                        <div class="toolbox-timeline-mini">
+                            ${states.emotionHistory.slice(-4).map(e => `<span class="toolbox-timeline-dot" style="background: ${emotionColors[e.emotion]}"></span>`).join('')}
+                        </div>
+                    ` : ''}
+                    <button id="toolbox-inject-state" class="toolbox-primary-btn">注入</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
             </div>
         </div>
     `;
@@ -614,31 +629,10 @@ function bindContentEvents() {
         renderExpandedContent();
     });
 
-    $('#toolbox-add-keyword').off('click').on('click', function() {
-        const keyword = $('#toolbox-new-keyword').val().trim();
-        if (!keyword) return;
-
-        const settings = extension_settings[extensionName];
-        if (!settings.anchorKeywords) settings.anchorKeywords = [];
-        if (!settings.anchorKeywords.includes(keyword)) {
-            settings.anchorKeywords.push(keyword);
-            saveSettingsDebounced();
-            renderExpandedContent();
-        }
-        $('#toolbox-new-keyword').val('');
-    });
-
-    $('.toolbox-keyword-remove').off('click').on('click', function() {
-        const index = $(this).data('index');
-        extension_settings[extensionName].anchorKeywords.splice(index, 1);
-        saveSettingsDebounced();
-        renderExpandedContent();
-    });
-
     $('#toolbox-inject-anchor-btn').off('click').on('click', function() {
         const mode = extension_settings[extensionName]?.injectMode || 'temporary';
         injectAnchorToInput(mode);
-        toggleTab(null);
+        goBack();
     });
 
     $('#toolbox-copy-anchor-btn').off('click').on('click', function() {
@@ -663,7 +657,7 @@ function bindContentEvents() {
         if (input.length) {
             input.val(text);
             input.focus();
-            toggleTab(null);
+            goBack();
         }
     });
 
@@ -677,33 +671,14 @@ function bindContentEvents() {
                 const fixText = `【OOC 修正】\n${suggestions.join('\n')}`;
                 input.val(fixText);
                 input.focus();
-                toggleTab(null);
+                goBack();
             }
         }
     });
 
-    $('#toolbox-add-field').off('click').on('click', function() {
-        const name = $('#toolbox-field-name').val().trim();
-        const value = $('#toolbox-field-value').val().trim();
-        if (!name) return;
-
-        appState.charStates.customFields[name] = value || '0';
-        saveStateToCharacter();
-        renderExpandedContent();
-        $('#toolbox-field-name').val('');
-        $('#toolbox-field-value').val('');
-    });
-
-    $('.toolbox-remove-field').off('click').on('click', function() {
-        const field = $(this).data('field');
-        delete appState.charStates.customFields[field];
-        saveStateToCharacter();
-        renderExpandedContent();
-    });
-
     $('#toolbox-inject-state').off('click').on('click', function() {
         injectStateToInput();
-        toggleTab(null);
+        goBack();
     });
 }
 
@@ -895,6 +870,7 @@ jQuery(async function() {
     }
 
     window.toggleTab = toggleTab;
+    window.goBack = goBack;
 
     logInfo('Checking initial character immediately...');
     tryLoadCharacter();
