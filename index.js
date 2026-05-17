@@ -1,5 +1,4 @@
-import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+import { extension_settings, saveSettingsDebounced } from '../../../extensions.js';
 
 const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -45,31 +44,67 @@ function logError(message, error) {
 
 function getCurrentCharacter() {
     try {
-        const context = getContext();
-        
-        if (!context) {
-            logInfo('getContext() 返回 null');
+        if (typeof characters === 'undefined') {
+            logInfo('characters 全局变量未定义');
             return null;
         }
         
-        if (!context.name) {
-            logInfo('未加载角色（context.name 为空）');
+        if (typeof this_chid === 'undefined' || this_chid === null || this_chid < 0) {
+            logInfo('this_chid 未定义或无效');
             return null;
         }
         
-        logInfo('获取当前角色成功', context.name);
+        const character = characters[this_chid];
+        if (!character) {
+            logInfo('characters[this_chid] 为空');
+            return null;
+        }
+        
+        logInfo('获取当前角色成功', character.name);
         
         return {
-            name: context.name,
-            description: context.description || '',
-            personality: context.personality || '',
-            scenario: context.scenario || '',
-            firstMessage: context.first_mes || '',
-            avatar: context.avatar || '',
+            name: character.name || '未知角色',
+            description: character.description || '',
+            personality: character.personality || '',
+            scenario: character.scenario || '',
+            firstMessage: character.first_mes || character.first_message || '',
+            avatar: character.avatar || '',
         };
     } catch (e) {
         logError('获取角色信息失败', e);
         return null;
+    }
+}
+
+function getChatHistory() {
+    try {
+        if (typeof characters === 'undefined') {
+            logInfo('characters 全局变量未定义');
+            return [];
+        }
+        
+        if (typeof this_chid === 'undefined' || this_chid === null || this_chid < 0) {
+            return [];
+        }
+        
+        const character = characters[this_chid];
+        if (!character || !character.chat) {
+            return [];
+        }
+        
+        if (typeof character.chat === 'string') {
+            logInfo('聊天记录是字符串格式（非数组）');
+            return [];
+        }
+        
+        if (Array.isArray(character.chat)) {
+            return character.chat;
+        }
+        
+        return [];
+    } catch (e) {
+        logError('获取聊天历史失败', e);
+        return [];
     }
 }
 
@@ -148,26 +183,21 @@ function generateWeightedAnchor(character, mode = 'temporary') {
 
 function detectOOCConflicts() {
     try {
-        const context = getContext();
-        
-        if (!context) {
-            logInfo('detectOOCConflicts: getContext() 返回 null');
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-        
-        if (!context.chat || context.chat.length === 0) {
-            logInfo('聊天记录为空');
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-        
-        logInfo('聊天记录数量', context.chat.length);
-        
         const character = getCurrentCharacter();
         if (!character) {
+            logInfo('未加载角色');
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
         
-        const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
+        const chat = getChatHistory();
+        if (chat.length === 0) {
+            logInfo('聊天记录为空或格式不支持');
+            return { conflicts: [], lastMessage: null, characterInfo: character };
+        }
+        
+        logInfo('聊天记录数量', chat.length);
+        
+        const lastAIMsg = chat.filter(m => !m.is_user).slice(-1)[0];
         if (!lastAIMsg || !lastAIMsg.mes) {
             logInfo('未找到 AI 消息');
             return { conflicts: [], lastMessage: null, characterInfo: character };
@@ -308,12 +338,15 @@ function extractEmotion(message) {
 
 function updateCharStates() {
     try {
-        const context = getContext();
-        if (!context || !context.chat) return;
+        const chat = getChatHistory();
+        if (chat.length === 0) {
+            logInfo('无聊天记录');
+            return;
+        }
         
-        logInfo('更新状态，聊天记录数量', context.chat.length);
+        logInfo('更新状态，聊天记录数量', chat.length);
         
-        const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
+        const recentMessages = chat.filter(m => !m.is_user).slice(-5);
         if (recentMessages.length === 0) {
             logInfo('无 AI 消息');
             return;
@@ -344,9 +377,9 @@ function updateCharStates() {
 
 function trySaveStateToCharacter() {
     try {
-        const context = getContext();
-        if (context && context.name) {
-            const stateKey = `state_${context.name}`;
+        const character = getCurrentCharacter();
+        if (character && character.name) {
+            const stateKey = `state_${character.name}`;
             extension_settings[extensionName][stateKey] = {
                 ...appState.charStates,
                 savedAt: Date.now()
@@ -360,16 +393,16 @@ function trySaveStateToCharacter() {
 
 function tryLoadStateFromCharacter() {
     try {
-        const context = getContext();
-        if (context && context.name) {
-            const stateKey = `state_${context.name}`;
+        const character = getCurrentCharacter();
+        if (character && character.name) {
+            const stateKey = `state_${character.name}`;
             const savedState = extension_settings[extensionName][stateKey];
             if (savedState) {
                 appState.charStates = {
                     ...appState.charStates,
                     ...savedState
                 };
-                logInfo('已加载角色状态', context.name);
+                logInfo('已加载角色状态', character.name);
             }
         }
     } catch(e) {
@@ -849,19 +882,27 @@ function startMonitoring() {
         if (!isInitialized) return;
         
         try {
-            const context = getContext();
-            if (!context) return;
+            if (typeof characters === 'undefined' || typeof this_chid === 'undefined') {
+                return;
+            }
             
-            if (context.name && context.name !== lastCharacterName) {
-                logInfo('角色切换', `${lastCharacterName} -> ${context.name}`);
-                lastCharacterName = context.name;
-                lastChatLength = context.chat?.length || 0;
+            const currentChar = characters[this_chid];
+            if (!currentChar) return;
+            
+            if (currentChar.name && currentChar.name !== lastCharacterName) {
+                logInfo('角色切换', `${lastCharacterName} -> ${currentChar.name}`);
+                lastCharacterName = currentChar.name;
+                
+                const chat = getChatHistory();
+                lastChatLength = chat.length;
+                
                 tryLoadStateFromCharacter();
             }
             
-            if (context.chat && context.chat.length !== lastChatLength) {
-                logInfo('新消息', `聊天记录数: ${context.chat.length}`);
-                lastChatLength = context.chat.length;
+            const chat = getChatHistory();
+            if (chat.length !== lastChatLength) {
+                logInfo('新消息', `聊天记录数: ${chat.length}`);
+                lastChatLength = chat.length;
                 
                 if (appState.expandedTab === 'state') {
                     updateCharStates();
@@ -876,13 +917,6 @@ function startMonitoring() {
 
 jQuery(async () => {
     logInfo('开始初始化扩展');
-    
-    try {
-        await loadExtensionSettings();
-        logInfo('loadExtensionSettings 完成');
-    } catch (e) {
-        logError('loadExtensionSettings 失败', e);
-    }
     
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
@@ -930,11 +964,19 @@ jQuery(async () => {
     startMonitoring();
     logInfo('启动角色和对话监控');
     
-    const initialCharacter = getCurrentCharacter();
-    if (initialCharacter) {
-        logInfo('检测到已加载角色', initialCharacter.name);
+    if (typeof characters !== 'undefined' && typeof this_chid !== 'undefined' && this_chid >= 0) {
+        const currentChar = characters[this_chid];
+        if (currentChar && currentChar.name) {
+            logInfo('检测到已加载角色', currentChar.name);
+            lastCharacterName = currentChar.name;
+            
+            const chat = getChatHistory();
+            lastChatLength = chat.length;
+        } else {
+            logInfo('未检测到角色，请在 SillyTavern 中加载角色');
+        }
     } else {
-        logInfo('未检测到角色，请在 SillyTavern 中加载角色');
+        logInfo('SillyTavern 全局变量未定义，请刷新页面');
     }
     
     window.toggleTab = toggleTab;
