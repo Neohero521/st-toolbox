@@ -1,160 +1,50 @@
 #toolbox-toolbar {
-  position: relative;
   width: 100%;
-  min-height: 80px;
-  padding: 12px 20px;
+  padding: 12px 16px;
   margin-bottom: 12px;
-  background: 
-    radial-gradient(circle at 10% 10%, rgba(139, 92, 246, 0.15) 0%, transparent 30%),
-    radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.12) 0%, transparent 35%),
-    radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
-    rgba(15, 15, 25, 0.75);
-  border: 2px solid rgba(99, 102, 241, 0.4);
-  border-radius: 24px;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 
-    0 8px 32px rgba(99, 102, 241, 0.15),
-    0 2px 12px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  animation: borderPulse 4s ease-in-out infinite;
-  overflow: visible;
-  z-index: 100;
-}
-
-@keyframes borderPulse {
-  0%, 100% {
-    border-color: rgba(99, 102, 241, 0.4);
-    box-shadow: 
-      0 8px 32px rgba(99, 102, 241, 0.15),
-      0 2px 12px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-  50% {
-    border-color: rgba(236, 72, 153, 0.5);
-    box-shadow: 
-      0 8px 40px rgba(236, 72, 153, 0.18),
-      0 2px 12px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 0 25px rgba(99, 102, 241, 0.2);
-  }
-}
-
-#toolbox-toolbar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
-  border-radius: 24px;
-  pointer-events: none;
-  z-index: 1;
-  animation: waterRipple 8s ease-in-out infinite;
-}
-
-@keyframes waterRipple {
-  0%, 100% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
+  background: rgba(20, 20, 40, 0.8);
+  border: 2px solid rgba(99, 102, 241, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .toolbox-buttons {
-  position: relative;
-  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  height: 100%;
+  gap: 16px;
 }
 
 .toolbox-main-btn {
-  position: relative;
-  min-width: 90px;
-  height: 56px;
-  padding: 0 24px;
-  background: rgba(25, 25, 40, 0.75);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 16px;
+  min-width: 80px;
+  height: 40px;
+  padding: 0 20px;
+  background: rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.6);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3;
+  transition: all 0.2s ease;
 }
 
 .toolbox-main-btn:hover {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: rgba(99, 102, 241, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-}
-
-.toolbox-main-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-}
-
-.toolbox-btn-text {
-  position: relative;
-  z-index: 1;
-}
-
-.toolbox-divider {
-  width: 1px;
-  height: 40px;
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  margin: 0 16px;
-  z-index: 2;
+  background: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 #toolbox-expanded {
-  position: relative;
   width: 100%;
-  margin-top: 8px;
   margin-bottom: 12px;
-  z-index: 99;
 }
 
 .toolbox-content-section {
-  width: 100%;
-  padding: 18px 24px;
-  background: 
-    radial-gradient(circle at 10% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 30%),
-    radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 35%),
-    rgba(15, 15, 25, 0.8);
-  border: 1.5px solid rgba(99, 102, 241, 0.35);
-  border-radius: 18px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-  animation: contentSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes contentSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 16px;
+  background: rgba(20, 20, 40, 0.85);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 12px;
 }
 
 .toolbox-content-header {
@@ -163,13 +53,13 @@
   justify-content: space-between;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .toolbox-content-title {
   font-size: 17px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
 }
 
 .toolbox-content-close {
@@ -178,49 +68,49 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .toolbox-content-close:hover {
   background: rgba(239, 68, 68, 0.3);
-  color: rgba(255, 255, 255, 0.95);
 }
 
 .toolbox-char-info {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .toolbox-char-name {
   display: inline-block;
-  padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.18);
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  border-radius: 10px;
+  padding: 6px 14px;
+  background: rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.5);
+  border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  color: #ffffff;
 }
 
 .toolbox-core-points {
   margin-top: 12px;
-  padding: 12px 16px;
+  padding: 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .toolbox-section-label {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .toolbox-core-points ul {
@@ -230,7 +120,7 @@
 
 .toolbox-core-points li {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.6;
   margin-bottom: 4px;
 }
@@ -238,12 +128,12 @@
 .toolbox-no-char {
   padding: 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
 }
 
 .toolbox-mode-selector {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .toolbox-mode-buttons {
@@ -253,11 +143,11 @@
 
 .toolbox-mode-btn {
   flex: 1;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -266,47 +156,47 @@
 
 .toolbox-mode-btn:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.4);
 }
 
 .toolbox-mode-btn.active {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: rgba(99, 102, 241, 0.5);
-  color: rgba(255, 255, 255, 0.95);
+  background: rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
 }
 
 .toolbox-keywords {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .toolbox-keyword-input {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .toolbox-keyword-input input {
   flex: 1;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
   font-size: 14px;
   outline: none;
 }
 
 .toolbox-keyword-input input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(99, 102, 241, 0.6);
 }
 
 .toolbox-keyword-input button,
 .toolbox-field-input button {
-  padding: 10px 18px;
-  background: rgba(99, 102, 241, 0.35);
-  border: 1.5px solid rgba(99, 102, 241, 0.5);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.95);
+  padding: 8px 18px;
+  background: rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.6);
+  border-radius: 8px;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -315,37 +205,37 @@
 
 .toolbox-keyword-input button:hover,
 .toolbox-field-input button:hover {
-  background: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.6);
 }
 
 .toolbox-keyword-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .toolbox-keyword-tag {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: rgba(99, 102, 241, 0.18);
-  border-radius: 10px;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #ffffff;
 }
 
 .toolbox-keyword-remove,
 .toolbox-remove-field {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -354,21 +244,21 @@
 .toolbox-keyword-remove:hover,
 .toolbox-remove-field:hover {
   background: rgba(239, 68, 68, 0.3);
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
 }
 
 .toolbox-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .toolbox-primary-btn {
   flex: 1;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
-  border: 1.5px solid rgba(99, 102, 241, 0.5);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.95);
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
+  border: 1px solid rgba(99, 102, 241, 0.7);
+  border-radius: 10px;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -376,9 +266,9 @@
 }
 
 .toolbox-primary-btn:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .toolbox-conflict-title,
@@ -397,9 +287,9 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 8px;
   border-left: 3px solid rgba(255, 255, 255, 0.2);
 }
@@ -422,23 +312,23 @@
 .toolbox-severity-badge {
   padding: 2px 8px;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.8);
   white-space: nowrap;
 }
 
 .toolbox-conflict-text {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.5;
 }
 
 .toolbox-no-conflict {
   padding: 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
 }
 
@@ -453,11 +343,11 @@
 }
 
 .toolbox-suggestion-btn {
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
@@ -466,7 +356,7 @@
 
 .toolbox-suggestion-btn:hover {
   background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.4);
 }
 
 .toolbox-current-state {
@@ -478,14 +368,14 @@
   align-items: center;
   gap: 12px;
   margin-top: 10px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  border: 1.5px solid;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid;
 }
 
 .toolbox-emotion-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .toolbox-emotion-value {
@@ -493,163 +383,44 @@
   font-weight: 700;
 }
 
-.toolbox-emotion-history {
-  margin-bottom: 18px;
-}
-
-.toolbox-emotion-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 40px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-}
-
-.toolbox-chart-bar {
-  flex: 1;
-  min-width: 10px;
-  height: 20px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-}
-
 .toolbox-custom-fields {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .toolbox-field-input {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .toolbox-field-input input {
   flex: 1;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
   font-size: 14px;
   outline: none;
 }
 
 .toolbox-field-input input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(99, 102, 241, 0.6);
 }
 
 .toolbox-custom-fields-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .toolbox-custom-field {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: rgba(139, 92, 246, 0.18);
-  border-radius: 10px;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 6px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-/* Settings panel styles */
-.toolbox-extension-settings {
-  padding: 0;
-}
-
-.toolbox-extension-block {
-  margin-bottom: 12px;
-}
-
-.toolbox-extension-block label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-@media (prefers-color-scheme: light) {
-  #toolbox-toolbar {
-    background: 
-      radial-gradient(circle at 10% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 30%),
-      radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 35%),
-      radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-      rgba(250, 250, 255, 0.75);
-    border-color: rgba(99, 102, 241, 0.35);
-  }
-  
-  .toolbox-main-btn {
-    color: rgba(0, 0, 0, 0.85);
-    background: rgba(255, 255, 255, 0.65);
-    border-color: rgba(0, 0, 0, 0.12);
-  }
-  
-  .toolbox-main-btn:hover {
-    color: rgba(0, 0, 0, 0.95);
-    background: rgba(99, 102, 241, 0.18);
-    border-color: rgba(99, 102, 241, 0.35);
-  }
-  
-  .toolbox-content-section {
-    background: 
-      radial-gradient(circle at 10% 10%, rgba(139, 92, 246, 0.1) 0%, transparent 30%),
-      radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.08) 0%, transparent 35%),
-      rgba(250, 250, 255, 0.85);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-  
-  .toolbox-content-title,
-  .toolbox-char-name,
-  .toolbox-btn-text {
-    color: rgba(0, 0, 0, 0.9);
-  }
-  
-  .toolbox-core-points li,
-  .toolbox-keyword-tag,
-  .toolbox-custom-field,
-  .toolbox-conflict-text,
-  .toolbox-suggestion-btn {
-    color: rgba(0, 0, 0, 0.8);
-  }
-}
-
-/* Mobile responsive */
-@media (max-width: 640px) {
-  #toolbox-toolbar {
-    padding: 10px 16px;
-    min-height: 70px;
-  }
-  
-  .toolbox-main-btn {
-    min-width: 70px;
-    height: 48px;
-    padding: 0 18px;
-    font-size: 14px;
-  }
-  
-  .toolbox-divider {
-    height: 32px;
-    margin: 0 12px;
-  }
-  
-  .toolbox-content-section {
-    padding: 14px 16px;
-  }
-  
-  .toolbox-mode-buttons {
-    flex-direction: column;
-  }
-  
-  .toolbox-keyword-input,
-  .toolbox-field-input {
-    flex-direction: column;
-  }
-  
-  .toolbox-keyword-input button,
-  .toolbox-field-input button {
-    width: 100%;
-  }
+  color: #ffffff;
 }
