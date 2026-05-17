@@ -1,5 +1,6 @@
 import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
+import { eventSource, event_types } from '../../../../script.js';
 
 const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -13,7 +14,6 @@ const defaultSettings = {
     anchorKeywords: [],
     injectMode: 'temporary',
     oocDetectThreshold: 0.7,
-    autoInjectInterval: 5,
 };
 
 let appState = {
@@ -27,36 +27,38 @@ let appState = {
 };
 
 function logInfo(message, data = null) {
-    const prefix = `[ST-Toolbox] `;
+    const prefix = `[${extensionName}]`;
     if (data !== null) {
-        console.log(prefix + message, data);
+        console.log(prefix, message, data);
     } else {
-        console.log(prefix + message);
+        console.log(prefix, message);
     }
 }
 
 function logError(message, error = null) {
-    const prefix = `[ST-Toolbox] `;
+    const prefix = `[${extensionName}]`;
     if (error !== null) {
-        console.error(prefix + message, error);
+        console.error(prefix, message, error);
     } else {
-        console.error(prefix + message);
+        console.error(prefix, message);
     }
 }
 
-function getCurrentCharacter() {
+function getCurrentCharacterData() {
     try {
         const context = getContext();
         
         if (!context) {
-            logInfo('getContext() 返回 null');
+            logInfo('getContext() is null');
             return null;
         }
-        
+
         if (!context.name) {
-            logInfo('未加载角色（context.name 为空）');
+            logInfo('No character loaded (context.name is empty)');
             return null;
         }
+
+        logInfo('Got character:', context.name);
         
         return {
             name: context.name,
@@ -67,31 +69,30 @@ function getCurrentCharacter() {
             avatar: context.avatar || '',
         };
     } catch (e) {
-        logError('获取角色信息失败', e);
+        logError('Error getting character data', e);
         return null;
     }
 }
 
 function extractCorePoints(character) {
     if (!character) return [];
-    
+
     const points = [];
-    
     const sources = [
-        { text: character.description, label: '描述' },
-        { text: character.personality, label: '性格' },
-        { text: character.scenario, label: '场景' },
-        { text: character.first_mes, label: '首句' },
+        character.description,
+        character.personality,
+        character.scenario,
+        character.first_mes,
     ];
-    
+
     for (const source of sources) {
-        if (!source.text) continue;
+        if (!source) continue;
         
-        const lines = source.text.split(/[\n\r。；；!?！？]/).filter(line => {
+        const lines = source.split(/[\n\r。；；!?！？]/).filter(line => {
             line = line.trim();
             return line.length > 5 && line.length < 300;
         });
-        
+
         for (let i = 0; i < Math.min(lines.length, 3); i++) {
             const point = lines[i].trim();
             if (point && !points.includes(point)) {
@@ -99,18 +100,18 @@ function extractCorePoints(character) {
             }
         }
     }
-    
+
     return points.slice(0, 15);
 }
 
 function generateWeightedAnchor(character, mode = 'temporary') {
     if (!character) return '';
-    
+
     const corePoints = extractCorePoints(character);
     const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
-    
+
     let weightText = '';
-    
+
     switch(mode) {
         case 'emergency':
             weightText = `\n\n【最高优先级 - 绝对不可违背】\n\n`;
@@ -121,9 +122,9 @@ function generateWeightedAnchor(character, mode = 'temporary') {
         default:
             weightText = `\n\n【设定提醒】\n\n`;
     }
-    
+
     weightText += `<important>\n角色: ${character.name}\n</important>\n\n`;
-    
+
     if (corePoints.length > 0) {
         weightText += `### 核心设定\n`;
         corePoints.forEach((point, idx) => {
@@ -131,7 +132,7 @@ function generateWeightedAnchor(character, mode = 'temporary') {
         });
         weightText += '\n';
     }
-    
+
     if (userKeywords.length > 0) {
         weightText += `### 用户要求\n`;
         userKeywords.forEach(keyword => {
@@ -139,9 +140,9 @@ function generateWeightedAnchor(character, mode = 'temporary') {
         });
         weightText += '\n';
     }
-    
+
     weightText += `请严格保持 ${character.name} 的角色设定一致性。\n`;
-    
+
     return weightText;
 }
 
@@ -150,34 +151,28 @@ function detectOOCConflicts() {
         const context = getContext();
         
         if (!context) {
-            logInfo('detectOOCConflicts: getContext() 返回 null');
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
-        
+
         if (!context.chat || context.chat.length === 0) {
-            logInfo('聊天记录为空');
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
-        
-        logInfo('聊天记录数量:', context.chat.length);
-        
-        const character = getCurrentCharacter();
+
+        const character = getCurrentCharacterData();
         if (!character) {
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
-        
+
         const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
         if (!lastAIMsg || !lastAIMsg.mes) {
-            logInfo('未找到 AI 消息');
             return { conflicts: [], lastMessage: null, characterInfo: character };
         }
-        
+
         const message = lastAIMsg.mes;
-        logInfo('最后 AI 消息预览:', message.substring(0, 50));
-        
+
         const conflicts = [];
         const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
-        
+
         const conflictChecks = [
             {
                 keywords: ['哑巴', '不会说话', '沉默不语', '不说话'],
@@ -208,11 +203,11 @@ function detectOOCConflicts() {
                 severity: 'high'
             }
         ];
-        
+
         for (const check of conflictChecks) {
             const hasTrait = check.keywords.some(kw => allText.includes(kw));
             if (!hasTrait) continue;
-            
+
             const hasConflict = check.forbidden.some(word => message.includes(word));
             if (hasConflict) {
                 conflicts.push({
@@ -224,7 +219,7 @@ function detectOOCConflicts() {
                 });
             }
         }
-        
+
         if (message.length < 20) {
             conflicts.push({
                 type: 'length',
@@ -232,21 +227,19 @@ function detectOOCConflicts() {
                 severity: 'low'
             });
         }
-        
-        logInfo('检测到冲突数量:', conflicts.length);
-        
+
         return { conflicts, lastMessage: message, characterInfo: character };
     } catch (e) {
-        logError('OOC 检测失败', e);
+        logError('OOC detection error', e);
         return { conflicts: [], lastMessage: null, characterInfo: null };
     }
 }
 
 function generateFixSuggestions(conflicts, character) {
     if (!conflicts || conflicts.length === 0) return [];
-    
+
     const suggestions = [];
-    
+
     conflicts.forEach(c => {
         switch(c.type) {
             case 'speech':
@@ -271,20 +264,20 @@ function generateFixSuggestions(conflicts, character) {
                 break;
         }
     });
-    
+
     if (character && character.name) {
         const corePoints = extractCorePoints(character);
         if (corePoints.length > 0) {
             suggestions.push(`【角色设定回顾】\n${character.name}的核心设定：${corePoints.slice(0, 3).join('；')}`);
         }
     }
-    
+
     return [...new Set(suggestions)].slice(0, 3);
 }
 
 function extractEmotion(message) {
     if (!message) return 'neutral';
-    
+
     const lowerMsg = message.toLowerCase();
     const emotionMap = {
         happy: ['笑', '开心', '高兴', '愉快', '欢乐', '喜悦'],
@@ -293,7 +286,7 @@ function extractEmotion(message) {
         sad: ['难过', '悲伤', '哭', '流泪', '伤心', '沮丧'],
         surprised: ['惊讶', '吃惊', '震惊', '意外', '诧异'],
     };
-    
+
     for (const [emotion, keywords] of Object.entries(emotionMap)) {
         for (const keyword of keywords) {
             if (lowerMsg.includes(keyword)) {
@@ -301,7 +294,7 @@ function extractEmotion(message) {
             }
         }
     }
-    
+
     return 'neutral';
 }
 
@@ -309,20 +302,15 @@ function updateCharStates() {
     try {
         const context = getContext();
         if (!context || !context.chat) return;
-        
-        logInfo('更新状态，聊天记录数量:', context.chat.length);
-        
+
         const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
         if (recentMessages.length === 0) {
-            logInfo('无 AI 消息');
             return;
         }
-        
+
         const lastMessage = recentMessages[recentMessages.length - 1];
         if (!lastMessage.mes) return;
-        
-        logInfo('提取情绪关键词:', lastMessage.mes.substring(0, 30));
-        
+
         const emotion = extractEmotion(lastMessage.mes);
         if (appState.charStates.emotion !== emotion) {
             appState.charStates.emotion = emotion;
@@ -334,10 +322,10 @@ function updateCharStates() {
                 timestamp: Date.now()
             });
         }
-        
+
         saveStateToCharacter();
     } catch (e) {
-        logError('更新角色状态失败', e);
+        logError('State update error', e);
     }
 }
 
@@ -352,7 +340,7 @@ function saveStateToCharacter() {
         };
         saveSettingsDebounced();
     } catch(e) {
-        logError('保存状态失败', e);
+        logError('State save error', e);
     }
 }
 
@@ -367,10 +355,10 @@ function loadStateFromCharacter() {
                 ...appState.charStates,
                 ...savedState
             };
-            logInfo('已加载角色状态:', appState.currentCharacter.name);
+            logInfo('Loaded state for character:', appState.currentCharacter.name);
         }
     } catch(e) {
-        logError('加载状态失败', e);
+        logError('State load error', e);
     }
 }
 
@@ -379,18 +367,17 @@ function getMessageInput() {
 }
 
 function injectAnchorToInput(mode = 'temporary') {
-    const character = appState.currentCharacter || getCurrentCharacter();
+    const character = appState.currentCharacter || getCurrentCharacterData();
     if (!character || !character.name) {
         if (typeof toastr !== 'undefined') {
             toastr.warning('请先加载角色');
         }
-        logInfo('没有加载的角色，无法注入锚点');
         return;
     }
-    
+
     const anchorText = generateWeightedAnchor(character, mode);
     const input = getMessageInput();
-    
+
     if (input.length) {
         const currentText = input.val() || '';
         input.val(currentText + (currentText ? '\n' : '') + anchorText);
@@ -402,15 +389,14 @@ function injectAnchorToInput(mode = 'temporary') {
 }
 
 function copyAnchorToClipboard(mode = 'temporary') {
-    const character = appState.currentCharacter || getCurrentCharacter();
+    const character = appState.currentCharacter || getCurrentCharacterData();
     if (!character || !character.name) {
         if (typeof toastr !== 'undefined') {
             toastr.warning('请先加载角色');
         }
-        logInfo('没有加载的角色，无法复制锚点');
         return;
     }
-    
+
     const anchorText = generateWeightedAnchor(character, mode);
     navigator.clipboard.writeText(anchorText).then(() => {
         if (typeof toastr !== 'undefined') {
@@ -424,9 +410,9 @@ function copyAnchorToClipboard(mode = 'temporary') {
 }
 
 function injectStateToInput() {
-    const character = appState.currentCharacter || getCurrentCharacter();
+    const character = appState.currentCharacter || getCurrentCharacterData();
     updateCharStates();
-    
+
     const emotionLabels = {
         happy: '开心',
         angry: '愤怒',
@@ -435,18 +421,18 @@ function injectStateToInput() {
         surprised: '惊讶',
         neutral: '中性',
     };
-    
+
     let stateText = `\n\n【角色状态】\n`;
     stateText += `角色: ${character?.name || '未知'}\n`;
     stateText += `当前情绪: ${emotionLabels[appState.charStates.emotion] || '中性'}\n`;
-    
+
     if (Object.keys(appState.charStates.customFields).length > 0) {
         stateText += `\n自定义状态:\n`;
         Object.keys(appState.charStates.customFields).forEach(key => {
             stateText += `- ${key}: ${appState.charStates.customFields[key]}\n`;
         });
     }
-    
+
     const input = getMessageInput();
     if (input.length) {
         const currentText = input.val() || '';
@@ -477,7 +463,7 @@ function renderExpandedContent() {
         container.hide();
         return;
     }
-    
+
     let content = '';
     switch(appState.expandedTab) {
         case 'anchor':
@@ -490,23 +476,23 @@ function renderExpandedContent() {
             content = renderStateContent();
             break;
     }
-    
+
     container.html(content);
     container.show();
     bindContentEvents();
 }
 
 function renderAnchorContent() {
-    const character = appState.currentCharacter || getCurrentCharacter();
+    const character = appState.currentCharacter || getCurrentCharacterData();
     const corePoints = character ? extractCorePoints(character) : [];
     const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
     const mode = extension_settings[extensionName]?.injectMode || 'temporary';
-    
+
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">设定锚点注入器</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
             </div>
             
             ${character && character.name ? `
@@ -562,12 +548,12 @@ function renderOocContent() {
     const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
     const settings = extension_settings[extensionName];
     const threshold = settings?.oocDetectThreshold || defaultSettings.oocDetectThreshold;
-    
+
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">OOC 实时检测</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
             </div>
             
             ${result.characterInfo ? `
@@ -624,9 +610,9 @@ function renderOocContent() {
 }
 
 function renderStateContent() {
-    const character = appState.currentCharacter || getCurrentCharacter();
+    const character = appState.currentCharacter || getCurrentCharacterData();
     const states = appState.charStates;
-    
+
     const emotionLabels = {
         happy: '开心',
         angry: '愤怒',
@@ -635,7 +621,7 @@ function renderStateContent() {
         surprised: '惊讶',
         neutral: '中性',
     };
-    
+
     const emotionColors = {
         happy: '#4ade80',
         angry: '#f87171',
@@ -644,12 +630,12 @@ function renderStateContent() {
         surprised: '#fbbf24',
         neutral: '#94a3b8',
     };
-    
+
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">角色状态追踪</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
             </div>
             
             <div class="toolbox-current-state">
@@ -708,11 +694,11 @@ function bindContentEvents() {
         saveSettingsDebounced();
         renderExpandedContent();
     });
-    
+
     $('#toolbox-add-keyword').off('click').on('click', function() {
         const keyword = $('#toolbox-new-keyword').val().trim();
         if (!keyword) return;
-        
+
         const settings = extension_settings[extensionName];
         if (!settings.anchorKeywords) settings.anchorKeywords = [];
         if (!settings.anchorKeywords.includes(keyword)) {
@@ -722,36 +708,36 @@ function bindContentEvents() {
         }
         $('#toolbox-new-keyword').val('');
     });
-    
+
     $('.toolbox-keyword-remove').off('click').on('click', function() {
         const index = $(this).data('index');
         extension_settings[extensionName].anchorKeywords.splice(index, 1);
         saveSettingsDebounced();
         renderExpandedContent();
     });
-    
+
     $('#toolbox-inject-anchor-btn').off('click').on('click', function() {
         const mode = extension_settings[extensionName]?.injectMode || 'temporary';
         injectAnchorToInput(mode);
         toggleTab(null);
     });
-    
+
     $('#toolbox-copy-anchor-btn').off('click').on('click', function() {
         const mode = extension_settings[extensionName]?.injectMode || 'temporary';
         copyAnchorToClipboard(mode);
     });
-    
+
     $('#toolbox-run-ooc').off('click').on('click', function() {
         renderExpandedContent();
     });
-    
+
     $('#toolbox-ooc-threshold').off('input').on('input', function() {
         const value = parseFloat($(this).val());
         extension_settings[extensionName].oocDetectThreshold = value;
         saveSettingsDebounced();
         $(this).next('.toolbox-threshold-value').text(value);
     });
-    
+
     $('.toolbox-suggestion-btn').off('click').on('click', function() {
         const text = $(this).data('text');
         const input = getMessageInput();
@@ -761,11 +747,11 @@ function bindContentEvents() {
             toggleTab(null);
         }
     });
-    
+
     $('#toolbox-fix-ooc').off('click').on('click', function() {
         const result = detectOOCConflicts();
         const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
-        
+
         if (suggestions.length > 0) {
             const input = getMessageInput();
             if (input.length) {
@@ -776,26 +762,26 @@ function bindContentEvents() {
             }
         }
     });
-    
+
     $('#toolbox-add-field').off('click').on('click', function() {
         const name = $('#toolbox-field-name').val().trim();
         const value = $('#toolbox-field-value').val().trim();
         if (!name) return;
-        
+
         appState.charStates.customFields[name] = value || '0';
         saveStateToCharacter();
         renderExpandedContent();
         $('#toolbox-field-name').val('');
         $('#toolbox-field-value').val('');
     });
-    
+
     $('.toolbox-remove-field').off('click').on('click', function() {
         const field = $(this).data('field');
         delete appState.charStates.customFields[field];
         saveStateToCharacter();
         renderExpandedContent();
     });
-    
+
     $('#toolbox-inject-state').off('click').on('click', function() {
         injectStateToInput();
         toggleTab(null);
@@ -807,28 +793,28 @@ async function loadSettings() {
     if (Object.keys(extension_settings[extensionName]).length === 0) {
         Object.assign(extension_settings[extensionName], defaultSettings);
     }
-    
+
     const settings = extension_settings[extensionName];
     $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
-    
+
     const tools = settings.tools || defaultSettings.tools;
     $('#tool_anchor_inject').prop('checked', tools.anchorInject !== false).trigger('input');
     $('#tool_ooc_detect').prop('checked', tools.oocDetect !== false).trigger('input');
     $('#tool_char_state').prop('checked', tools.charState !== false).trigger('input');
-    
+
     updateToolVisibility();
 }
 
 function updateToolVisibility() {
     const settings = extension_settings[extensionName];
     const tools = settings.tools || defaultSettings.tools;
-    
+
     $('#toolbox-anchor-btn').toggle(tools.anchorInject !== false);
     $('#toolbox-ooc-btn').toggle(tools.oocDetect !== false);
     $('#toolbox-state-btn').toggle(tools.charState !== false);
-    
+
     const allHidden = !tools.anchorInject && !tools.oocDetect && !tools.charState;
-    
+
     if (allHidden || !settings.enabled) {
         $('#toolbox-toolbar').hide();
     } else {
@@ -855,77 +841,50 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
-function onCharacterLoaded(character) {
-    logInfo('角色加载事件触发！', character);
+function handleChatChanged() {
+    logInfo('CHAT_CHANGED event received!');
     
-    if (!character) {
-        logInfo('传入的 character 参数为空，尝试从 getContext() 获取');
-        const contextChar = getCurrentCharacter();
-        if (contextChar) {
-            appState.currentCharacter = contextChar;
-        } else {
-            logInfo('也无法从 getContext() 获取角色');
-            return;
-        }
-    } else {
-        if (typeof character === 'object' && character.name) {
-            appState.currentCharacter = character;
-        } else {
-            logInfo('character 参数格式异常，尝试从 getContext() 获取');
-            const contextChar = getCurrentCharacter();
-            if (contextChar) {
-                appState.currentCharacter = contextChar;
-            }
-        }
-    }
-    
-    logInfo('当前角色:', appState.currentCharacter?.name || 'unknown');
-    loadStateFromCharacter();
-    updateCharStates();
-    
-    if (appState.expandedTab) {
-        renderExpandedContent();
-    }
-}
-
-function onChatLoaded() {
-    logInfo('聊天加载事件触发！');
-    const character = getCurrentCharacter();
+    const character = getCurrentCharacterData();
     if (character) {
         appState.currentCharacter = character;
-        logInfo('从聊天加载角色:', character.name);
+        logInfo('New character loaded:', character.name);
         loadStateFromCharacter();
         updateCharStates();
+        if (appState.expandedTab) {
+            renderExpandedContent();
+        }
+    } else {
+        logInfo('No character loaded in chat');
     }
 }
 
-function onMessageReceived(message) {
-    logInfo('收到新消息事件！', message);
+function handleMessageReceived() {
+    logInfo('MESSAGE_RECEIVED event received!');
     if (appState.expandedTab === 'state') {
         updateCharStates();
         renderExpandedContent();
     }
 }
 
-jQuery(async () => {
-    logInfo('开始初始化扩展...');
-    
+jQuery(async function() {
+    logInfo('Extension initializing...');
+
     try {
         await loadExtensionSettings();
-        logInfo('loadExtensionSettings 完成');
+        logInfo('loadExtensionSettings complete');
     } catch (e) {
-        logError('loadExtensionSettings 失败', e);
+        logError('loadExtensionSettings error', e);
     }
-    
+
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
         $('#extensions_settings').append(settingsHtml);
-        logInfo('设置面板加载成功');
+        logInfo('Settings panel loaded');
     } catch (e) {
-        logError('加载设置面板失败', e);
+        logError('Settings panel load error', e);
         return;
     }
-    
+
     const toolbarHtml = `
         <div id="toolbox-toolbar" style="display: none;">
             <div class="toolbox-buttons">
@@ -936,76 +895,65 @@ jQuery(async () => {
         </div>
         <div id="toolbox-expanded" style="display: none;"></div>
     `;
-    
+
     const sendForm = $('#send_form');
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
-        logInfo('工具栏已添加到 DOM');
+        logInfo('Toolbar added to DOM');
     } else {
-        logError('找不到 #send_form 元素');
+        logError('#send_form not found');
         return;
     }
-    
+
     $('#toolbox-anchor-btn').on('click', () => toggleTab('anchor'));
     $('#toolbox-ooc-btn').on('click', () => toggleTab('ooc'));
     $('#toolbox-state-btn').on('click', () => toggleTab('state'));
-    
+
     $('#enable_toolbox').on('input', onEnableInput);
     $('#tool_anchor_inject').on('input', onToolVisibilityChange('anchorInject'));
     $('#tool_ooc_detect').on('input', onToolVisibilityChange('oocDetect'));
     $('#tool_char_state').on('input', onToolVisibilityChange('charState'));
-    
+
     await loadSettings();
-    
-    if (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.on) {
-        logInfo('SillyTavern.on 可用，注册事件监听');
-        
-        try {
-            window.SillyTavern.on('characterLoaded', onCharacterLoaded);
-            logInfo('已注册 characterLoaded 事件');
-        } catch (e) {
-            logError('注册 characterLoaded 事件失败', e);
+
+    try {
+        if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
+            logInfo('eventSource is available');
+            
+            eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+            logInfo('CHAT_CHANGED listener registered');
+            
+            eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+            logInfo('MESSAGE_RECEIVED listener registered');
+        } else {
+            logInfo('eventSource not available, skipping');
         }
-        
-        try {
-            window.SillyTavern.on('chatLoaded', onChatLoaded);
-            logInfo('已注册 chatLoaded 事件');
-        } catch (e) {
-            logError('注册 chatLoaded 事件失败', e);
-        }
-        
-        try {
-            window.SillyTavern.on('messageReceived', onMessageReceived);
-            logInfo('已注册 messageReceived 事件');
-        } catch (e) {
-            logError('注册 messageReceived 事件失败', e);
-        }
-    } else {
-        logInfo('window.SillyTavern.on 不可用，将使用备选方案');
+    } catch (e) {
+        logError('Event registration error', e);
     }
-    
-    logInfo('检查初始角色...');
-    const initialCharacter = getCurrentCharacter();
+
+    window.toggleTab = toggleTab;
+
+    logInfo('Checking initial character...');
+    const initialCharacter = getCurrentCharacterData();
     if (initialCharacter) {
-        logInfo('检测到已加载角色:', initialCharacter.name);
+        logInfo('Initial character found:', initialCharacter.name);
         appState.currentCharacter = initialCharacter;
         loadStateFromCharacter();
         updateCharStates();
     } else {
-        logInfo('未检测到角色，等待角色加载事件');
+        logInfo('No initial character, waiting for event');
     }
-    
-    window.toggleTab = toggleTab;
-    
-    logInfo('扩展初始化完成！');
-    
+
     setTimeout(() => {
-        const charAfterWait = getCurrentCharacter();
+        const charAfterWait = getCurrentCharacterData();
         if (charAfterWait && (!appState.currentCharacter || appState.currentCharacter.name !== charAfterWait.name)) {
-            logInfo('延迟检查发现角色:', charAfterWait.name);
+            logInfo('Delay check found character:', charAfterWait.name);
             appState.currentCharacter = charAfterWait;
             loadStateFromCharacter();
             updateCharStates();
         }
     }, 2000);
+
+    logInfo('Extension initialization complete!');
 });
