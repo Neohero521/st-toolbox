@@ -1,15 +1,8 @@
-import { extension_settings, getContext } from '../../../extensions.js';
-import { 
-    eventSource, 
-    event_types, 
-    saveSettingsDebounced,
-    characters,
-    this_chid 
-} from '../../../script.js';
+import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
+import { saveSettingsDebounced } from '../../../../script.js';
 
 const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-
 const defaultSettings = {
     enabled: true,
     tools: {
@@ -20,17 +13,23 @@ const defaultSettings = {
     anchorKeywords: [],
     injectMode: 'temporary',
     oocDetectThreshold: 0.7,
+    autoInjectInterval: 5,
 };
 
-const appState = {
+const STORAGE_KEY = 'st-toolbox-state';
+
+let appState = {
     expandedTab: null,
     charStates: {
         emotion: 'neutral',
         emotionHistory: [],
         customFields: {},
     },
-    isReady: false,
 };
+
+let lastChatLength = 0;
+let lastCharacterName = '';
+let isInitialized = false;
 
 function logInfo(message, data = null) {
     if (data) {
@@ -46,87 +45,30 @@ function logError(message, error) {
 
 function getCurrentCharacter() {
     try {
-        const context = SillyTavern.getContext();
+        const context = getContext();
         
         if (!context) {
-            logInfo('getContext() 返回 null，使用备用方式');
-            return getCurrentCharacterFallback();
-        }
-        
-        const characterId = context.characterId;
-        
-        if (characterId === undefined || characterId === null) {
-            logInfo('未加载角色（characterId 为空）', { 
-                characterId, 
-                name2: context.name2,
-                chat: context.chat?.length 
-            });
-            return getCurrentCharacterFallback();
-        }
-        
-        if (!characters || !Array.isArray(characters) || characters.length === 0) {
-            logInfo('characters 数组不可用', { 
-                characterId,
-                name2: context.name2,
-                charactersLength: characters?.length 
-            });
-            return {
-                name: context.name2 || '未知角色',
-                description: '',
-                personality: '',
-                scenario: '',
-                firstMessage: '',
-                avatar: '',
-            };
-        }
-        
-        if (!characters[characterId]) {
-            logInfo('角色索引无效', { characterId, charactersLength: characters.length });
-            return {
-                name: context.name2 || '未知角色',
-                description: '',
-                personality: '',
-                scenario: '',
-                firstMessage: '',
-                avatar: '',
-            };
-        }
-        
-        const character = characters[characterId];
-        
-        logInfo('获取当前角色成功', character.name);
-        
-        return {
-            name: character.name || context.name2 || '未知角色',
-            description: character.description || '',
-            personality: character.personality || '',
-            scenario: character.scenario || '',
-            firstMessage: character.first_mes || character.first_message || '',
-            avatar: character.avatar || '',
-        };
-    } catch (e) {
-        logError('获取角色信息失败', e);
-        return getCurrentCharacterFallback();
-    }
-}
-
-function getCurrentCharacterFallback() {
-    try {
-        const context = SillyTavern.getContext();
-        if (!context || !context.name2) {
+            logInfo('getContext() 返回 null');
             return null;
         }
         
+        if (!context.name) {
+            logInfo('未加载角色（context.name 为空）');
+            return null;
+        }
+        
+        logInfo('获取当前角色成功', context.name);
+        
         return {
-            name: context.name2 || '未知角色',
-            description: '',
-            personality: '',
-            scenario: '',
-            firstMessage: '',
-            avatar: '',
+            name: context.name,
+            description: context.description || '',
+            personality: context.personality || '',
+            scenario: context.scenario || '',
+            firstMessage: context.first_mes || '',
+            avatar: context.avatar || '',
         };
     } catch (e) {
-        logError('备用角色获取也失败', e);
+        logError('获取角色信息失败', e);
         return null;
     }
 }
@@ -206,7 +148,7 @@ function generateWeightedAnchor(character, mode = 'temporary') {
 
 function detectOOCConflicts() {
     try {
-        const context = SillyTavern.getContext();
+        const context = getContext();
         
         if (!context) {
             logInfo('detectOOCConflicts: getContext() 返回 null');
@@ -222,7 +164,6 @@ function detectOOCConflicts() {
         
         const character = getCurrentCharacter();
         if (!character) {
-            logInfo('无法获取角色信息');
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
         
@@ -237,11 +178,6 @@ function detectOOCConflicts() {
         
         const conflicts = [];
         const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
-        
-        if (!allText || allText.length < 10) {
-            logInfo('角色设定信息不足，跳过冲突检测');
-            return { conflicts: [], lastMessage: message, characterInfo: character };
-        }
         
         const conflictChecks = [
             {
@@ -372,11 +308,8 @@ function extractEmotion(message) {
 
 function updateCharStates() {
     try {
-        const context = SillyTavern.getContext();
-        if (!context || !context.chat) {
-            logInfo('updateCharStates: 无法获取聊天上下文');
-            return;
-        }
+        const context = getContext();
+        if (!context || !context.chat) return;
         
         logInfo('更新状态，聊天记录数量', context.chat.length);
         
@@ -411,9 +344,9 @@ function updateCharStates() {
 
 function trySaveStateToCharacter() {
     try {
-        const character = getCurrentCharacter();
-        if (character && character.name) {
-            const stateKey = `state_${character.name}`;
+        const context = getContext();
+        if (context && context.name) {
+            const stateKey = `state_${context.name}`;
             extension_settings[extensionName][stateKey] = {
                 ...appState.charStates,
                 savedAt: Date.now()
@@ -427,16 +360,16 @@ function trySaveStateToCharacter() {
 
 function tryLoadStateFromCharacter() {
     try {
-        const character = getCurrentCharacter();
-        if (character && character.name) {
-            const stateKey = `state_${character.name}`;
+        const context = getContext();
+        if (context && context.name) {
+            const stateKey = `state_${context.name}`;
             const savedState = extension_settings[extensionName][stateKey];
             if (savedState) {
                 appState.charStates = {
                     ...appState.charStates,
                     ...savedState
                 };
-                logInfo('已加载角色状态', character.name);
+                logInfo('已加载角色状态', context.name);
             }
         }
     } catch(e) {
@@ -858,7 +791,7 @@ function bindContentEvents() {
     });
 }
 
-function loadSettings() {
+async function loadSettings() {
     extension_settings[extensionName] = extension_settings[extensionName] || {};
     if (Object.keys(extension_settings[extensionName]).length === 0) {
         Object.assign(extension_settings[extensionName], defaultSettings);
@@ -911,44 +844,45 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
-function registerEventListeners() {
-    eventSource.on(event_types.CHAT_CHANGED, () => {
-        logInfo('聊天已改变');
-        const character = getCurrentCharacter();
-        if (character) {
-            logInfo('当前角色', character.name);
-            tryLoadStateFromCharacter();
+function startMonitoring() {
+    setInterval(() => {
+        if (!isInitialized) return;
+        
+        try {
+            const context = getContext();
+            if (!context) return;
+            
+            if (context.name && context.name !== lastCharacterName) {
+                logInfo('角色切换', `${lastCharacterName} -> ${context.name}`);
+                lastCharacterName = context.name;
+                lastChatLength = context.chat?.length || 0;
+                tryLoadStateFromCharacter();
+            }
+            
+            if (context.chat && context.chat.length !== lastChatLength) {
+                logInfo('新消息', `聊天记录数: ${context.chat.length}`);
+                lastChatLength = context.chat.length;
+                
+                if (appState.expandedTab === 'state') {
+                    updateCharStates();
+                    renderExpandedContent();
+                }
+            }
+        } catch (e) {
+            logError('监控出错', e);
         }
-    });
-    
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId) => {
-        if (appState.expandedTab === 'state') {
-            updateCharStates();
-            renderExpandedContent();
-        }
-    });
-}
-
-export function onActivate() {
-    logInfo('开始激活扩展');
-    
-    loadSettings();
-    
-    registerEventListeners();
-    
-    appState.isReady = true;
-    logInfo('扩展激活完成');
-    
-    const character = getCurrentCharacter();
-    if (character) {
-        logInfo('检测到已加载角色', character.name);
-    } else {
-        logInfo('未检测到角色，请在 SillyTavern 中加载角色');
-    }
+    }, 1000);
 }
 
 jQuery(async () => {
     logInfo('开始初始化扩展');
+    
+    try {
+        await loadExtensionSettings();
+        logInfo('loadExtensionSettings 完成');
+    } catch (e) {
+        logError('loadExtensionSettings 失败', e);
+    }
     
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
@@ -988,8 +922,20 @@ jQuery(async () => {
     $('#tool_ooc_detect').on('input', onToolVisibilityChange('oocDetect'));
     $('#tool_char_state').on('input', onToolVisibilityChange('charState'));
     
-    await onActivate();
+    await loadSettings();
+    
+    isInitialized = true;
+    logInfo('扩展初始化完成');
+    
+    startMonitoring();
+    logInfo('启动角色和对话监控');
+    
+    const initialCharacter = getCurrentCharacter();
+    if (initialCharacter) {
+        logInfo('检测到已加载角色', initialCharacter.name);
+    } else {
+        logInfo('未检测到角色，请在 SillyTavern 中加载角色');
+    }
     
     window.toggleTab = toggleTab;
-    logInfo('扩展初始化完成');
 });
