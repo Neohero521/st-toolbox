@@ -12,7 +12,12 @@ const defaultSettings = {
     },
     anchorKeywords: [],
     injectMode: 'temporary',
+    oocDetectThreshold: 0.7, // 添加检测阈值
+    autoInjectInterval: 5,
 };
+
+// 在 global 上暂存状态，用于同步
+const STORAGE_KEY = 'st-toolbox-state';
 
 const appState = {
     expandedTab: null,
@@ -50,9 +55,10 @@ function extractCorePoints(character) {
     for (const source of sources) {
         if (!source.text) continue;
         
-        const lines = source.text.split(/[\n.。；；]/).filter(line => {
+        // 更安全的分隔：支持多种换行和标点符号
+        const lines = source.text.split(/[\n\r。；;!?！？]/).filter(line => {
             line = line.trim();
-            return line.length > 5 && line.length < 200;
+            return line.length > 5 && line.length < 300;
         });
         
         for (let i = 0; i < Math.min(lines.length, 3); i++) {
@@ -63,7 +69,7 @@ function extractCorePoints(character) {
         }
     }
     
-    return points.slice(0, 12);
+    return points.slice(0, 15); // 最多提取15个核心点
 }
 
 function generateWeightedAnchor(character, mode = 'temporary') {
@@ -258,6 +264,46 @@ function updateCharStates() {
             timestamp: Date.now()
         });
     }
+    
+    // 尝试保存到角色自定义数据
+    trySaveStateToCharacter();
+}
+
+// 保存状态到角色数据
+function trySaveStateToCharacter() {
+    try {
+        const context = getContext();
+        if (context && context.name) {
+            // 将状态保存到 extension_settings 中，按角色名区分
+            const stateKey = `state_${context.name}`;
+            extension_settings[extensionName][stateKey] = {
+                ...appState.charStates,
+                savedAt: Date.now()
+            };
+            saveSettingsDebounced();
+        }
+    } catch(e) {
+        console.log('Failed to save state:', e);
+    }
+}
+
+// 从角色数据加载状态
+function tryLoadStateFromCharacter() {
+    try {
+        const context = getContext();
+        if (context && context.name) {
+            const stateKey = `state_${context.name}`;
+            const savedState = extension_settings[extensionName][stateKey];
+            if (savedState) {
+                appState.charStates = {
+                    ...appState.charStates,
+                    ...savedState
+                };
+            }
+        }
+    } catch(e) {
+        console.log('Failed to load state:', e);
+    }
 }
 
 function getMessageInput() {
@@ -337,6 +383,7 @@ function toggleTab(tab) {
     } else {
         appState.expandedTab = tab;
         if (tab === 'state') {
+            tryLoadStateFromCharacter(); // 切换到状态面板时先尝试加载
             updateCharStates();
         }
     }
@@ -433,12 +480,22 @@ function renderOocContent() {
     const character = getCurrentCharacter();
     const result = detectOOCConflicts(character);
     const suggestions = character ? generateFixSuggestions(result.conflicts, character) : [];
+    const settings = extension_settings[extensionName];
+    const threshold = settings?.oocDetectThreshold || defaultSettings.oocDetectThreshold;
     
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">OOC 实时检测</span>
                 <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+            </div>
+            
+            <div class="toolbox-threshold-container">
+                <span class="toolbox-section-label">检测阈值</span>
+                <div class="toolbox-threshold-slider-container">
+                    <input type="range" id="toolbox-ooc-threshold" min="0.1" max="1" step="0.1" value="${threshold}">
+                    <span class="toolbox-threshold-value">${threshold}</span>
+                </div>
             </div>
             
             <button id="toolbox-run-ooc" class="toolbox-primary-btn">运行检测</button>
@@ -601,6 +658,14 @@ function bindContentEvents() {
         renderExpandedContent();
     });
     
+    // 阈值设置事件
+    $('#toolbox-ooc-threshold').off('input').on('input', function() {
+        const value = parseFloat($(this).val());
+        extension_settings[extensionName].oocDetectThreshold = value;
+        saveSettingsDebounced();
+        $(this).next('.toolbox-threshold-value').text(value);
+    });
+    
     $('.toolbox-suggestion-btn').off('click').on('click', function() {
         const text = $(this).data('text');
         const input = getMessageInput();
@@ -611,7 +676,7 @@ function bindContentEvents() {
         }
     });
     
-    $('#toolbox-fix-ooc').off('click', function() {
+    $('#toolbox-fix-ooc').off('click').on('click', function() {
         const character = getCurrentCharacter();
         const result = detectOOCConflicts(character);
         const suggestions = character ? generateFixSuggestions(result.conflicts, character) : [];

@@ -620,3 +620,42 @@
     color: rgba(248, 113, 113, 0.9);
     margin-top: 6px;
 }
+
+.toolbox-threshold-container {
+    margin-bottom: 16px;
+}
+
+.toolbox-threshold-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.toolbox-threshold-slider-container input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    height: 8px;
+}
+
+.toolbox-threshold-slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.toolbox-threshold-value {
+    min-width: 40px;
+    text-align: center;
+    background: rgba(99,102,241,0.2);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+}
