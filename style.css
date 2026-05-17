@@ -1,17 +1,42 @@
 /* ST Toolbox - Smart Touch Panel Style */
 
+/* 强制清除所有可能的间隙 */
+#send_form,
+#send_form * {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 确保工具栏紧贴输入框 */
+#toolbox-toolbar {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+#toolbox-toolbar + #send_form {
+    margin-top: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-top: none !important;
+}
+
 #toolbox-toolbar {
     position: relative;
+    width: 100%;
     background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
     border: 2px solid rgba(139, 92, 246, 0.5);
     border-radius: 16px;
     padding: 10px 14px;
-    margin-bottom: 8px;
+    margin: 0;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .toolbox-status {
@@ -99,7 +124,7 @@
 .toolbox-content {
     margin-top: 10px;
     overflow: hidden;
-    max-height: 380px;
+    max-height: 320px;
     overflow-y: auto;
     animation: expandIn 0.3s ease-out;
 }
@@ -107,18 +132,16 @@
 @keyframes expandIn {
     from {
         opacity: 0;
-        transform: translateY(-8px);
         max-height: 0;
     }
     to {
         opacity: 1;
-        transform: translateY(0);
-        max-height: 380px;
+        max-height: 320px;
     }
 }
 
 .toolbox-content-section {
-    padding: 12px;
+    padding: 10px;
 }
 
 .toolbox-content-header {

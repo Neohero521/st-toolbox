@@ -909,6 +909,12 @@ jQuery(async function() {
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
         logInfo('Toolbar added to DOM');
+        
+        const toolbox = $('#toolbox-toolbar');
+        const parent = toolbox.parent();
+        parent.css('gap', '0');
+        sendForm.css('margin-top', '0');
+        logInfo('Fixed gap between toolbar and input');
     } else {
         logError('#send_form not found');
         return;
