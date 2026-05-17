@@ -6,12 +6,14 @@
     border: 2px solid rgba(139, 92, 246, 0.5);
     border-radius: 16px;
     padding: 12px 16px;
-    margin-bottom: 12px;
+    margin-bottom: 0;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .toolbox-status {
@@ -97,11 +99,13 @@
 }
 
 .toolbox-content {
-    margin-top: 12px;
+    margin-top: 10px;
     overflow: hidden;
-    max-height: 500px;
+    max-height: 420px;
     overflow-y: auto;
     animation: expandIn 0.3s ease-out;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @keyframes expandIn {
@@ -118,15 +122,15 @@
 }
 
 .toolbox-content-section {
-    padding: 16px;
+    padding: 12px;
 }
 
 .toolbox-content-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
     border-bottom: 1px solid rgba(139, 92, 246, 0.2);
 }
 
@@ -177,8 +181,8 @@
     background: rgba(30, 30, 60, 0.6);
     border: 1px solid rgba(139, 92, 246, 0.25);
     border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 18px;
+    padding: 12px;
+    margin-bottom: 14px;
 }
 
 .toolbox-char-name {
@@ -211,7 +215,7 @@
 }
 
 .toolbox-mode-selector {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .toolbox-mode-buttons {
@@ -249,7 +253,7 @@
 }
 
 .toolbox-keywords {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .toolbox-keyword-input {
@@ -401,8 +405,8 @@
     background: rgba(30, 30, 60, 0.6);
     border: 1px solid rgba(139, 92, 246, 0.25);
     border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 16px;
+    padding: 12px;
+    margin-bottom: 14px;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -422,7 +426,7 @@
 }
 
 .toolbox-threshold-container {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .toolbox-threshold-slider-container {
@@ -589,7 +593,7 @@
 }
 
 .toolbox-current-state {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .toolbox-emotion-display {
@@ -620,7 +624,7 @@
 }
 
 .toolbox-emotion-history {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .toolbox-emotion-timeline {
@@ -645,7 +649,7 @@
 }
 
 .toolbox-custom-fields {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .toolbox-field-input {
@@ -741,21 +745,21 @@
 }
 
 /* Scrollbar Styling */
-#toolbox-expanded::-webkit-scrollbar {
+.toolbox-content::-webkit-scrollbar {
     width: 8px;
 }
 
-#toolbox-expanded::-webkit-scrollbar-track {
+.toolbox-content::-webkit-scrollbar-track {
     background: rgba(15, 23, 42, 0.4);
     border-radius: 4px;
 }
 
-#toolbox-expanded::-webkit-scrollbar-thumb {
+.toolbox-content::-webkit-scrollbar-thumb {
     background: rgba(139, 92, 246, 0.4);
     border-radius: 4px;
 }
 
-#toolbox-expanded::-webkit-scrollbar-thumb:hover {
+.toolbox-content::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.6);
 }
 
