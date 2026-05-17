@@ -96,17 +96,12 @@
     transform: translateY(0) scale(0.98);
 }
 
-#toolbox-expanded {
-    background: linear-gradient(180deg, rgba(20, 20, 45, 0.98), rgba(15, 15, 35, 0.99));
-    border: 1.5px solid rgba(139, 92, 246, 0.35);
-    border-radius: 12px;
-    margin-top: 10px;
+.toolbox-content {
+    margin-top: 12px;
     overflow: hidden;
-    max-height: 600px;
+    max-height: 500px;
     overflow-y: auto;
     animation: expandIn 0.3s ease-out;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 @keyframes expandIn {
@@ -123,7 +118,7 @@
 }
 
 .toolbox-content-section {
-    padding: 20px;
+    padding: 16px;
 }
 
 .toolbox-content-header {

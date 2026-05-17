@@ -465,7 +465,7 @@ function injectStateToInput() {
 }
 
 function toggleTab(tab) {
-    if (appState.expandedTab === tab) {
+    if (appState.expandedTab === tab && tab !== null) {
         appState.expandedTab = null;
     } else {
         appState.expandedTab = tab;
@@ -478,9 +478,9 @@ function toggleTab(tab) {
 }
 
 function renderExpandedContent() {
-    const container = $('#toolbox-expanded');
+    const container = $('#toolbox-content');
     if (!appState.expandedTab) {
-        container.hide();
+        container.html('');
         return;
     }
 
@@ -498,7 +498,6 @@ function renderExpandedContent() {
     }
 
     container.html(content);
-    container.show();
     bindContentEvents();
 }
 
@@ -512,7 +511,6 @@ function renderAnchorContent() {
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
                 <span class="toolbox-content-title">设定锚点注入器</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
             </div>
             
             ${character && character.name ? `
@@ -520,7 +518,7 @@ function renderAnchorContent() {
                     <span class="toolbox-char-name">${character.name}</span>
                     ${corePoints.length > 0 ? `
                         <div class="toolbox-core-points">
-                            <span class="toolbox-section-label">提取的核心设定</span>
+                            <span class="toolbox-section-label">核心设定</span>
                             <ul>
                                 ${corePoints.slice(0, 6).map(p => `<li>${p}</li>`).join('')}
                             </ul>
@@ -532,20 +530,20 @@ function renderAnchorContent() {
             <div class="toolbox-mode-selector">
                 <span class="toolbox-section-label">注入模式</span>
                 <div class="toolbox-mode-buttons">
-                    <button class="toolbox-mode-btn ${mode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时注入</button>
-                    <button class="toolbox-mode-btn ${mode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续注入</button>
-                    <button class="toolbox-mode-btn ${mode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急修复</button>
+                    <button class="toolbox-mode-btn ${mode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时</button>
+                    <button class="toolbox-mode-btn ${mode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续</button>
+                    <button class="toolbox-mode-btn ${mode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急</button>
                 </div>
             </div>
             
             <div class="toolbox-keywords">
-                <span class="toolbox-section-label">自定义锚点关键词</span>
+                <span class="toolbox-section-label">自定义锚点</span>
                 <div class="toolbox-keyword-input">
-                    <input type="text" id="toolbox-new-keyword" placeholder="如：绝对不能暴露身份" />
+                    <input type="text" id="toolbox-new-keyword" placeholder="输入关键词..." />
                     <button id="toolbox-add-keyword">添加</button>
                 </div>
                 <div class="toolbox-keyword-list">
-                    ${userKeywords.length === 0 ? '<span class="toolbox-empty-hint">暂未添加关键词</span>' : ''}
+                    ${userKeywords.length === 0 ? '<span class="toolbox-empty-hint">暂无关键词</span>' : ''}
                     ${userKeywords.map((kw, i) => `
                         <span class="toolbox-keyword-tag">
                             ${kw}
@@ -557,7 +555,7 @@ function renderAnchorContent() {
             
             <div class="toolbox-actions">
                 <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入到输入框</button>
-                <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制锚点</button>
+                <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制</button>
             </div>
         </div>
     `;
@@ -572,8 +570,7 @@ function renderOocContent() {
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
-                <span class="toolbox-content-title">OOC 实时检测</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
+                <span class="toolbox-content-title">OOC 检测</span>
             </div>
             
             ${result.characterInfo ? `
@@ -654,8 +651,7 @@ function renderStateContent() {
     return `
         <div class="toolbox-content-section">
             <div class="toolbox-content-header">
-                <span class="toolbox-content-title">角色状态追踪</span>
-                <span class="toolbox-content-close" onclick="window.toggleTab(null)">×</span>
+                <span class="toolbox-content-title">状态追踪</span>
             </div>
             
             <div class="toolbox-current-state">
@@ -701,7 +697,7 @@ function renderStateContent() {
             </div>
             
             <div class="toolbox-actions">
-                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入状态到对话</button>
+                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入状态</button>
             </div>
         </div>
     `;
@@ -934,8 +930,8 @@ jQuery(async function() {
                 <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
                 <button id="toolbox-state-btn" class="toolbox-main-btn">状态</button>
             </div>
+            <div id="toolbox-content" class="toolbox-content"></div>
         </div>
-        <div id="toolbox-expanded" style="display: none;"></div>
     `;
 
     const sendForm = $('#send_form');
