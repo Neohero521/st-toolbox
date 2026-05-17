@@ -18,8 +18,7 @@ const defaultSettings = {
 
 // 全局状态
 const appState = {
-    currentTab: 'anchor',
-    lastOOCResult: null,
+    expandedTab: null, // 当前展开的标签
     charStates: {
         emotion: 'neutral',
         emotionHistory: [],
@@ -69,34 +68,29 @@ function generateWeightedAnchor(anchors, mode = 'temporary') {
     const settings = extension_settings[extensionName];
     
     let weightText = '';
-    let weightTag = '';
     
     switch(mode) {
         case 'emergency':
-            weightTag = '[最高优先级]';
-            weightText = `\n${weightTag}\n\n### 绝对不可逾越的核心设定：\n`;
+            weightText = `\n[最高优先级]\n\n[绝对不可逾越的核心设定]:\n`;
             break;
         case 'continuous':
-            weightTag = '[持续锚点]';
-            weightText = `\n${weightTag}\n\n### 必须遵守的核心设定：\n`;
+            weightText = `\n[持续锚点]\n\n[必须遵守的核心设定]:\n`;
             break;
         default:
-            weightTag = '[设定锚点]';
-            weightText = `\n${weightTag}\n\n### 核心设定提醒：\n`;
+            weightText = `\n[设定锚点]\n\n[核心设定提醒]:\n`;
     }
     
     if (anchors.corePoints && anchors.corePoints.length > 0) {
-        anchors.corePoints.forEach((point, idx) => {
-            const marker = mode === 'emergency' ? '💎' : '✨';
-            weightText += `${marker} ${point.trim()}\n`;
+        anchors.corePoints.forEach((point) => {
+            weightText += `- ${point.trim()}\n`;
         });
     }
     
     const userKeywords = settings?.anchorKeywords || defaultSettings.anchorKeywords;
     if (userKeywords && userKeywords.length > 0) {
-        weightText += `\n🎯 用户设定关键词：\n`;
+        weightText += `\n[用户设定关键词]:\n`;
         userKeywords.forEach(keyword => {
-            weightText += `  - ${keyword}\n`;
+            weightText += `- ${keyword}\n`;
         });
     }
     
@@ -123,7 +117,6 @@ function detectOOC() {
     
     const conflicts = [];
     
-    // 简单的规则匹配检测
     const personality = anchors.personality.toLowerCase();
     
     if (personality.includes('哑巴') || personality.includes('沉默') || personality.includes('不说话')) {
@@ -156,7 +149,6 @@ function detectOOC() {
         }
     }
     
-    // 检测回复长度是否异常
     if (msg.length < 20) {
         conflicts.push({
             type: 'length',
@@ -168,7 +160,6 @@ function detectOOC() {
     return conflicts.length > 0 ? conflicts : null;
 }
 
-// 生成修正方案
 function generateFixSuggestions(conflicts) {
     if (!conflicts || conflicts.length === 0) return [];
     
@@ -202,47 +193,18 @@ function generateFixSuggestions(conflicts) {
     return [...new Set(suggestions)].slice(0, 3);
 }
 
-// 提取情绪
 function extractEmotion(msg) {
     if (!msg) return 'neutral';
     
     const lowerMsg = msg.toLowerCase();
     
-    if (lowerMsg.includes('笑') || lowerMsg.includes('开心') || lowerMsg.includes('高兴') || 
-        lowerMsg.includes('😊') || lowerMsg.includes('😄')) return 'happy';
-    
-    if (lowerMsg.includes('生气') || lowerMsg.includes('愤怒') || lowerMsg.includes('怒') || 
-        lowerMsg.includes('😠') || lowerMsg.includes('💢')) return 'angry';
-    
-    if (lowerMsg.includes('害羞') || lowerMsg.includes('脸红') || lowerMsg.includes('羞涩') ||
-        lowerMsg.includes('😳')) return 'shy';
-    
-    if (lowerMsg.includes('伤心') || lowerMsg.includes('难过') || lowerMsg.includes('哭') ||
-        lowerMsg.includes('😢') || lowerMsg.includes('😭')) return 'sad';
-    
-    if (lowerMsg.includes('惊讶') || lowerMsg.includes('吃惊') || lowerMsg.includes('😮')) return 'surprised';
+    if (lowerMsg.includes('笑') || lowerMsg.includes('开心') || lowerMsg.includes('高兴')) return 'happy';
+    if (lowerMsg.includes('生气') || lowerMsg.includes('愤怒') || lowerMsg.includes('怒')) return 'angry';
+    if (lowerMsg.includes('害羞') || lowerMsg.includes('脸红') || lowerMsg.includes('羞涩')) return 'shy';
+    if (lowerMsg.includes('伤心') || lowerMsg.includes('难过') || lowerMsg.includes('哭')) return 'sad';
+    if (lowerMsg.includes('惊讶') || lowerMsg.includes('吃惊')) return 'surprised';
     
     return 'neutral';
-}
-
-// 更新角色状态
-function updateCharState() {
-    const context = getContext();
-    if (!context || !context.chat) return;
-    
-    const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
-    if (!lastAIMsg) return;
-    
-    const emotion = extractEmotion(lastAIMsg.mes);
-    appState.charStates.emotion = emotion;
-    
-    if (appState.charStates.emotionHistory.length >= 10) {
-        appState.charStates.emotionHistory.shift();
-    }
-    appState.charStates.emotionHistory.push({
-        emotion,
-        timestamp: Date.now(),
-    });
 }
 
 // 加载设置
@@ -267,16 +229,16 @@ function updateToolVisibility() {
     const settings = extension_settings[extensionName];
     const tools = settings.tools || defaultSettings.tools;
     
-    $('#toolbox_anchor_inject_btn').toggle(tools.anchorInject !== false);
-    $('#toolbox_ooc_detect_btn').toggle(tools.oocDetect !== false);
-    $('#toolbox_char_state_btn').toggle(tools.charState !== false);
+    $('#toolbox-anchor-btn').toggle(tools.anchorInject !== false);
+    $('#toolbox-ooc-btn').toggle(tools.oocDetect !== false);
+    $('#toolbox-state-btn').toggle(tools.charState !== false);
     
     const allHidden = !tools.anchorInject && !tools.oocDetect && !tools.charState;
     
     if (allHidden || !settings.enabled) {
-        $('#toolbox_toolbar').hide();
+        $('#toolbox-toolbar').hide();
     } else {
-        $('#toolbox_toolbar').show();
+        $('#toolbox-toolbar').show();
     }
 }
 
@@ -323,142 +285,153 @@ function injectAnchorToInput(mode = 'temporary') {
     input.val(newText);
     input.focus();
     
-    toastr.success(`已注入${anchors.name}的设定锚点`);
+    toastr.success('已注入' + anchors.name + '的设定锚点');
 }
 
-// 打开二级面板
-function openPanel(tab) {
-    appState.currentTab = tab;
-    updatePanelContent();
-    $('#toolbox_panel').show();
+// 展开/收起标签
+function toggleTab(tab) {
+    if (appState.expandedTab === tab) {
+        appState.expandedTab = null;
+    } else {
+        appState.expandedTab = tab;
+    }
+    renderExpandedContent();
 }
 
-// 关闭二级面板
-function closePanel() {
-    $('#toolbox_panel').hide();
-}
-
-// 更新面板内容
-function updatePanelContent() {
-    const tab = appState.currentTab;
-    const context = getContext();
-    const anchors = extractCharacterAnchors(context);
+// 渲染展开的内容
+function renderExpandedContent() {
+    const container = $('#toolbox-expanded');
+    
+    if (!appState.expandedTab) {
+        container.hide();
+        return;
+    }
     
     let content = '';
     
-    switch(tab) {
+    switch(appState.expandedTab) {
         case 'anchor':
-            content = renderAnchorPanel(anchors);
+            content = renderAnchorContent();
             break;
         case 'ooc':
-            content = renderOocPanel();
+            content = renderOocContent();
             break;
         case 'state':
-            content = renderStatePanel();
+            content = renderStateContent();
             break;
     }
     
-    $('#toolbox_panel_content').html(content);
-    bindPanelEvents();
+    container.html(content);
+    container.show();
+    bindContentEvents();
 }
 
-// 渲染锚点面板
-function renderAnchorPanel(anchors) {
+// 渲染锚点内容
+function renderAnchorContent() {
+    const context = getContext();
+    const anchors = extractCharacterAnchors(context);
     const settings = extension_settings[extensionName];
-    const keywords = settings?.anchorKeywords || [];
+    const keywords = settings?.anchorKeywords || defaultSettings.anchorKeywords;
     
     return `
-<div class="panel-section">
-    <h3>角色设定锚点注入器</h3>
-    <p class="panel-desc">强化角色设定，防止OOC（角色崩坏）</p>
-    
-    ${anchors ? `
-    <div class="char-info">
-        <h4>${anchors.name}</h4>
-        ${anchors.corePoints.length > 0 ? `
-        <div class="core-points">
-            <h5>核心设定点：</h5>
-            <ul>
-                ${anchors.corePoints.map(p => `<li>${p}</li>`).join('')}
-            </ul>
-        </div>` : ''}
-    </div>` : '<p class="no-char">暂无角色信息</p>'}
-    
-    <div class="mode-selector">
-        <h5>注入模式：</h5>
-        <div class="mode-buttons">
-            <button class="mode-btn ${settings.injectMode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时注入</button>
-            <button class="mode-btn ${settings.injectMode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续注入</button>
-            <button class="mode-btn ${settings.injectMode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急修复</button>
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">锚点注入</span>
+                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+            </div>
+            
+            ${anchors ? `
+                <div class="toolbox-char-info">
+                    <span class="toolbox-char-name">${anchors.name}</span>
+                    ${anchors.corePoints.length > 0 ? `
+                        <div class="toolbox-core-points">
+                            <span class="toolbox-section-label">核心设定</span>
+                            <ul>
+                                ${anchors.corePoints.map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : '<div class="toolbox-no-char">暂无角色信息</div>}
+            
+            <div class="toolbox-mode-selector">
+                <span class="toolbox-section-label">注入模式</span>
+                <div class="toolbox-mode-buttons">
+                    <button class="toolbox-mode-btn ${settings.injectMode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时注入</button>
+                    <button class="toolbox-mode-btn ${settings.injectMode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续注入</button>
+                    <button class="toolbox-mode-btn ${settings.injectMode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急修复</button>
+                </div>
+            </div>
+            
+            <div class="toolbox-keywords">
+                <span class="toolbox-section-label">自定义关键词</span>
+                <div class="toolbox-keyword-input">
+                    <input type="text" id="toolbox-new-keyword" placeholder="输入新关键词" />
+                    <button id="toolbox-add-keyword">添加</button>
+                </div>
+                <div class="toolbox-keyword-list">
+                    ${keywords.map((kw, i) => `
+                        <span class="toolbox-keyword-tag">
+                            ${kw}
+                            <button class="toolbox-keyword-remove" data-index="${i}">×</button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="toolbox-actions">
+                <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">一键注入锚点</button>
+            </div>
         </div>
-        <p class="mode-desc">
-            ${settings.injectMode === 'temporary' ? '仅对下一条回复生效' : 
-              settings.injectMode === 'continuous' ? `每${settings.autoInjectInterval}轮自动重注` : '最高优先级强制修复'}
-        </p>
-    </div>
-    
-    <div class="keywords-section">
-        <h5>自定义锚点关键词：</h5>
-        <input type="text" id="new_keyword" placeholder="输入新的关键词" />
-        <button id="add_keyword">添加</button>
-        <ul id="keyword_list">
-            ${keywords.map((kw, i) => `<li>${kw} <button class="delete-keyword" data-index="${i}">×</button></li>`).join('')}
-        </ul>
-    </div>
-    
-    <div class="auto-inject-section">
-        <label>
-            <input type="checkbox" id="auto_inject" ${settings.injectMode === 'continuous' ? 'checked' : ''} />
-            每 <input type="number" id="inject_interval" value="${settings.autoInjectInterval || 5}" min="1" max="20" /> 轮自动注入
-        </label>
-    </div>
-    
-    <div class="panel-actions">
-        <button id="inject_anchor" class="primary-btn">一键注入锚点</button>
-        <button id="copy_anchor">复制锚点文本</button>
-    </div>
-</div>`;
+    `;
 }
 
-// 渲染OOC检测面板
-function renderOocPanel() {
+// 渲染OOC内容
+function renderOocContent() {
     const conflicts = detectOOC();
     const suggestions = conflicts ? generateFixSuggestions(conflicts) : [];
-    appState.lastOOCResult = conflicts;
     
     return `
-<div class="panel-section">
-    <h3>OOC实时检测</h3>
-    <p class="panel-desc">分析AI回复与角色设定的一致性</p>
-    
-    <button id="run_ooc_check" class="primary-btn">运行检测</button>
-    
-    ${conflicts ? `
-    <div class="conflict-results">
-        <h4>检测结果：发现 ${conflicts.length} 个冲突</h4>
-        <div class="conflict-list">
-            ${conflicts.map((c, i) => `
-            <div class="conflict-item ${c.severity}">
-                <span class="severity-badge">${c.severity === 'high' ? '高' : c.severity === 'medium' ? '中' : '低'}</span>
-                <p>${c.message}</p>
-            </div>`).join('')}
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">OOC检测</span>
+                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+            </div>
+            
+            <button id="toolbox-run-ooc" class="toolbox-primary-btn">运行检测</button>
+            
+            ${conflicts ? `
+                <div class="toolbox-conflict-results">
+                    <div class="toolbox-conflict-title">检测结果: ${conflicts.length} 个冲突</div>
+                    <div class="toolbox-conflict-list">
+                        ${conflicts.map((c, i) => `
+                            <div class="toolbox-conflict-item ${c.severity}">
+                                <span class="toolbox-severity-badge">${c.severity === 'high' ? '高' : c.severity === 'medium' ? '中' : '低'}</span>
+                                <span class="toolbox-conflict-text">${c.message}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    ${suggestions.length > 0 ? `
+                        <div class="toolbox-suggestions">
+                            <div class="toolbox-suggestions-title">修正建议</div>
+                            <div class="toolbox-suggestion-list">
+                                ${suggestions.map((s, i) => `
+                                    <button class="toolbox-suggestion-btn" data-text="${s}">${i + 1}. ${s}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <button id="toolbox-fix-ooc" class="toolbox-primary-btn">一键修复</button>
+                </div>
+            ` : '<div class="toolbox-no-conflict">未检测到OOC冲突</div>'}
         </div>
-        
-        ${suggestions.length > 0 ? `
-        <div class="suggestions">
-            <h4>修正建议：</h4>
-            <ul>
-                ${suggestions.map((s, i) => `<li><button class="suggestion-btn" data-index="${i}">${i+1}. ${s}</button></li>`).join('')}
-            </ul>
-        </div>` : ''}
-        
-        <button id="fix_ooc" class="primary-btn">一键修复</button>
-    </div>` : '<p class="no-conflict">未检测到OOC冲突</p>'}
-</div>`;
+    `;
 }
 
-// 渲染状态追踪面板
-function renderStatePanel() {
+// 渲染状态内容
+function renderStateContent() {
     const context = getContext();
     const charName = context?.name || '未知角色';
     const states = appState.charStates;
@@ -482,65 +455,65 @@ function renderStatePanel() {
     };
     
     return `
-<div class="panel-section">
-    <h3>角色状态追踪</h3>
-    <p class="panel-desc">实时记录角色情绪和自定义状态</p>
-    
-    <div class="current-state">
-        <h4>${charName}</h4>
-        <div class="emotion-display" style="background: ${emotionColors[states.emotion]}20; border-color: ${emotionColors[states.emotion]}">
-            <span class="emotion-label">当前情绪：</span>
-            <span class="emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">角色状态</span>
+                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
+            </div>
+            
+            <div class="toolbox-current-state">
+                <div class="toolbox-char-name">${charName}</div>
+                <div class="toolbox-emotion-display" style="background: ${emotionColors[states.emotion]}20; border-color: ${emotionColors[states.emotion]}">
+                    <span class="toolbox-emotion-label">当前情绪</span>
+                    <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
+                </div>
+            </div>
+            
+            ${states.emotionHistory.length > 0 ? `
+                <div class="toolbox-emotion-history">
+                    <div class="toolbox-section-label">情绪历史</div>
+                    <div class="toolbox-emotion-chart">
+                        ${states.emotionHistory.map(e => `<div class="toolbox-chart-bar" style="background: ${emotionColors[e.emotion]}" title="${emotionLabels[e.emotion]}"></div>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="toolbox-custom-fields">
+                <div class="toolbox-section-label">自定义字段</div>
+                <div class="toolbox-field-input">
+                    <input type="text" id="toolbox-field-name" placeholder="字段名" />
+                    <input type="text" id="toolbox-field-value" placeholder="值" />
+                    <button id="toolbox-add-field">添加</button>
+                </div>
+                <div class="toolbox-custom-fields-list">
+                    ${Object.keys(states.customFields).map(key => `
+                        <span class="toolbox-custom-field">
+                            ${key}: ${states.customFields[key]}
+                            <button class="toolbox-remove-field" data-field="${key}">×</button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="toolbox-actions">
+                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入状态到对话</button>
+            </div>
         </div>
-    </div>
-    
-    ${states.emotionHistory.length > 0 ? `
-    <div class="emotion-history">
-        <h5>情绪变化记录：</h5>
-        <div class="emotion-chart">
-            ${states.emotionHistory.map((e, i) => `
-            <div class="chart-bar" style="background: ${emotionColors[e.emotion]}" title="${emotionLabels[e.emotion]}"></div>
-            `).join('')}
-        </div>
-    </div>` : ''}
-    
-    <div class="custom-fields">
-        <h5>自定义状态字段：</h5>
-        <div class="field-input">
-            <input type="text" id="field_name" placeholder="字段名称" />
-            <input type="text" id="field_value" placeholder="字段值" />
-            <button id="add_field">添加</button>
-        </div>
-        <div id="custom_fields_list">
-            ${Object.keys(states.customFields).map(k => `
-            <div class="custom-field-item">
-                <span>${k}：${states.customFields[k]}</span>
-                <button class="delete-field" data-name="${k}">×</button>
-            </div>`).join('')}
-        </div>
-    </div>
-    
-    <div class="panel-actions">
-        <button id="inject_state" class="primary-btn">注入状态到对话</button>
-        <button id="clear_state">重置状态</button>
-    </div>
-</div>`;
+    `;
 }
 
-// 绑定面板事件
-function bindPanelEvents() {
-    // 锚点面板
-    $('.mode-btn').off('click').on('click', function() {
+// 绑定内容事件
+function bindContentEvents() {
+    // 锚点
+    $('.toolbox-mode-btn').off('click').on('click', function() {
         const mode = $(this).data('mode');
         extension_settings[extensionName].injectMode = mode;
         saveSettingsDebounced();
-        $('.mode-btn').removeClass('active');
-        $(this).addClass('active');
-        updatePanelContent();
+        renderExpandedContent();
     });
     
-    $('#add_keyword').off('click').on('click', function() {
-        const keyword = $('#new_keyword').val().trim();
+    $('#toolbox-add-keyword').off('click').on('click', function() {
+        const keyword = $('#toolbox-new-keyword').val().trim();
         if (!keyword) return;
         
         const settings = extension_settings[extensionName];
@@ -548,116 +521,91 @@ function bindPanelEvents() {
         if (!settings.anchorKeywords.includes(keyword)) {
             settings.anchorKeywords.push(keyword);
             saveSettingsDebounced();
-            updatePanelContent();
+            renderExpandedContent();
         }
-        $('#new_keyword').val('');
+        $('#toolbox-new-keyword').val('');
     });
     
-    $('.delete-keyword').off('click').on('click', function() {
+    $('.toolbox-keyword-remove').off('click').on('click', function() {
         const index = $(this).data('index');
         const settings = extension_settings[extensionName];
         settings.anchorKeywords.splice(index, 1);
         saveSettingsDebounced();
-        updatePanelContent();
+        renderExpandedContent();
     });
     
-    $('#auto_inject').off('change').on('change', function() {
-        const enabled = $(this).prop('checked');
-        extension_settings[extensionName].injectMode = enabled ? 'continuous' : 'temporary';
-        saveSettingsDebounced();
-        updatePanelContent();
-    });
-    
-    $('#inject_interval').off('change').on('change', function() {
-        const val = parseInt($(this).val()) || 5;
-        extension_settings[extensionName].autoInjectInterval = val;
-        saveSettingsDebounced();
-    });
-    
-    $('#inject_anchor').off('click').on('click', function() {
+    $('#toolbox-inject-anchor-btn').off('click').on('click', function() {
         const settings = extension_settings[extensionName];
         injectAnchorToInput(settings.injectMode);
-        closePanel();
+        toggleTab(null);
     });
     
-    // OOC面板
-    $('#run_ooc_check').off('click').on('click', function() {
-        updatePanelContent();
+    // OOC
+    $('#toolbox-run-ooc').off('click').on('click', function() {
+        renderExpandedContent();
     });
     
-    $('.suggestion-btn').off('click').on('click', function() {
-        const index = $(this).data('index');
-        const suggestions = generateFixSuggestions(appState.lastOOCResult);
-        if (suggestions[index]) {
-            const input = getMessageInput();
-            if (input.length) {
-                input.val(suggestions[index]);
-                input.focus();
-                closePanel();
-            }
+    $('.toolbox-suggestion-btn').off('click').on('click', function() {
+        const text = $(this).data('text');
+        const input = getMessageInput();
+        if (input.length) {
+            input.val(text);
+            input.focus();
+            toggleTab(null);
         }
     });
     
-    $('#fix_ooc').off('click').on('click', function() {
-        const suggestions = generateFixSuggestions(appState.lastOOCResult);
+    $('#toolbox-fix-ooc').off('click').on('click', function() {
+        const conflicts = detectOOC();
+        const suggestions = generateFixSuggestions(conflicts);
         if (suggestions.length > 0) {
             const input = getMessageInput();
             if (input.length) {
                 input.val('[OOC修复]\n' + suggestions.join('\n'));
                 input.focus();
-                closePanel();
+                toggleTab(null);
             }
         }
     });
     
-    // 状态面板
-    $('#add_field').off('click').on('click', function() {
-        const name = $('#field_name').val().trim();
-        const value = $('#field_value').val().trim();
+    // 状态
+    $('#toolbox-add-field').off('click').on('click', function() {
+        const name = $('#toolbox-field-name').val().trim();
+        const value = $('#toolbox-field-value').val().trim();
         if (!name) return;
         
         appState.charStates.customFields[name] = value || '0';
         saveSettingsDebounced();
-        updatePanelContent();
-        $('#field_name').val('');
-        $('#field_value').val('');
+        renderExpandedContent();
+        $('#toolbox-field-name').val('');
+        $('#toolbox-field-value').val('');
     });
     
-    $('.delete-field').off('click').on('click', function() {
-        const name = $(this).data('name');
-        delete appState.charStates.customFields[name];
+    $('.toolbox-remove-field').off('click').on('click', function() {
+        const field = $(this).data('field');
+        delete appState.charStates.customFields[field];
         saveSettingsDebounced();
-        updatePanelContent();
+        renderExpandedContent();
     });
     
-    $('#inject_state').off('click').on('click', function() {
+    $('#toolbox-inject-state').off('click').on('click', function() {
         const context = getContext();
         const charName = context?.name || '角色';
         const states = appState.charStates;
         
-        let stateText = `[角色状态：${charName}]\n`;
-        stateText += `情绪：${states.emotion}\n`;
+        let stateText = `[角色状态: ${charName}]\n情绪: ${states.emotion}\n`;
         
-        Object.keys(states.customFields).forEach(k => {
-            stateText += `${k}：${states.customFields[k]}\n`;
+        Object.keys(states.customFields).forEach(key => {
+            stateText += `${key}: ${states.customFields[key]}\n`;
         });
         
         const input = getMessageInput();
         if (input.length) {
             const currentText = input.val() || '';
-            input.val(currentText + (currentText ? '\n\n' : '') + stateText);
+            input.val(currentText ? currentText + '\n\n' + stateText : stateText);
             input.focus();
-            closePanel();
+            toggleTab(null);
         }
-    });
-    
-    $('#clear_state').off('click').on('click', function() {
-        appState.charStates = {
-            emotion: 'neutral',
-            emotionHistory: [],
-            customFields: {},
-        };
-        updatePanelContent();
     });
 }
 
@@ -666,68 +614,39 @@ jQuery(async function() {
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
     $('#extensions_settings').append(settingsHtml);
     
-    // 创建工具栏
     const toolbarHtml = `
-<div id="toolbox_toolbar" style="display: none;">
-    <button id="toolbox_anchor_inject_btn" class="toolbox-btn" title="锚点注入 - 强化角色设定防止OOC">
-        <span class="btn-text">锚点</span>
-    </button>
-    <div class="toolbox-divider"></div>
-    <button id="toolbox_ooc_detect_btn" class="toolbox-btn" title="OOC检测 - 检测角色设定冲突">
-        <span class="btn-text">检测</span>
-    </button>
-    <button id="toolbox_char_state_btn" class="toolbox-btn" title="状态追踪 - 查看角色状态">
-        <span class="btn-text">状态</span>
-    </button>
-</div>`;
-    
-    // 创建二级面板
-    const panelHtml = `
-<div id="toolbox_panel" style="display: none;">
-    <div class="panel-overlay" onclick="closePanel()"></div>
-    <div class="panel-container">
-        <div class="panel-header">
-            <h2>工具箱</h2>
-            <button class="close-btn" onclick="closePanel()">×</button>
+        <div id="toolbox-toolbar" style="display: none;">
+            <div class="toolbox-buttons">
+                <button id="toolbox-anchor-btn" class="toolbox-main-btn" title="锚点注入">
+                    <span class="toolbox-btn-text">锚点</span>
+                </button>
+                <div class="toolbox-divider"></div>
+                <button id="toolbox-ooc-btn" class="toolbox-main-btn" title="OOC检测">
+                    <span class="toolbox-btn-text">检测</span>
+                </button>
+                <div class="toolbox-divider"></div>
+                <button id="toolbox-state-btn" class="toolbox-main-btn" title="角色状态">
+                    <span class="toolbox-btn-text">状态</span>
+                </button>
+            </div>
         </div>
-        <div class="panel-tabs">
-            <button class="tab-btn active" data-tab="anchor">锚点注入</button>
-            <button class="tab-btn" data-tab="ooc">OOC检测</button>
-            <button class="tab-btn" data-tab="state">状态追踪</button>
-        </div>
-        <div id="toolbox_panel_content" class="panel-content"></div>
-    </div>
-</div>`;
+        <div id="toolbox-expanded" style="display: none;"></div>
+    `;
     
     const sendForm = $('#send_form');
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
     }
     
-    $('body').append(panelHtml);
+    $('#toolbox-anchor-btn').on('click', () => toggleTab('anchor'));
+    $('#toolbox-ooc-btn').on('click', () => toggleTab('ooc'));
+    $('#toolbox-state-btn').on('click', () => toggleTab('state'));
     
-    // 工具栏事件
-    $('#toolbox_anchor_inject_btn').on('click', () => openPanel('anchor'));
-    $('#toolbox_ooc_detect_btn').on('click', () => openPanel('ooc'));
-    $('#toolbox_char_state_btn').on('click', () => openPanel('state'));
-    
-    // 面板标签切换
-    $('.tab-btn').on('click', function() {
-        const tab = $(this).data('tab');
-        appState.currentTab = tab;
-        $('.tab-btn').removeClass('active');
-        $(this).addClass('active');
-        updatePanelContent();
-    });
-    
-    // 设置事件
     $('#enable_toolbox').on('input', onEnableInput);
     $('#tool_anchor_inject').on('input', onToolVisibilityChange('anchorInject'));
     $('#tool_ooc_detect').on('input', onToolVisibilityChange('oocDetect'));
     $('#tool_char_state').on('input', onToolVisibilityChange('charState'));
     
     loadSettings();
-    
-    // 绑定全局关闭函数
-    window.closePanel = closePanel;
+    window.toggleTab = toggleTab;
 });
