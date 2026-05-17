@@ -1,4 +1,4 @@
-import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
+import { extension_settings, getContext } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import { eventSource, event_types } from '../../../../script.js';
 
@@ -48,25 +48,32 @@ function getCurrentCharacterData() {
     try {
         const context = getContext();
         
-        if (!context) {
-            logInfo('getContext() is null');
+        // getContext() 永不返回 null，但 characterId 可能是 undefined
+        if (context.characterId === undefined) {
+            logInfo('No character selected (characterId is undefined)');
             return null;
         }
-
-        if (!context.name) {
-            logInfo('No character loaded (context.name is empty)');
-            return null;
-        }
-
-        logInfo('Got character:', context.name);
         
+        // 从 characters 数组中获取当前角色
+        const character = context.characters[context.characterId];
+        
+        if (!character) {
+            logInfo('Character not found at index:', context.characterId);
+            return null;
+        }
+        
+        logInfo('Got character:', character.name);
+        
+        // 返回角色数据，注意：description、personality 等在 data 字段中
         return {
-            name: context.name,
-            description: context.description || '',
-            personality: context.personality || '',
-            scenario: context.scenario || '',
-            first_mes: context.first_mes || '',
-            avatar: context.avatar || '',
+            name: character.name || 'Unknown',
+            description: character.data?.description || '',
+            personality: character.data?.personality || '',
+            scenario: character.data?.scenario || '',
+            first_mes: character.data?.first_mes || '',
+            avatar: character.avatar || '',
+            // 原始角色对象
+            raw: character,
         };
     } catch (e) {
         logError('Error getting character data', e);
@@ -150,10 +157,6 @@ function detectOOCConflicts() {
     try {
         const context = getContext();
         
-        if (!context) {
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-
         if (!context.chat || context.chat.length === 0) {
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
@@ -301,12 +304,10 @@ function extractEmotion(message) {
 function updateCharStates() {
     try {
         const context = getContext();
-        if (!context || !context.chat) return;
+        if (!context.chat || context.chat.length === 0) return;
 
         const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
-        if (recentMessages.length === 0) {
-            return;
-        }
+        if (recentMessages.length === 0) return;
 
         const lastMessage = recentMessages[recentMessages.length - 1];
         if (!lastMessage.mes) return;
@@ -841,8 +842,8 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
-function handleChatChanged() {
-    logInfo('CHAT_CHANGED event received!');
+function handleChatChanged(chatId) {
+    logInfo('CHAT_CHANGED event received!', chatId);
     
     const character = getCurrentCharacterData();
     if (character) {
@@ -854,11 +855,11 @@ function handleChatChanged() {
             renderExpandedContent();
         }
     } else {
-        logInfo('No character loaded in chat');
+        logInfo('No character selected');
     }
 }
 
-function handleMessageReceived() {
+function handleMessageReceived(message) {
     logInfo('MESSAGE_RECEIVED event received!');
     if (appState.expandedTab === 'state') {
         updateCharStates();
@@ -868,13 +869,6 @@ function handleMessageReceived() {
 
 jQuery(async function() {
     logInfo('Extension initializing...');
-
-    try {
-        await loadExtensionSettings();
-        logInfo('loadExtensionSettings complete');
-    } catch (e) {
-        logError('loadExtensionSettings error', e);
-    }
 
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
