@@ -1,5 +1,6 @@
-import { extension_settings, getContext, eventSource, event_types, loadExtensionSettings } from '../../../extensions.js';
-import { saveSettingsDebounced, characters, this_chid } from '../../../../script.js';
+import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
+import { saveSettingsDebounced } from '../../../../script.js';
+import { eventSource, event_types } from '../../../../script.js';
 
 const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -23,8 +24,6 @@ let appState = {
         customFields: {},
     },
     currentCharacter: null,
-    isReady: false,
-    pendingCharId: null,
 };
 
 function logInfo(message, data = null) {
@@ -45,74 +44,33 @@ function logError(message, error = null) {
     }
 }
 
-async function getCurrentCharacterSafe() {
-    const context = getContext();
-    
-    if (!context) {
-        logInfo('getContext() is null');
-        return null;
-    }
-
-    if (context.characterId === undefined) {
-        logInfo('No character selected (characterId is undefined)');
-        return null;
-    }
-
-    const character = characters[context.characterId];
-    if (!character) {
-        logInfo('Character not found at index:', context.characterId);
-        return null;
-    }
-
-    if (!character.description && context.unshallowCharacter) {
-        logInfo('Loading full character data...');
-        try {
-            await context.unshallowCharacter(String(context.characterId));
-            logInfo('Full character data loaded');
-        } catch (error) {
-            logError('Failed to load character data', error);
-        }
-    }
-
-    const fullCharacter = characters[context.characterId];
-    logInfo('Got character:', fullCharacter?.avatar || fullCharacter?.name);
-    
-    return {
-        name: fullCharacter?.avatar || fullCharacter?.name || 'Unknown',
-        description: fullCharacter?.description || '',
-        personality: fullCharacter?.personality || '',
-        scenario: fullCharacter?.scenario || '',
-        first_mes: fullCharacter?.first_mes || '',
-        avatar: fullCharacter?.avatar || '',
-    };
-}
-
-async function handleCharacterChange() {
-    const context = getContext();
-    
-    if (context.groupId) {
-        logInfo('Group chat mode, skipping character load');
-        appState.currentCharacter = null;
-        return;
-    }
-    
-    if (context.characterId === undefined) {
-        logInfo('No character selected');
-        appState.currentCharacter = null;
-        return;
-    }
-    
-    logInfo('Character change detected:', context.characterId);
-    
-    const character = await getCurrentCharacterSafe();
-    if (character) {
-        appState.currentCharacter = character;
-        loadStateFromCharacter();
-        updateCharStates();
+function getCurrentCharacterData() {
+    try {
+        const context = getContext();
         
-        if (appState.expandedTab) {
-            renderExpandedContent();
+        if (!context) {
+            logInfo('getContext() is null');
+            return null;
         }
+
+        if (!context.name) {
+            logInfo('No character loaded (context.name is empty)');
+            return null;
+        }
+
+        logInfo('Got character:', context.name);
+        
+        return {
+            name: context.name,
+            description: context.description || '',
+            personality: context.personality || '',
+            scenario: context.scenario || '',
+            first_mes: context.first_mes || '',
+            avatar: context.avatar || '',
+        };
+    } catch (e) {
+        logError('Error getting character data', e);
+        return null;
     }
 }
 
@@ -200,7 +158,7 @@ function detectOOCConflicts() {
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
 
-        const character = appState.currentCharacter;
+        const character = getCurrentCharacterData();
         if (!character) {
             return { conflicts: [], lastMessage: null, characterInfo: null };
         }
@@ -409,7 +367,7 @@ function getMessageInput() {
 }
 
 function injectAnchorToInput(mode = 'temporary') {
-    const character = appState.currentCharacter;
+    const character = appState.currentCharacter || getCurrentCharacterData();
     if (!character || !character.name) {
         if (typeof toastr !== 'undefined') {
             toastr.warning('请先加载角色');
@@ -431,7 +389,7 @@ function injectAnchorToInput(mode = 'temporary') {
 }
 
 function copyAnchorToClipboard(mode = 'temporary') {
-    const character = appState.currentCharacter;
+    const character = appState.currentCharacter || getCurrentCharacterData();
     if (!character || !character.name) {
         if (typeof toastr !== 'undefined') {
             toastr.warning('请先加载角色');
@@ -452,7 +410,7 @@ function copyAnchorToClipboard(mode = 'temporary') {
 }
 
 function injectStateToInput() {
-    const character = appState.currentCharacter;
+    const character = appState.currentCharacter || getCurrentCharacterData();
     updateCharStates();
 
     const emotionLabels = {
@@ -491,16 +449,9 @@ function toggleTab(tab) {
         appState.expandedTab = null;
     } else {
         appState.expandedTab = tab;
-        if (tab === 'anchor' || tab === 'state') {
-            getCurrentCharacterSafe().then(character => {
-                if (character) {
-                    appState.currentCharacter = character;
-                    loadStateFromCharacter();
-                    updateCharStates();
-                }
-                renderExpandedContent();
-            });
-            return;
+        if (tab === 'state') {
+            loadStateFromCharacter();
+            updateCharStates();
         }
     }
     renderExpandedContent();
@@ -532,7 +483,7 @@ function renderExpandedContent() {
 }
 
 function renderAnchorContent() {
-    const character = appState.currentCharacter;
+    const character = appState.currentCharacter || getCurrentCharacterData();
     const corePoints = character ? extractCorePoints(character) : [];
     const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
     const mode = extension_settings[extensionName]?.injectMode || 'temporary';
@@ -659,7 +610,7 @@ function renderOocContent() {
 }
 
 function renderStateContent() {
-    const character = appState.currentCharacter;
+    const character = appState.currentCharacter || getCurrentCharacterData();
     const states = appState.charStates;
 
     const emotionLabels = {
@@ -890,7 +841,32 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
-async function initialize() {
+function handleChatChanged() {
+    logInfo('CHAT_CHANGED event received!');
+    
+    const character = getCurrentCharacterData();
+    if (character) {
+        appState.currentCharacter = character;
+        logInfo('New character loaded:', character.name);
+        loadStateFromCharacter();
+        updateCharStates();
+        if (appState.expandedTab) {
+            renderExpandedContent();
+        }
+    } else {
+        logInfo('No character loaded in chat');
+    }
+}
+
+function handleMessageReceived() {
+    logInfo('MESSAGE_RECEIVED event received!');
+    if (appState.expandedTab === 'state') {
+        updateCharStates();
+        renderExpandedContent();
+    }
+}
+
+jQuery(async function() {
     logInfo('Extension initializing...');
 
     try {
@@ -940,25 +916,44 @@ async function initialize() {
 
     await loadSettings();
 
-    eventSource.on(event_types.CHAT_CHANGED, handleCharacterChange);
-    logInfo('CHAT_CHANGED listener registered');
+    try {
+        if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
+            logInfo('eventSource is available');
+            
+            eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+            logInfo('CHAT_CHANGED listener registered');
+            
+            eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+            logInfo('MESSAGE_RECEIVED listener registered');
+        } else {
+            logInfo('eventSource not available, skipping');
+        }
+    } catch (e) {
+        logError('Event registration error', e);
+    }
 
     window.toggleTab = toggleTab;
 
-    const character = await getCurrentCharacterSafe();
-    if (character) {
-        logInfo('Initial character found:', character.name);
-        appState.currentCharacter = character;
+    logInfo('Checking initial character...');
+    const initialCharacter = getCurrentCharacterData();
+    if (initialCharacter) {
+        logInfo('Initial character found:', initialCharacter.name);
+        appState.currentCharacter = initialCharacter;
         loadStateFromCharacter();
         updateCharStates();
     } else {
-        logInfo('No initial character, waiting for chat change');
+        logInfo('No initial character, waiting for event');
     }
 
-    appState.isReady = true;
-    logInfo('Extension initialization complete!');
-}
+    setTimeout(() => {
+        const charAfterWait = getCurrentCharacterData();
+        if (charAfterWait && (!appState.currentCharacter || appState.currentCharacter.name !== charAfterWait.name)) {
+            logInfo('Delay check found character:', charAfterWait.name);
+            appState.currentCharacter = charAfterWait;
+            loadStateFromCharacter();
+            updateCharStates();
+        }
+    }, 2000);
 
-jQuery(async () => {
-    await initialize();
+    logInfo('Extension initialization complete!');
 });
