@@ -29,17 +29,29 @@ const appState = {
 };
 
 function getCurrentCharacter() {
-    const context = getContext();
-    if (!context) return null;
-    
-    return {
-        name: context.name || '未知角色',
-        description: context.description || '',
-        personality: context.personality || '',
-        scenario: context.scenario || '',
-        firstMessage: context.first_mes || '',
-        avatar: context.avatar || '',
-    };
+    try {
+        const context = getContext();
+        if (!context) {
+            console.log('[ST-Toolbox] getContext() 返回 null');
+            return null;
+        }
+        if (!context.name) {
+            console.log('[ST-Toolbox] 未加载角色');
+            return null;
+        }
+        console.log('[ST-Toolbox] 获取当前角色:', context.name);
+        return {
+            name: context.name || '未知角色',
+            description: context.description || '',
+            personality: context.personality || '',
+            scenario: context.scenario || '',
+            firstMessage: context.first_mes || '',
+            avatar: context.avatar || '',
+        };
+    } catch (e) {
+        console.error('[ST-Toolbox] 获取角色失败:', e);
+        return null;
+    }
 }
 
 function extractCorePoints(character) {
@@ -113,17 +125,30 @@ function generateWeightedAnchor(character, mode = 'temporary') {
 }
 
 function detectOOCConflicts(character) {
+    console.log('[ST-Toolbox] 开始 OOC 冲突检测');
     const context = getContext();
-    if (!context || !context.chat || context.chat.length === 0) {
+    
+    if (!context) {
+        console.log('[ST-Toolbox] detectOOCConflicts: getContext() 返回 null');
+        return { conflicts: [], lastMessage: null };
+    }
+    
+    console.log('[ST-Toolbox] 聊天记录数量:', context.chat?.length || 0);
+    
+    if (!context.chat || context.chat.length === 0) {
+        console.log('[ST-Toolbox] 聊天记录为空');
         return { conflicts: [], lastMessage: null };
     }
     
     const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
     if (!lastAIMsg || !lastAIMsg.mes) {
+        console.log('[ST-Toolbox] 未找到 AI 消息');
         return { conflicts: [], lastMessage: null };
     }
     
     const message = lastAIMsg.mes;
+    console.log('[ST-Toolbox] 最后 AI 消息预览:', message.substring(0, 100) + '...');
+    
     const conflicts = [];
     const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
     
@@ -182,6 +207,7 @@ function detectOOCConflicts(character) {
         });
     }
     
+    console.log('[ST-Toolbox] OOC 检测完成，发现冲突数:', conflicts.length);
     return { conflicts, lastMessage: message };
 }
 
@@ -245,15 +271,25 @@ function extractEmotion(message) {
 
 function updateCharStates() {
     const context = getContext();
-    if (!context || !context.chat) return;
+    if (!context || !context.chat) {
+        console.log('[ST-Toolbox] updateCharStates: 无聊天记录');
+        return;
+    }
+    
+    console.log('[ST-Toolbox] 更新角色状态，聊天记录数:', context.chat.length);
     
     const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
-    if (recentMessages.length === 0) return;
+    if (recentMessages.length === 0) {
+        console.log('[ST-Toolbox] updateCharStates: 无 AI 消息');
+        return;
+    }
     
     const lastMessage = recentMessages[recentMessages.length - 1];
     if (!lastMessage.mes) return;
     
     const emotion = extractEmotion(lastMessage.mes);
+    console.log('[ST-Toolbox] 提取的情绪关键词:', emotion, '- 消息预览:', lastMessage.mes.substring(0, 50) + '...');
+    
     if (appState.charStates.emotion !== emotion) {
         appState.charStates.emotion = emotion;
         if (appState.charStates.emotionHistory.length >= 10) {
@@ -265,7 +301,6 @@ function updateCharStates() {
         });
     }
     
-    // 尝试保存到角色自定义数据
     trySaveStateToCharacter();
 }
 
@@ -771,8 +806,20 @@ function onToolVisibilityChange(toolKey) {
 }
 
 jQuery(async function() {
-    const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-    $('#extensions_settings').append(settingsHtml);
+    console.log('[ST-Toolbox] 开始初始化');
+    
+    try {
+        const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
+        const settingsContainer = $('#extensions_settings');
+        if (settingsContainer.length) {
+            settingsContainer.append(settingsHtml);
+            console.log('[ST-Toolbox] 设置面板加载成功');
+        } else {
+            console.log('[ST-Toolbox] 警告: #extensions_settings 元素不存在');
+        }
+    } catch (e) {
+        console.error('[ST-Toolbox] 加载设置面板失败:', e);
+    }
     
     const toolbarHtml = `
         <div id="toolbox-toolbar" style="display: none;">
@@ -801,4 +848,35 @@ jQuery(async function() {
     
     loadSettings();
     window.toggleTab = toggleTab;
+    console.log('[ST-Toolbox] 初始化完成');
+    
+    let lastChatLength = 0;
+    let lastCharacterName = '';
+    
+    setInterval(() => {
+        try {
+            const context = getContext();
+            if (!context) return;
+            
+            if (context.name && context.name !== lastCharacterName) {
+                console.log('[ST-Toolbox] 角色切换:', lastCharacterName, '->', context.name);
+                lastCharacterName = context.name;
+                lastChatLength = context.chat?.length || 0;
+                
+                tryLoadStateFromCharacter();
+            }
+            
+            if (context.chat && context.chat.length !== lastChatLength) {
+                console.log('[ST-Toolbox] 检测到新消息，聊天记录数:', context.chat.length);
+                lastChatLength = context.chat.length;
+                
+                if (appState.expandedTab === 'state') {
+                    updateCharStates();
+                    renderExpandedContent();
+                }
+            }
+        } catch (e) {
+            console.error('[ST-Toolbox] 监听出错:', e);
+        }
+    }, 1000);
 });
