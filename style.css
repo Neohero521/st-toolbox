@@ -11,9 +11,9 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
-    height: 400px;
-    min-height: 400px;
-    max-height: 400px;
+    height: 133px;
+    min-height: 133px;
+    max-height: 133px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
