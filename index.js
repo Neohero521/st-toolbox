@@ -47,31 +47,50 @@ function logError(message, error = null) {
 function getCurrentCharacterData() {
     try {
         const context = getContext();
+        logInfo('getContext() called, context keys:', Object.keys(context));
         
-        // getContext() 永不返回 null，但 characterId 可能是 undefined
-        if (context.characterId === undefined) {
-            logInfo('No character selected (characterId is undefined)');
-            return null;
+        // 尝试多种方式获取当前角色
+        let character = null;
+        
+        // 方式 1: 尝试使用 context.character
+        if (context.character) {
+            character = context.character;
+            logInfo('Got character via context.character');
+        }
+        // 方式 2: 尝试使用 context.characters 和 context.characterId
+        else if (context.characters && context.characterId !== undefined) {
+            character = context.characters[context.characterId];
+            logInfo('Got character via context.characters[characterId]');
+        }
+        // 方式 3: 尝试 context.selectedCharacter
+        else if (context.selectedCharacter) {
+            character = context.selectedCharacter;
+            logInfo('Got character via context.selectedCharacter');
+        }
+        // 方式 4: 尝试使用 context.name (可能是旧版本)
+        else if (context.name) {
+            character = context;
+            logInfo('Got character via context (direct)');
         }
         
-        // 从 characters 数组中获取当前角色
-        const character = context.characters[context.characterId];
-        
         if (!character) {
-            logInfo('Character not found at index:', context.characterId);
+            logInfo('All character access methods failed');
+            logInfo('context:', JSON.stringify(context, (k, v) => typeof v === 'object' ? '[Object]' : v, 2));
             return null;
         }
         
         logInfo('Got character:', character.name);
         
-        // 返回角色数据，注意：description、personality 等在 data 字段中
+        // 尝试获取角色数据，兼容不同的数据结构
+        const charData = character.data || character;
+        
         return {
-            name: character.name || 'Unknown',
-            description: character.data?.description || '',
-            personality: character.data?.personality || '',
-            scenario: character.data?.scenario || '',
-            first_mes: character.data?.first_mes || '',
-            avatar: character.avatar || '',
+            name: character.name || charData.name || 'Unknown',
+            description: charData.description || '',
+            personality: charData.personality || '',
+            scenario: charData.scenario || '',
+            first_mes: charData.first_mes || '',
+            avatar: character.avatar || charData.avatar || '',
             // 原始角色对象
             raw: character,
         };
@@ -842,21 +861,42 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
-function handleChatChanged(chatId) {
-    logInfo('CHAT_CHANGED event received!', chatId);
-    
+function updateToolbarStatus() {
+    const statusEl = $('#toolbox-char-name');
+    if (statusEl.length) {
+        if (appState.currentCharacter) {
+            statusEl.text(`✓ ${appState.currentCharacter.name}`);
+            statusEl.css('color', 'rgba(74, 222, 128, 0.95)');
+        } else {
+            statusEl.text('未加载角色');
+            statusEl.css('color', 'rgba(148, 163, 184, 0.7)');
+        }
+    }
+}
+
+function tryLoadCharacter() {
+    logInfo('Attempting to load character...');
     const character = getCurrentCharacterData();
     if (character) {
         appState.currentCharacter = character;
-        logInfo('New character loaded:', character.name);
+        logInfo('Character loaded successfully:', character.name);
         loadStateFromCharacter();
         updateCharStates();
+        updateToolbarStatus();
         if (appState.expandedTab) {
             renderExpandedContent();
         }
+        return true;
     } else {
-        logInfo('No character selected');
+        logInfo('Failed to load character');
+        updateToolbarStatus();
+        return false;
     }
+}
+
+function handleChatChanged(chatId) {
+    logInfo('CHAT_CHANGED event received!', chatId);
+    setTimeout(() => tryLoadCharacter(), 100);
 }
 
 function handleMessageReceived(message) {
@@ -865,6 +905,11 @@ function handleMessageReceived(message) {
         updateCharStates();
         renderExpandedContent();
     }
+}
+
+function handleCharacterChanged() {
+    logInfo('CHARACTER_CHANGED event received!');
+    setTimeout(() => tryLoadCharacter(), 100);
 }
 
 jQuery(async function() {
@@ -881,6 +926,9 @@ jQuery(async function() {
 
     const toolbarHtml = `
         <div id="toolbox-toolbar" style="display: none;">
+            <div id="toolbox-status" class="toolbox-status">
+                <span id="toolbox-char-name" class="toolbox-char-status">未加载角色</span>
+            </div>
             <div class="toolbox-buttons">
                 <button id="toolbox-anchor-btn" class="toolbox-main-btn">锚点</button>
                 <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
@@ -913,14 +961,35 @@ jQuery(async function() {
     try {
         if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
             logInfo('eventSource is available');
+            logInfo('Available event types:', Object.keys(event_types));
             
-            eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
-            logInfo('CHAT_CHANGED listener registered');
+            // 注册所有可能的相关事件
+            const events = [
+                'CHAT_CHANGED',
+                'MESSAGE_RECEIVED',
+                'CHARACTER_CHANGED',
+                'CHARACTER_LOADED',
+                'CHARACTER_SELECTED',
+                'GROUP_CHANGED'
+            ];
             
-            eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
-            logInfo('MESSAGE_RECEIVED listener registered');
+            // 尝试注册多个事件
+            events.forEach(eventName => {
+                if (event_types[eventName]) {
+                    if (eventName === 'CHAT_CHANGED') {
+                        eventSource.on(event_types[eventName], handleChatChanged);
+                        logInfo(`${eventName} listener registered (handleChatChanged)`);
+                    } else if (eventName === 'MESSAGE_RECEIVED') {
+                        eventSource.on(event_types[eventName], handleMessageReceived);
+                        logInfo(`${eventName} listener registered (handleMessageReceived)`);
+                    } else {
+                        eventSource.on(event_types[eventName], handleCharacterChanged);
+                        logInfo(`${eventName} listener registered (handleCharacterChanged)`);
+                    }
+                }
+            });
         } else {
-            logInfo('eventSource not available, skipping');
+            logInfo('eventSource not available, skipping event registration');
         }
     } catch (e) {
         logError('Event registration error', e);
@@ -928,26 +997,20 @@ jQuery(async function() {
 
     window.toggleTab = toggleTab;
 
-    logInfo('Checking initial character...');
-    const initialCharacter = getCurrentCharacterData();
-    if (initialCharacter) {
-        logInfo('Initial character found:', initialCharacter.name);
-        appState.currentCharacter = initialCharacter;
-        loadStateFromCharacter();
-        updateCharStates();
-    } else {
-        logInfo('No initial character, waiting for event');
-    }
+    logInfo('Checking initial character immediately...');
+    tryLoadCharacter();
+    updateToolbarStatus(); // 立即更新状态显示
 
-    setTimeout(() => {
-        const charAfterWait = getCurrentCharacterData();
-        if (charAfterWait && (!appState.currentCharacter || appState.currentCharacter.name !== charAfterWait.name)) {
-            logInfo('Delay check found character:', charAfterWait.name);
-            appState.currentCharacter = charAfterWait;
-            loadStateFromCharacter();
-            updateCharStates();
-        }
-    }, 2000);
+    // 使用轮询机制，多次尝试加载角色
+    const retryIntervals = [500, 1500, 3000, 5000, 8000];
+    retryIntervals.forEach((delay, index) => {
+        setTimeout(() => {
+            if (!appState.currentCharacter) {
+                logInfo(`Retry ${index + 1} at ${delay}ms...`);
+                tryLoadCharacter();
+            }
+        }, delay);
+    });
 
     logInfo('Extension initialization complete!');
 });
