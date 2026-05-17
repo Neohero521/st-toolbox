@@ -2,20 +2,16 @@
 
 #toolbox-toolbar {
     position: relative;
-    width: 100%;
-    max-width: 600px;
-    min-height: 180px;
     background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
     border: 2px solid rgba(139, 92, 246, 0.5);
     border-radius: 16px;
     padding: 12px 16px;
-    margin: 0 auto 12px auto;
+    margin-bottom: 12px;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: borderPulse 4s ease-in-out infinite;
-    box-sizing: border-box;
 }
 
 .toolbox-status {
@@ -101,9 +97,11 @@
 }
 
 .toolbox-content {
-    margin-top: 10px;
-    height: 280px;
+    margin-top: 12px;
+    overflow: hidden;
+    max-height: 500px;
     overflow-y: auto;
+    animation: expandIn 0.3s ease-out;
 }
 
 @keyframes expandIn {
@@ -120,157 +118,7 @@
 }
 
 .toolbox-content-section {
-    padding: 12px;
-}
-
-.anchor-page .toolbox-char-info {
-    margin-bottom: 10px;
-}
-
-.anchor-page .toolbox-char-name {
-    font-size: 14px;
-    margin-bottom: 8px;
-    padding-bottom: 8px;
-}
-
-.anchor-page .toolbox-core-points {
-    max-height: 80px;
-    overflow-y: auto;
-}
-
-.anchor-page .toolbox-core-points li {
-    font-size: 11px;
-    padding: 6px 8px;
-    margin-bottom: 4px;
-}
-
-.anchor-page .toolbox-mode-selector {
-    margin-bottom: 10px;
-}
-
-.anchor-page .toolbox-mode-btn {
-    padding: 8px 10px;
-    font-size: 11px;
-}
-
-.anchor-page .toolbox-keywords-compact {
-    margin-bottom: 10px;
-}
-
-.anchor-page .toolbox-keyword-input input {
-    padding: 8px 10px;
-    font-size: 12px;
-}
-
-.anchor-page .toolbox-keyword-input button {
-    padding: 8px 14px;
-    font-size: 12px;
-}
-
-.anchor-page .toolbox-keyword-tag {
-    padding: 5px 10px;
-    font-size: 11px;
-}
-
-.anchor-page .toolbox-actions {
-    margin-top: 10px;
-}
-
-.ooc-page .toolbox-ooc-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.ooc-page .toolbox-threshold-inline {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-}
-
-.ooc-page .toolbox-threshold-inline input {
-    flex: 1;
-}
-
-.ooc-page .toolbox-primary-btn:first-of-type {
-    margin-bottom: 10px;
-}
-
-.ooc-page .toolbox-conflict-results {
-    max-height: 140px;
-    overflow-y: auto;
-}
-
-.ooc-page .toolbox-conflict-item {
-    padding: 8px 10px;
-    margin-bottom: 6px;
-}
-
-.ooc-page .toolbox-suggestion-btn {
-    padding: 8px 12px;
-    font-size: 11px;
-    margin-bottom: 4px;
-}
-
-.state-page .toolbox-state-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.state-page .toolbox-char-name {
-    font-size: 14px;
-}
-
-.state-page .toolbox-emotion-display {
-    padding: 8px 12px;
-}
-
-.state-page .toolbox-emotion-label {
-    font-size: 11px;
-}
-
-.state-page .toolbox-emotion-value {
-    font-size: 14px;
-    margin-left: 8px;
-}
-
-.state-page .toolbox-emotion-timeline {
-    margin-bottom: 10px;
-}
-
-.state-page .toolbox-timeline-item {
-    padding: 8px 6px;
-}
-
-.state-page .toolbox-timeline-emotion {
-    font-size: 10px;
-}
-
-.state-page .toolbox-field-input input {
-    padding: 8px 10px;
-    font-size: 12px;
-}
-
-.state-page .toolbox-field-input button {
-    padding: 8px 14px;
-    font-size: 12px;
-}
-
-.state-page .toolbox-custom-field {
-    padding: 8px 12px;
-    margin-bottom: 6px;
-}
-
-.state-page .toolbox-field-label {
-    font-size: 12px;
-}
-
-.state-page .toolbox-field-value {
-    font-size: 12px;
+    padding: 16px;
 }
 
 .toolbox-content-header {
@@ -329,8 +177,8 @@
     background: rgba(30, 30, 60, 0.6);
     border: 1px solid rgba(139, 92, 246, 0.25);
     border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
 }
 
 .toolbox-char-name {

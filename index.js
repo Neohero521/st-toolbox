@@ -508,16 +508,24 @@ function renderAnchorContent() {
     const mode = extension_settings[extensionName]?.injectMode || 'temporary';
 
     return `
-        <div class="toolbox-content-section anchor-page">
-            <div class="toolbox-char-info">
-                <span class="toolbox-char-name">${character?.name || '未加载角色'}</span>
-                <span class="toolbox-section-label">核心设定</span>
-                ${corePoints.length > 0 ? `
-                    <ul class="toolbox-core-points">
-                        ${corePoints.slice(0, 3).map(p => `<li>${p}</li>`).join('')}
-                    </ul>
-                ` : '<div class="toolbox-no-char">未找到核心设定</div>'}
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">设定锚点注入器</span>
             </div>
+            
+            ${character && character.name ? `
+                <div class="toolbox-char-info">
+                    <span class="toolbox-char-name">${character.name}</span>
+                    ${corePoints.length > 0 ? `
+                        <div class="toolbox-core-points">
+                            <span class="toolbox-section-label">核心设定</span>
+                            <ul>
+                                ${corePoints.slice(0, 6).map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : '<div class="toolbox-no-char">未找到核心设定</div>'}
+                </div>
+            ` : '<div class="toolbox-no-char">请先加载角色</div>'}
             
             <div class="toolbox-mode-selector">
                 <span class="toolbox-section-label">注入模式</span>
@@ -528,13 +536,15 @@ function renderAnchorContent() {
                 </div>
             </div>
             
-            <div class="toolbox-keywords-compact">
+            <div class="toolbox-keywords">
+                <span class="toolbox-section-label">自定义锚点</span>
                 <div class="toolbox-keyword-input">
-                    <input type="text" id="toolbox-new-keyword" placeholder="关键词..." />
-                    <button id="toolbox-add-keyword">+</button>
+                    <input type="text" id="toolbox-new-keyword" placeholder="输入关键词..." />
+                    <button id="toolbox-add-keyword">添加</button>
                 </div>
                 <div class="toolbox-keyword-list">
-                    ${userKeywords.slice(0, 4).map((kw, i) => `
+                    ${userKeywords.length === 0 ? '<span class="toolbox-empty-hint">暂无关键词</span>' : ''}
+                    ${userKeywords.map((kw, i) => `
                         <span class="toolbox-keyword-tag">
                             ${kw}
                             <button class="toolbox-keyword-remove" data-index="${i}">×</button>
@@ -544,7 +554,7 @@ function renderAnchorContent() {
             </div>
             
             <div class="toolbox-actions">
-                <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入</button>
+                <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入到输入框</button>
                 <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制</button>
             </div>
         </div>
@@ -558,13 +568,23 @@ function renderOocContent() {
     const threshold = settings?.oocDetectThreshold || defaultSettings.oocDetectThreshold;
 
     return `
-        <div class="toolbox-content-section ooc-page">
-            <div class="toolbox-ooc-header">
-                <span class="toolbox-section-label">检测角色: ${result.characterInfo?.name || '未加载'}</span>
-                <div class="toolbox-threshold-inline">
-                    <span>阈值</span>
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">OOC 检测</span>
+            </div>
+            
+            ${result.characterInfo ? `
+                <div class="toolbox-ooc-char">
+                    <span class="toolbox-ooc-label">检测角色:</span>
+                    <span class="toolbox-ooc-value">${result.characterInfo.name}</span>
+                </div>
+            ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            
+            <div class="toolbox-threshold-container">
+                <span class="toolbox-section-label">检测阈值</span>
+                <div class="toolbox-threshold-slider-container">
                     <input type="range" id="toolbox-ooc-threshold" min="0.1" max="1" step="0.1" value="${threshold}" />
-                    <span>${threshold}</span>
+                    <span class="toolbox-threshold-value">${threshold}</span>
                 </div>
             </div>
             
@@ -572,29 +592,36 @@ function renderOocContent() {
             
             ${result.conflicts.length > 0 ? `
                 <div class="toolbox-conflict-results">
-                    <div class="toolbox-conflict-title">检测到 ${result.conflicts.length} 个冲突</div>
+                    <div class="toolbox-conflict-title">
+                        检测到 ${result.conflicts.length} 个潜在冲突
+                    </div>
                     <div class="toolbox-conflict-list">
-                        ${result.conflicts.slice(0, 3).map((c, i) => `
+                        ${result.conflicts.map((c, i) => `
                             <div class="toolbox-conflict-item ${c.severity}">
-                                <span class="toolbox-severity-badge ${c.severity}">${c.severity === 'high' ? '高' : c.severity === 'medium' ? '中' : '低'}</span>
-                                <span class="toolbox-conflict-message">${c.message}</span>
+                                <div class="toolbox-conflict-header">
+                                    <span class="toolbox-severity-badge ${c.severity}">${c.severity === 'high' ? '高' : c.severity === 'medium' ? '中' : '低'}</span>
+                                    <span class="toolbox-conflict-type">${c.type}</span>
+                                </div>
+                                <div class="toolbox-conflict-message">${c.message}</div>
+                                ${c.forbidden ? `<div class="toolbox-conflict-forbidden">问题词："${c.forbidden}"</div>` : ''}
                             </div>
                         `).join('')}
                     </div>
                     
                     ${suggestions.length > 0 ? `
                         <div class="toolbox-suggestions">
+                            <div class="toolbox-suggestions-title">修正方案</div>
                             <div class="toolbox-suggestion-list">
-                                ${suggestions.slice(0, 2).map((s, i) => `
-                                    <button class="toolbox-suggestion-btn" data-text="${s}">${s}</button>
+                                ${suggestions.map((s, i) => `
+                                    <button class="toolbox-suggestion-btn" data-text="${s}">${i + 1}. ${s}</button>
                                 `).join('')}
                             </div>
                         </div>
                     ` : ''}
                     
-                    <button id="toolbox-fix-ooc" class="toolbox-primary-btn">修正</button>
+                    <button id="toolbox-fix-ooc" class="toolbox-primary-btn">一键注入修正</button>
                 </div>
-            ` : '<div class="toolbox-no-conflict">未检测到冲突</div>'}
+            ` : '<div class="toolbox-no-conflict">未检测到明显冲突</div>'}
         </div>
     `;
 }
@@ -622,12 +649,18 @@ function renderStateContent() {
     };
 
     return `
-        <div class="toolbox-content-section state-page">
-            <div class="toolbox-state-header">
-                <span class="toolbox-char-name">${character?.name || '未知角色'}</span>
-                <div class="toolbox-emotion-display" style="border-left: 3px solid ${emotionColors[states.emotion]}">
-                    <span class="toolbox-emotion-label">情绪</span>
-                    <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">状态追踪</span>
+            </div>
+            
+            <div class="toolbox-current-state">
+                <div class="toolbox-char-name">${character?.name || '未知角色'}</div>
+                <div class="toolbox-emotion-display" style="border-left: 4px solid ${emotionColors[states.emotion]}">
+                    <div class="toolbox-emotion-main">
+                        <span class="toolbox-emotion-label">当前情绪</span>
+                        <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
+                    </div>
                 </div>
             </div>
             
@@ -635,8 +668,8 @@ function renderStateContent() {
                 <div class="toolbox-emotion-history">
                     <span class="toolbox-section-label">情绪变化</span>
                     <div class="toolbox-emotion-timeline">
-                        ${states.emotionHistory.slice(-6).map(e => `
-                            <div class="toolbox-timeline-item" style="border-top: 2px solid ${emotionColors[e.emotion]}">
+                        ${states.emotionHistory.slice(-8).map(e => `
+                            <div class="toolbox-timeline-item" style="border-top-color: ${emotionColors[e.emotion]}">
                                 <span class="toolbox-timeline-emotion">${emotionLabels[e.emotion]}</span>
                             </div>
                         `).join('')}
@@ -647,12 +680,13 @@ function renderStateContent() {
             <div class="toolbox-custom-fields">
                 <span class="toolbox-section-label">自定义状态</span>
                 <div class="toolbox-field-input">
-                    <input type="text" id="toolbox-field-name" placeholder="字段" />
+                    <input type="text" id="toolbox-field-name" placeholder="字段名" />
                     <input type="text" id="toolbox-field-value" placeholder="值" />
-                    <button id="toolbox-add-field">+</button>
+                    <button id="toolbox-add-field">添加</button>
                 </div>
                 <div class="toolbox-custom-fields-list">
-                    ${Object.keys(states.customFields).slice(0, 3).map(key => `
+                    ${Object.keys(states.customFields).length === 0 ? '<span class="toolbox-empty-hint">暂无自定义状态</span>' : ''}
+                    ${Object.keys(states.customFields).map(key => `
                         <div class="toolbox-custom-field">
                             <span class="toolbox-field-label">${key}</span>
                             <span class="toolbox-field-value">${states.customFields[key]}</span>
@@ -663,7 +697,7 @@ function renderStateContent() {
             </div>
             
             <div class="toolbox-actions">
-                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入</button>
+                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入状态</button>
             </div>
         </div>
     `;
