@@ -1,73 +1,90 @@
-import { extension_settings, getContext, loadExtensionSettings } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+// The main script for the extension
+import { extension_settings, getContext, loadExtensionSettings } from "../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
-const extensionName = 'st-toolbox';
+const extensionName = "st-toolbox";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: true,
     tools: {
         anchorInject: true,
         oocDetect: true,
-        charState: true,
+        charState: true
     },
     anchorKeywords: [],
-    injectMode: 'temporary',
-    oocDetectThreshold: 0.7,
-    autoInjectInterval: 5,
+    injectMode: "temporary"
 };
 
-let appState = {
-    expandedTab: null,
-    charStates: {
-        emotion: 'neutral',
-        emotionHistory: [],
-        customFields: {},
-    },
-    currentCharacter: null,
-};
+async function loadSettings() {
+    extension_settings[extensionName] = extension_settings[extensionName] || {};
+    if (Object.keys(extension_settings[extensionName]).length === 0) {
+        Object.assign(extension_settings[extensionName], defaultSettings);
+    }
+    
+    $("#enable_toolbox").prop("checked", extension_settings[extensionName].enabled).trigger("input");
+    
+    const tools = extension_settings[extensionName].tools || defaultSettings.tools;
+    $("#tool_anchor_inject").prop("checked", tools.anchorInject !== false).trigger("input");
+    $("#tool_ooc_detect").prop("checked", tools.oocDetect !== false).trigger("input");
+    $("#tool_char_state").prop("checked", tools.charState !== false).trigger("input");
+    
+    updateToolVisibility();
+}
 
-function logInfo(message, data = null) {
-    const prefix = `[ST-Toolbox] `;
-    if (data !== null) {
-        console.log(prefix + message, data);
+function updateToolVisibility() {
+    const settings = extension_settings[extensionName];
+    const tools = settings.tools || defaultSettings.tools;
+    const allHidden = !tools.anchorInject && !tools.oocDetect && !tools.charState;
+    
+    if (allHidden || !settings.enabled) {
+        $("#toolbox-toolbar").hide();
     } else {
-        console.log(prefix + message);
+        $("#toolbox-toolbar").show();
     }
 }
 
-function logError(message, error = null) {
-    const prefix = `[ST-Toolbox] `;
-    if (error !== null) {
-        console.error(prefix + message, error);
-    } else {
-        console.error(prefix + message);
-    }
+function onEnableInput(event) {
+    const value = Boolean($(event.target).prop("checked"));
+    extension_settings[extensionName].enabled = value;
+    saveSettingsDebounced();
+    updateToolVisibility();
+}
+
+function onToolVisibilityChange(toolKey) {
+    return function(event) {
+        const checked = Boolean($(event.target).prop("checked"));
+        if (!extension_settings[extensionName].tools) {
+            extension_settings[extensionName].tools = {};
+        }
+        extension_settings[extensionName].tools[toolKey] = checked;
+        saveSettingsDebounced();
+        updateToolVisibility();
+    };
+}
+
+function getMessageInput() {
+    return $("#send_textarea, #prompt_textarea").first();
 }
 
 function getCurrentCharacter() {
     try {
         const context = getContext();
-        
-        if (!context) {
-            logInfo('getContext() 返回 null');
-            return null;
-        }
+        if (!context) return null;
         
         if (!context.name) {
-            logInfo('未加载角色（context.name 为空）');
             return null;
         }
         
         return {
             name: context.name,
-            description: context.description || '',
-            personality: context.personality || '',
-            scenario: context.scenario || '',
-            first_mes: context.first_mes || '',
-            avatar: context.avatar || '',
+            description: context.description || "",
+            personality: context.personality || "",
+            scenario: context.scenario || "",
+            first_mes: context.first_mes || "",
+            avatar: context.avatar || ""
         };
     } catch (e) {
-        logError('获取角色信息失败', e);
+        console.error("[ST-Toolbox] Error getting character:", e);
         return null;
     }
 }
@@ -76,18 +93,12 @@ function extractCorePoints(character) {
     if (!character) return [];
     
     const points = [];
-    
-    const sources = [
-        { text: character.description, label: '描述' },
-        { text: character.personality, label: '性格' },
-        { text: character.scenario, label: '场景' },
-        { text: character.first_mes, label: '首句' },
-    ];
+    const sources = [character.description, character.personality, character.scenario, character.first_mes];
     
     for (const source of sources) {
-        if (!source.text) continue;
+        if (!source) continue;
         
-        const lines = source.text.split(/[\n\r。；；!?！？]/).filter(line => {
+        const lines = source.split(/[\n\r。；；!?！？]/).filter(line => {
             line = line.trim();
             return line.length > 5 && line.length < 300;
         });
@@ -103,909 +114,291 @@ function extractCorePoints(character) {
     return points.slice(0, 15);
 }
 
-function generateWeightedAnchor(character, mode = 'temporary') {
-    if (!character) return '';
-    
-    const corePoints = extractCorePoints(character);
-    const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
-    
-    let weightText = '';
-    
-    switch(mode) {
-        case 'emergency':
-            weightText = `\n\n【最高优先级 - 绝对不可违背】\n\n`;
-            break;
-        case 'continuous':
-            weightText = `\n\n【持续锚点 - 必须遵守】\n\n`;
-            break;
-        default:
-            weightText = `\n\n【设定提醒】\n\n`;
+function injectAnchor() {
+    const character = getCurrentCharacter();
+    if (!character || !character.name) {
+        toastr.warning("请先加载角色");
+        return;
     }
     
-    weightText += `<important>\n角色: ${character.name}\n</important>\n\n`;
+    const corePoints = extractCorePoints(character);
+    const userKeywords = extension_settings[extensionName].anchorKeywords || [];
+    
+    let weightText = "\n\n【角色设定提醒】\n";
+    weightText += `<important>角色: ${character.name}</important>\n\n`;
     
     if (corePoints.length > 0) {
-        weightText += `### 核心设定\n`;
+        weightText += "核心设定：\n";
         corePoints.forEach((point, idx) => {
             weightText += `${idx + 1}. ${point}\n`;
         });
-        weightText += '\n';
+        weightText += "\n";
     }
     
     if (userKeywords.length > 0) {
-        weightText += `### 用户要求\n`;
+        weightText += "用户要求：\n";
         userKeywords.forEach(keyword => {
             weightText += `- ${keyword}\n`;
         });
-        weightText += '\n';
+        weightText += "\n";
     }
     
-    weightText += `请严格保持 ${character.name} 的角色设定一致性。\n`;
+    weightText += "请严格保持角色一致性。\n";
     
-    return weightText;
-}
-
-function detectOOCConflicts() {
-    try {
-        const context = getContext();
-        
-        if (!context) {
-            logInfo('detectOOCConflicts: getContext() 返回 null');
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-        
-        if (!context.chat || context.chat.length === 0) {
-            logInfo('聊天记录为空');
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-        
-        logInfo('聊天记录数量:', context.chat.length);
-        
-        const character = getCurrentCharacter();
-        if (!character) {
-            return { conflicts: [], lastMessage: null, characterInfo: null };
-        }
-        
-        const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
-        if (!lastAIMsg || !lastAIMsg.mes) {
-            logInfo('未找到 AI 消息');
-            return { conflicts: [], lastMessage: null, characterInfo: character };
-        }
-        
-        const message = lastAIMsg.mes;
-        logInfo('最后 AI 消息预览:', message.substring(0, 50));
-        
-        const conflicts = [];
-        const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
-        
-        const conflictChecks = [
-            {
-                keywords: ['哑巴', '不会说话', '沉默不语', '不说话'],
-                forbidden: ['说', '回答', '开口', '讲'],
-                type: 'speech',
-                message: '角色设定为哑巴/沉默，但回复中出现了对话',
-                severity: 'high'
-            },
-            {
-                keywords: ['害羞', '内向', '腼腆', '羞涩'],
-                forbidden: ['大笑', '热情', '主动', '拥抱', '亲吻'],
-                type: 'behavior',
-                message: '角色设定为害羞/内向，但表现过于外向',
-                severity: 'medium'
-            },
-            {
-                keywords: ['冷酷', '冷漠', '高冷', '冷淡'],
-                forbidden: ['温柔', '关心', '体贴', '温暖', '热情'],
-                type: 'emotion',
-                message: '角色设定为冷酷/高冷，但表现出温暖情感',
-                severity: 'medium'
-            },
-            {
-                keywords: ['小孩子', '年幼', '儿童', '小孩'],
-                forbidden: ['成熟', '老练', '像大人', '稳重'],
-                type: 'age',
-                message: '角色设定为年幼，但表现过于成熟',
-                severity: 'high'
-            }
-        ];
-        
-        for (const check of conflictChecks) {
-            const hasTrait = check.keywords.some(kw => allText.includes(kw));
-            if (!hasTrait) continue;
-            
-            const hasConflict = check.forbidden.some(word => message.includes(word));
-            if (hasConflict) {
-                conflicts.push({
-                    type: check.type,
-                    message: check.message,
-                    severity: check.severity,
-                    keyword: check.keywords.find(kw => allText.includes(kw)),
-                    forbidden: check.forbidden.find(word => message.includes(word))
-                });
-            }
-        }
-        
-        if (message.length < 20) {
-            conflicts.push({
-                type: 'length',
-                message: '回复过短，可能不符合角色设定',
-                severity: 'low'
-            });
-        }
-        
-        logInfo('检测到冲突数量:', conflicts.length);
-        
-        return { conflicts, lastMessage: message, characterInfo: character };
-    } catch (e) {
-        logError('OOC 检测失败', e);
-        return { conflicts: [], lastMessage: null, characterInfo: null };
+    const input = getMessageInput();
+    if (input.length) {
+        const currentText = input.val() || "";
+        input.val(currentText + weightText);
+        input.focus();
+        toastr.success("已注入角色设定锚点");
     }
 }
 
-function generateFixSuggestions(conflicts, character) {
-    if (!conflicts || conflicts.length === 0) return [];
+function checkOOC() {
+    const character = getCurrentCharacter();
+    if (!character || !character.name) {
+        toastr.warning("请先加载角色");
+        return;
+    }
     
-    const suggestions = [];
+    const context = getContext();
+    if (!context || !context.chat || context.chat.length === 0) {
+        toastr.info("暂无聊天记录");
+        return;
+    }
     
-    conflicts.forEach(c => {
-        switch(c.type) {
-            case 'speech':
-                suggestions.push('请保持沉默，通过动作、表情或心理活动表达');
-                suggestions.push('用省略号或非语言方式回应');
-                break;
-            case 'behavior':
-                suggestions.push('请保持害羞/内向的性格，减少主动行为');
-                suggestions.push('增加脸红、低头、紧张等细节');
-                break;
-            case 'emotion':
-                suggestions.push('请保持冷酷/高冷的态度，减少情感表达');
-                suggestions.push('语言简短、直接，不带感情色彩');
-                break;
-            case 'age':
-                suggestions.push('请用更天真、简单的语言表达');
-                suggestions.push('表现出符合年龄的好奇心和稚气');
-                break;
-            case 'length':
-                suggestions.push('请增加更多环境描写和细节');
-                suggestions.push('补充心理活动和动作描写');
-                break;
-        }
-    });
+    const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
+    if (!lastAIMsg || !lastAIMsg.mes) {
+        toastr.info("暂无 AI 消息");
+        return;
+    }
     
-    if (character && character.name) {
-        const corePoints = extractCorePoints(character);
-        if (corePoints.length > 0) {
-            suggestions.push(`【角色设定回顾】\n${character.name}的核心设定：${corePoints.slice(0, 3).join('；')}`);
+    toastr.info(`正在检查: ${character.name} 的回复`);
+    
+    $("#toolbox-expanded").show();
+    renderOOCPanel(character, lastAIMsg.mes);
+}
+
+function renderOOCPanel(character, message) {
+    const conflicts = [];
+    const allText = (character.personality + " " + character.description + " " + character.scenario).toLowerCase();
+    
+    const checks = [
+        { keywords: ["哑巴", "不会说话", "沉默不语", "不说话"], forbidden: ["说", "回答", "开口", "讲"], type: "speech", message: "角色设定为哑巴/沉默，但回复中出现了对话" },
+        { keywords: ["害羞", "内向", "腼腆", "羞涩"], forbidden: ["大笑", "热情", "主动", "拥抱", "亲吻"], type: "behavior", message: "角色设定为害羞/内向，但表现过于外向" },
+        { keywords: ["冷酷", "冷漠", "高冷", "冷淡"], forbidden: ["温柔", "关心", "体贴", "温暖", "热情"], type: "emotion", message: "角色设定为冷酷/高冷，但表现出温暖情感" },
+        { keywords: ["小孩子", "年幼", "儿童", "小孩"], forbidden: ["成熟", "老练", "像大人", "稳重"], type: "age", message: "角色设定为年幼，但表现过于成熟" }
+    ];
+    
+    for (const check of checks) {
+        const hasTrait = check.keywords.some(kw => allText.includes(kw));
+        if (!hasTrait) continue;
+        
+        const hasConflict = check.forbidden.some(word => message.includes(word));
+        if (hasConflict) {
+            conflicts.push(check);
         }
     }
     
-    return [...new Set(suggestions)].slice(0, 3);
+    const html = `
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">OOC 检查结果</span>
+                <span class="toolbox-content-close" onclick="closePanel()">×</span>
+            </div>
+            <div class="toolbox-char-info">
+                <span class="toolbox-char-name">角色: ${character.name}</span>
+            </div>
+            ${conflicts.length > 0 ? `
+                <div class="toolbox-conflict-results">
+                    <div class="toolbox-conflict-title">发现 ${conflicts.length} 个潜在问题</div>
+                    <div class="toolbox-conflict-list">
+                        ${conflicts.map(c => `
+                            <div class="toolbox-conflict-item">
+                                <div class="toolbox-conflict-message">${c.message}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : `
+                <div class="toolbox-no-conflict">未发现明显问题</div>
+            `}
+            <div class="toolbox-actions">
+                <button class="toolbox-secondary-btn" onclick="closePanel()">关闭</button>
+            </div>
+        </div>
+    `;
+    
+    $("#toolbox-expanded").html(html);
 }
 
-function extractEmotion(message) {
-    if (!message) return 'neutral';
+function checkState() {
+    const character = getCurrentCharacter();
+    if (!character || !character.name) {
+        toastr.warning("请先加载角色");
+        return;
+    }
     
-    const lowerMsg = message.toLowerCase();
+    const context = getContext();
+    if (!context || !context.chat || context.chat.length === 0) {
+        toastr.info("暂无聊天记录");
+        return;
+    }
+    
+    $("#toolbox-expanded").show();
+    renderStatePanel(character);
+}
+
+function renderStatePanel(character) {
+    const emotion = detectCurrentEmotion();
+    
+    const emotionLabels = {
+        happy: "开心",
+        angry: "愤怒",
+        shy: "害羞",
+        sad: "悲伤",
+        surprised: "惊讶",
+        neutral: "中性"
+    };
+    
+    const html = `
+        <div class="toolbox-content-section">
+            <div class="toolbox-content-header">
+                <span class="toolbox-content-title">角色状态</span>
+                <span class="toolbox-content-close" onclick="closePanel()">×</span>
+            </div>
+            <div class="toolbox-current-state">
+                <div class="toolbox-char-name">角色: ${character.name}</div>
+                <div class="toolbox-emotion-display">
+                    <div class="toolbox-emotion-main">
+                        <span class="toolbox-emotion-label">当前情绪:</span>
+                        <span class="toolbox-emotion-value">${emotionLabels[emotion] || "中性"}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbox-actions">
+                <button class="toolbox-secondary-btn" onclick="closePanel()">关闭</button>
+            </div>
+        </div>
+    `;
+    
+    $("#toolbox-expanded").html(html);
+}
+
+function detectCurrentEmotion() {
+    const context = getContext();
+    if (!context || !context.chat || context.chat.length === 0) {
+        return "neutral";
+    }
+    
+    const recentMessages = context.chat.filter(m => !m.is_user).slice(-3);
+    if (recentMessages.length === 0) {
+        return "neutral";
+    }
+    
+    const allText = recentMessages.map(m => m.mes).join(" ").toLowerCase();
+    
     const emotionMap = {
-        happy: ['笑', '开心', '高兴', '愉快', '欢乐', '喜悦'],
-        angry: ['生气', '愤怒', '恼火', '怒', '气愤', '暴躁'],
-        shy: ['害羞', '脸红', '羞涩', '腼腆', '不好意思'],
-        sad: ['难过', '悲伤', '哭', '流泪', '伤心', '沮丧'],
-        surprised: ['惊讶', '吃惊', '震惊', '意外', '诧异'],
+        happy: ["笑", "开心", "高兴", "愉快", "欢乐", "喜悦"],
+        angry: ["生气", "愤怒", "恼火", "怒", "气愤", "暴躁"],
+        shy: ["害羞", "脸红", "羞涩", "腼腆", "不好意思"],
+        sad: ["难过", "悲伤", "哭", "流泪", "伤心", "沮丧"],
+        surprised: ["惊讶", "吃惊", "震惊", "意外", "诧异"]
     };
     
     for (const [emotion, keywords] of Object.entries(emotionMap)) {
         for (const keyword of keywords) {
-            if (lowerMsg.includes(keyword)) {
+            if (allText.includes(keyword)) {
                 return emotion;
             }
         }
     }
     
-    return 'neutral';
+    return "neutral";
 }
 
-function updateCharStates() {
-    try {
-        const context = getContext();
-        if (!context || !context.chat) return;
-        
-        logInfo('更新状态，聊天记录数量:', context.chat.length);
-        
-        const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
-        if (recentMessages.length === 0) {
-            logInfo('无 AI 消息');
-            return;
-        }
-        
-        const lastMessage = recentMessages[recentMessages.length - 1];
-        if (!lastMessage.mes) return;
-        
-        logInfo('提取情绪关键词:', lastMessage.mes.substring(0, 30));
-        
-        const emotion = extractEmotion(lastMessage.mes);
-        if (appState.charStates.emotion !== emotion) {
-            appState.charStates.emotion = emotion;
-            if (appState.charStates.emotionHistory.length >= 10) {
-                appState.charStates.emotionHistory.shift();
-            }
-            appState.charStates.emotionHistory.push({
-                emotion,
-                timestamp: Date.now()
-            });
-        }
-        
-        saveStateToCharacter();
-    } catch (e) {
-        logError('更新角色状态失败', e);
+function closePanel() {
+    $("#toolbox-expanded").hide();
+}
+
+function addKeyword(keyword) {
+    if (!keyword || keyword.trim() === "") return;
+    
+    if (!extension_settings[extensionName].anchorKeywords) {
+        extension_settings[extensionName].anchorKeywords = [];
     }
-}
-
-function saveStateToCharacter() {
-    try {
-        if (!appState.currentCharacter) return;
-        
-        const stateKey = `state_${appState.currentCharacter.name}`;
-        extension_settings[extensionName][stateKey] = {
-            ...appState.charStates,
-            savedAt: Date.now()
-        };
+    
+    if (!extension_settings[extensionName].anchorKeywords.includes(keyword.trim())) {
+        extension_settings[extensionName].anchorKeywords.push(keyword.trim());
         saveSettingsDebounced();
-    } catch(e) {
-        logError('保存状态失败', e);
+        toastr.success("已添加关键词");
     }
 }
 
-function loadStateFromCharacter() {
-    try {
-        if (!appState.currentCharacter) return;
-        
-        const stateKey = `state_${appState.currentCharacter.name}`;
-        const savedState = extension_settings[extensionName][stateKey];
-        if (savedState) {
-            appState.charStates = {
-                ...appState.charStates,
-                ...savedState
-            };
-            logInfo('已加载角色状态:', appState.currentCharacter.name);
-        }
-    } catch(e) {
-        logError('加载状态失败', e);
-    }
-}
-
-function getMessageInput() {
-    return $('#send_textarea, #prompt_textarea').first();
-}
-
-function injectAnchorToInput(mode = 'temporary') {
-    const character = appState.currentCharacter || getCurrentCharacter();
-    if (!character || !character.name) {
-        if (typeof toastr !== 'undefined') {
-            toastr.warning('请先加载角色');
-        }
-        logInfo('没有加载的角色，无法注入锚点');
-        return;
-    }
-    
-    const anchorText = generateWeightedAnchor(character, mode);
-    const input = getMessageInput();
-    
-    if (input.length) {
-        const currentText = input.val() || '';
-        input.val(currentText + (currentText ? '\n' : '') + anchorText);
-        input.focus();
-        if (typeof toastr !== 'undefined') {
-            toastr.success('已注入设定锚点');
-        }
-    }
-}
-
-function copyAnchorToClipboard(mode = 'temporary') {
-    const character = appState.currentCharacter || getCurrentCharacter();
-    if (!character || !character.name) {
-        if (typeof toastr !== 'undefined') {
-            toastr.warning('请先加载角色');
-        }
-        logInfo('没有加载的角色，无法复制锚点');
-        return;
-    }
-    
-    const anchorText = generateWeightedAnchor(character, mode);
-    navigator.clipboard.writeText(anchorText).then(() => {
-        if (typeof toastr !== 'undefined') {
-            toastr.success('已复制到剪贴板');
-        }
-    }).catch(() => {
-        if (typeof toastr !== 'undefined') {
-            toastr.error('复制失败');
-        }
-    });
-}
-
-function injectStateToInput() {
-    const character = appState.currentCharacter || getCurrentCharacter();
-    updateCharStates();
-    
-    const emotionLabels = {
-        happy: '开心',
-        angry: '愤怒',
-        shy: '害羞',
-        sad: '悲伤',
-        surprised: '惊讶',
-        neutral: '中性',
-    };
-    
-    let stateText = `\n\n【角色状态】\n`;
-    stateText += `角色: ${character?.name || '未知'}\n`;
-    stateText += `当前情绪: ${emotionLabels[appState.charStates.emotion] || '中性'}\n`;
-    
-    if (Object.keys(appState.charStates.customFields).length > 0) {
-        stateText += `\n自定义状态:\n`;
-        Object.keys(appState.charStates.customFields).forEach(key => {
-            stateText += `- ${key}: ${appState.charStates.customFields[key]}\n`;
-        });
-    }
-    
-    const input = getMessageInput();
-    if (input.length) {
-        const currentText = input.val() || '';
-        input.val(currentText + stateText);
-        input.focus();
-        if (typeof toastr !== 'undefined') {
-            toastr.success('已注入状态');
-        }
-    }
-}
-
-function toggleTab(tab) {
-    if (appState.expandedTab === tab) {
-        appState.expandedTab = null;
-    } else {
-        appState.expandedTab = tab;
-        if (tab === 'state') {
-            loadStateFromCharacter();
-            updateCharStates();
-        }
-    }
-    renderExpandedContent();
-}
-
-function renderExpandedContent() {
-    const container = $('#toolbox-expanded');
-    if (!appState.expandedTab) {
-        container.hide();
-        return;
-    }
-    
-    let content = '';
-    switch(appState.expandedTab) {
-        case 'anchor':
-            content = renderAnchorContent();
-            break;
-        case 'ooc':
-            content = renderOocContent();
-            break;
-        case 'state':
-            content = renderStateContent();
-            break;
-    }
-    
-    container.html(content);
-    container.show();
-    bindContentEvents();
-}
-
-function renderAnchorContent() {
-    const character = appState.currentCharacter || getCurrentCharacter();
-    const corePoints = character ? extractCorePoints(character) : [];
-    const userKeywords = extension_settings[extensionName]?.anchorKeywords || [];
-    const mode = extension_settings[extensionName]?.injectMode || 'temporary';
-    
-    return `
-        <div class="toolbox-content-section">
-            <div class="toolbox-content-header">
-                <span class="toolbox-content-title">设定锚点注入器</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
-            </div>
-            
-            ${character && character.name ? `
-                <div class="toolbox-char-info">
-                    <span class="toolbox-char-name">${character.name}</span>
-                    ${corePoints.length > 0 ? `
-                        <div class="toolbox-core-points">
-                            <span class="toolbox-section-label">提取的核心设定</span>
-                            <ul>
-                                ${corePoints.slice(0, 6).map(p => `<li>${p}</li>`).join('')}
-                            </ul>
-                        </div>
-                    ` : '<div class="toolbox-no-char">未找到核心设定</div>'}
-                </div>
-            ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            
-            <div class="toolbox-mode-selector">
-                <span class="toolbox-section-label">注入模式</span>
-                <div class="toolbox-mode-buttons">
-                    <button class="toolbox-mode-btn ${mode === 'temporary' ? 'active' : ''}" data-mode="temporary">临时注入</button>
-                    <button class="toolbox-mode-btn ${mode === 'continuous' ? 'active' : ''}" data-mode="continuous">持续注入</button>
-                    <button class="toolbox-mode-btn ${mode === 'emergency' ? 'active' : ''}" data-mode="emergency">紧急修复</button>
-                </div>
-            </div>
-            
-            <div class="toolbox-keywords">
-                <span class="toolbox-section-label">自定义锚点关键词</span>
-                <div class="toolbox-keyword-input">
-                    <input type="text" id="toolbox-new-keyword" placeholder="如：绝对不能暴露身份" />
-                    <button id="toolbox-add-keyword">添加</button>
-                </div>
-                <div class="toolbox-keyword-list">
-                    ${userKeywords.length === 0 ? '<span class="toolbox-empty-hint">暂未添加关键词</span>' : ''}
-                    ${userKeywords.map((kw, i) => `
-                        <span class="toolbox-keyword-tag">
-                            ${kw}
-                            <button class="toolbox-keyword-remove" data-index="${i}">×</button>
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div class="toolbox-actions">
-                <button id="toolbox-inject-anchor-btn" class="toolbox-primary-btn">注入到输入框</button>
-                <button id="toolbox-copy-anchor-btn" class="toolbox-secondary-btn">复制锚点</button>
-            </div>
-        </div>
-    `;
-}
-
-function renderOocContent() {
-    const result = detectOOCConflicts();
-    const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
-    const settings = extension_settings[extensionName];
-    const threshold = settings?.oocDetectThreshold || defaultSettings.oocDetectThreshold;
-    
-    return `
-        <div class="toolbox-content-section">
-            <div class="toolbox-content-header">
-                <span class="toolbox-content-title">OOC 实时检测</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
-            </div>
-            
-            ${result.characterInfo ? `
-                <div class="toolbox-ooc-char">
-                    <span class="toolbox-ooc-label">检测角色:</span>
-                    <span class="toolbox-ooc-value">${result.characterInfo.name}</span>
-                </div>
-            ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            
-            <div class="toolbox-threshold-container">
-                <span class="toolbox-section-label">检测阈值</span>
-                <div class="toolbox-threshold-slider-container">
-                    <input type="range" id="toolbox-ooc-threshold" min="0.1" max="1" step="0.1" value="${threshold}" />
-                    <span class="toolbox-threshold-value">${threshold}</span>
-                </div>
-            </div>
-            
-            <button id="toolbox-run-ooc" class="toolbox-primary-btn">运行检测</button>
-            
-            ${result.conflicts.length > 0 ? `
-                <div class="toolbox-conflict-results">
-                    <div class="toolbox-conflict-title">
-                        检测到 ${result.conflicts.length} 个潜在冲突
-                    </div>
-                    <div class="toolbox-conflict-list">
-                        ${result.conflicts.map((c, i) => `
-                            <div class="toolbox-conflict-item ${c.severity}">
-                                <div class="toolbox-conflict-header">
-                                    <span class="toolbox-severity-badge ${c.severity}">${c.severity === 'high' ? '高' : c.severity === 'medium' ? '中' : '低'}</span>
-                                    <span class="toolbox-conflict-type">${c.type}</span>
-                                </div>
-                                <div class="toolbox-conflict-message">${c.message}</div>
-                                ${c.forbidden ? `<div class="toolbox-conflict-forbidden">问题词："${c.forbidden}"</div>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    ${suggestions.length > 0 ? `
-                        <div class="toolbox-suggestions">
-                            <div class="toolbox-suggestions-title">修正方案</div>
-                            <div class="toolbox-suggestion-list">
-                                ${suggestions.map((s, i) => `
-                                    <button class="toolbox-suggestion-btn" data-text="${s}">${i + 1}. ${s}</button>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <button id="toolbox-fix-ooc" class="toolbox-primary-btn">一键注入修正</button>
-                </div>
-            ` : '<div class="toolbox-no-conflict">未检测到明显冲突</div>'}
-        </div>
-    `;
-}
-
-function renderStateContent() {
-    const character = appState.currentCharacter || getCurrentCharacter();
-    const states = appState.charStates;
-    
-    const emotionLabels = {
-        happy: '开心',
-        angry: '愤怒',
-        shy: '害羞',
-        sad: '悲伤',
-        surprised: '惊讶',
-        neutral: '中性',
-    };
-    
-    const emotionColors = {
-        happy: '#4ade80',
-        angry: '#f87171',
-        shy: '#f472b6',
-        sad: '#60a5fa',
-        surprised: '#fbbf24',
-        neutral: '#94a3b8',
-    };
-    
-    return `
-        <div class="toolbox-content-section">
-            <div class="toolbox-content-header">
-                <span class="toolbox-content-title">角色状态追踪</span>
-                <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
-            </div>
-            
-            <div class="toolbox-current-state">
-                <div class="toolbox-char-name">${character?.name || '未知角色'}</div>
-                <div class="toolbox-emotion-display" style="border-left: 4px solid ${emotionColors[states.emotion]}">
-                    <div class="toolbox-emotion-main">
-                        <span class="toolbox-emotion-label">当前情绪</span>
-                        <span class="toolbox-emotion-value" style="color: ${emotionColors[states.emotion]}">${emotionLabels[states.emotion]}</span>
-                    </div>
-                </div>
-            </div>
-            
-            ${states.emotionHistory.length > 1 ? `
-                <div class="toolbox-emotion-history">
-                    <span class="toolbox-section-label">情绪变化</span>
-                    <div class="toolbox-emotion-timeline">
-                        ${states.emotionHistory.slice(-8).map(e => `
-                            <div class="toolbox-timeline-item" style="border-top-color: ${emotionColors[e.emotion]}">
-                                <span class="toolbox-timeline-emotion">${emotionLabels[e.emotion]}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
-            
-            <div class="toolbox-custom-fields">
-                <span class="toolbox-section-label">自定义状态</span>
-                <div class="toolbox-field-input">
-                    <input type="text" id="toolbox-field-name" placeholder="字段名" />
-                    <input type="text" id="toolbox-field-value" placeholder="值" />
-                    <button id="toolbox-add-field">添加</button>
-                </div>
-                <div class="toolbox-custom-fields-list">
-                    ${Object.keys(states.customFields).length === 0 ? '<span class="toolbox-empty-hint">暂无自定义状态</span>' : ''}
-                    ${Object.keys(states.customFields).map(key => `
-                        <div class="toolbox-custom-field">
-                            <span class="toolbox-field-label">${key}</span>
-                            <span class="toolbox-field-value">${states.customFields[key]}</span>
-                            <button class="toolbox-remove-field" data-field="${key}">×</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div class="toolbox-actions">
-                <button id="toolbox-inject-state" class="toolbox-primary-btn">注入状态到对话</button>
-            </div>
-        </div>
-    `;
-}
-
-function bindContentEvents() {
-    $('.toolbox-mode-btn').off('click').on('click', function() {
-        const mode = $(this).data('mode');
-        extension_settings[extensionName].injectMode = mode;
-        saveSettingsDebounced();
-        renderExpandedContent();
-    });
-    
-    $('#toolbox-add-keyword').off('click').on('click', function() {
-        const keyword = $('#toolbox-new-keyword').val().trim();
-        if (!keyword) return;
-        
-        const settings = extension_settings[extensionName];
-        if (!settings.anchorKeywords) settings.anchorKeywords = [];
-        if (!settings.anchorKeywords.includes(keyword)) {
-            settings.anchorKeywords.push(keyword);
-            saveSettingsDebounced();
-            renderExpandedContent();
-        }
-        $('#toolbox-new-keyword').val('');
-    });
-    
-    $('.toolbox-keyword-remove').off('click').on('click', function() {
-        const index = $(this).data('index');
-        extension_settings[extensionName].anchorKeywords.splice(index, 1);
-        saveSettingsDebounced();
-        renderExpandedContent();
-    });
-    
-    $('#toolbox-inject-anchor-btn').off('click').on('click', function() {
-        const mode = extension_settings[extensionName]?.injectMode || 'temporary';
-        injectAnchorToInput(mode);
-        toggleTab(null);
-    });
-    
-    $('#toolbox-copy-anchor-btn').off('click').on('click', function() {
-        const mode = extension_settings[extensionName]?.injectMode || 'temporary';
-        copyAnchorToClipboard(mode);
-    });
-    
-    $('#toolbox-run-ooc').off('click').on('click', function() {
-        renderExpandedContent();
-    });
-    
-    $('#toolbox-ooc-threshold').off('input').on('input', function() {
-        const value = parseFloat($(this).val());
-        extension_settings[extensionName].oocDetectThreshold = value;
-        saveSettingsDebounced();
-        $(this).next('.toolbox-threshold-value').text(value);
-    });
-    
-    $('.toolbox-suggestion-btn').off('click').on('click', function() {
-        const text = $(this).data('text');
-        const input = getMessageInput();
-        if (input.length) {
-            input.val(text);
-            input.focus();
-            toggleTab(null);
-        }
-    });
-    
-    $('#toolbox-fix-ooc').off('click').on('click', function() {
-        const result = detectOOCConflicts();
-        const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
-        
-        if (suggestions.length > 0) {
-            const input = getMessageInput();
-            if (input.length) {
-                const fixText = `【OOC 修正】\n${suggestions.join('\n')}`;
-                input.val(fixText);
-                input.focus();
-                toggleTab(null);
-            }
-        }
-    });
-    
-    $('#toolbox-add-field').off('click').on('click', function() {
-        const name = $('#toolbox-field-name').val().trim();
-        const value = $('#toolbox-field-value').val().trim();
-        if (!name) return;
-        
-        appState.charStates.customFields[name] = value || '0';
-        saveStateToCharacter();
-        renderExpandedContent();
-        $('#toolbox-field-name').val('');
-        $('#toolbox-field-value').val('');
-    });
-    
-    $('.toolbox-remove-field').off('click').on('click', function() {
-        const field = $(this).data('field');
-        delete appState.charStates.customFields[field];
-        saveStateToCharacter();
-        renderExpandedContent();
-    });
-    
-    $('#toolbox-inject-state').off('click').on('click', function() {
-        injectStateToInput();
-        toggleTab(null);
-    });
-}
-
-async function loadSettings() {
-    extension_settings[extensionName] = extension_settings[extensionName] || {};
-    if (Object.keys(extension_settings[extensionName]).length === 0) {
-        Object.assign(extension_settings[extensionName], defaultSettings);
-    }
-    
-    const settings = extension_settings[extensionName];
-    $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
-    
-    const tools = settings.tools || defaultSettings.tools;
-    $('#tool_anchor_inject').prop('checked', tools.anchorInject !== false).trigger('input');
-    $('#tool_ooc_detect').prop('checked', tools.oocDetect !== false).trigger('input');
-    $('#tool_char_state').prop('checked', tools.charState !== false).trigger('input');
-    
-    updateToolVisibility();
-}
-
-function updateToolVisibility() {
-    const settings = extension_settings[extensionName];
-    const tools = settings.tools || defaultSettings.tools;
-    
-    $('#toolbox-anchor-btn').toggle(tools.anchorInject !== false);
-    $('#toolbox-ooc-btn').toggle(tools.oocDetect !== false);
-    $('#toolbox-state-btn').toggle(tools.charState !== false);
-    
-    const allHidden = !tools.anchorInject && !tools.oocDetect && !tools.charState;
-    
-    if (allHidden || !settings.enabled) {
-        $('#toolbox-toolbar').hide();
-    } else {
-        $('#toolbox-toolbar').show();
-    }
-}
-
-function onEnableInput(event) {
-    const value = Boolean($(event.target).prop('checked'));
-    extension_settings[extensionName].enabled = value;
-    saveSettingsDebounced();
-    updateToolVisibility();
-}
-
-function onToolVisibilityChange(toolKey) {
-    return function(event) {
-        const checked = Boolean($(event.target).prop('checked'));
-        if (!extension_settings[extensionName].tools) {
-            extension_settings[extensionName].tools = {};
-        }
-        extension_settings[extensionName].tools[toolKey] = checked;
-        saveSettingsDebounced();
-        updateToolVisibility();
-    };
-}
-
-function onCharacterLoaded(character) {
-    logInfo('角色加载事件触发！', character);
-    
-    if (!character) {
-        logInfo('传入的 character 参数为空，尝试从 getContext() 获取');
-        const contextChar = getCurrentCharacter();
-        if (contextChar) {
-            appState.currentCharacter = contextChar;
-        } else {
-            logInfo('也无法从 getContext() 获取角色');
-            return;
-        }
-    } else {
-        if (typeof character === 'object' && character.name) {
-            appState.currentCharacter = character;
-        } else {
-            logInfo('character 参数格式异常，尝试从 getContext() 获取');
-            const contextChar = getCurrentCharacter();
-            if (contextChar) {
-                appState.currentCharacter = contextChar;
-            }
-        }
-    }
-    
-    logInfo('当前角色:', appState.currentCharacter?.name || 'unknown');
-    loadStateFromCharacter();
-    updateCharStates();
-    
-    if (appState.expandedTab) {
-        renderExpandedContent();
-    }
-}
-
-function onChatLoaded() {
-    logInfo('聊天加载事件触发！');
-    const character = getCurrentCharacter();
-    if (character) {
-        appState.currentCharacter = character;
-        logInfo('从聊天加载角色:', character.name);
-        loadStateFromCharacter();
-        updateCharStates();
-    }
-}
-
-function onMessageReceived(message) {
-    logInfo('收到新消息事件！', message);
-    if (appState.expandedTab === 'state') {
-        updateCharStates();
-        renderExpandedContent();
-    }
-}
+// Make functions global
+window.closePanel = closePanel;
+window.addKeyword = addKeyword;
 
 jQuery(async () => {
-    logInfo('开始初始化扩展...');
+    console.log("[ST-Toolbox] Loading extension...");
     
     try {
         await loadExtensionSettings();
-        logInfo('loadExtensionSettings 完成');
+        console.log("[ST-Toolbox] loadExtensionSettings completed");
     } catch (e) {
-        logError('loadExtensionSettings 失败', e);
+        console.error("[ST-Toolbox] Error loading extension settings:", e);
     }
     
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-        $('#extensions_settings').append(settingsHtml);
-        logInfo('设置面板加载成功');
+        $("#extensions_settings").append(settingsHtml);
+        console.log("[ST-Toolbox] Settings panel loaded");
     } catch (e) {
-        logError('加载设置面板失败', e);
-        return;
+        console.error("[ST-Toolbox] Error loading settings HTML:", e);
     }
     
     const toolbarHtml = `
         <div id="toolbox-toolbar" style="display: none;">
             <div class="toolbox-buttons">
                 <button id="toolbox-anchor-btn" class="toolbox-main-btn">锚点</button>
-                <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
+                <button id="toolbox-ooc-btn" class="toolbox-main-btn">检查</button>
                 <button id="toolbox-state-btn" class="toolbox-main-btn">状态</button>
             </div>
         </div>
         <div id="toolbox-expanded" style="display: none;"></div>
     `;
     
-    const sendForm = $('#send_form');
+    const sendForm = $("#send_form");
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
-        logInfo('工具栏已添加到 DOM');
+        console.log("[ST-Toolbox] Toolbar added to DOM");
     } else {
-        logError('找不到 #send_form 元素');
-        return;
+        console.error("[ST-Toolbox] Could not find send_form element");
     }
     
-    $('#toolbox-anchor-btn').on('click', () => toggleTab('anchor'));
-    $('#toolbox-ooc-btn').on('click', () => toggleTab('ooc'));
-    $('#toolbox-state-btn').on('click', () => toggleTab('state'));
+    $("#toolbox-anchor-btn").on("click", injectAnchor);
+    $("#toolbox-ooc-btn").on("click", checkOOC);
+    $("#toolbox-state-btn").on("click", checkState);
     
-    $('#enable_toolbox').on('input', onEnableInput);
-    $('#tool_anchor_inject').on('input', onToolVisibilityChange('anchorInject'));
-    $('#tool_ooc_detect').on('input', onToolVisibilityChange('oocDetect'));
-    $('#tool_char_state').on('input', onToolVisibilityChange('charState'));
+    $("#enable_toolbox").on("input", onEnableInput);
+    $("#tool_anchor_inject").on("input", onToolVisibilityChange("anchorInject"));
+    $("#tool_ooc_detect").on("input", onToolVisibilityChange("oocDetect"));
+    $("#tool_char_state").on("input", onToolVisibilityChange("charState"));
+    
+    $("#add_keyword_btn").on("click", () => {
+        const keyword = $("#new_keyword").val();
+        addKeyword(keyword);
+        $("#new_keyword").val("");
+    });
     
     await loadSettings();
     
-    if (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.on) {
-        logInfo('SillyTavern.on 可用，注册事件监听');
-        
-        try {
-            window.SillyTavern.on('characterLoaded', onCharacterLoaded);
-            logInfo('已注册 characterLoaded 事件');
-        } catch (e) {
-            logError('注册 characterLoaded 事件失败', e);
-        }
-        
-        try {
-            window.SillyTavern.on('chatLoaded', onChatLoaded);
-            logInfo('已注册 chatLoaded 事件');
-        } catch (e) {
-            logError('注册 chatLoaded 事件失败', e);
-        }
-        
-        try {
-            window.SillyTavern.on('messageReceived', onMessageReceived);
-            logInfo('已注册 messageReceived 事件');
-        } catch (e) {
-            logError('注册 messageReceived 事件失败', e);
-        }
-    } else {
-        logInfo('window.SillyTavern.on 不可用，将使用备选方案');
+    console.log("[ST-Toolbox] Extension initialized");
+    
+    // Check if character is already loaded
+    const character = getCurrentCharacter();
+    if (character) {
+        console.log("[ST-Toolbox] Character detected:", character.name);
     }
-    
-    logInfo('检查初始角色...');
-    const initialCharacter = getCurrentCharacter();
-    if (initialCharacter) {
-        logInfo('检测到已加载角色:', initialCharacter.name);
-        appState.currentCharacter = initialCharacter;
-        loadStateFromCharacter();
-        updateCharStates();
-    } else {
-        logInfo('未检测到角色，等待角色加载事件');
-    }
-    
-    window.toggleTab = toggleTab;
-    
-    logInfo('扩展初始化完成！');
-    
-    setTimeout(() => {
-        const charAfterWait = getCurrentCharacter();
-        if (charAfterWait && (!appState.currentCharacter || appState.currentCharacter.name !== charAfterWait.name)) {
-            logInfo('延迟检查发现角色:', charAfterWait.name);
-            appState.currentCharacter = charAfterWait;
-            loadStateFromCharacter();
-            updateCharStates();
-        }
-    }, 2000);
 });
+
