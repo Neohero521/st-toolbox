@@ -12,14 +12,13 @@ const defaultSettings = {
     },
     anchorKeywords: [],
     injectMode: 'temporary',
-    oocDetectThreshold: 0.7, // 添加检测阈值
+    oocDetectThreshold: 0.7,
     autoInjectInterval: 5,
 };
 
-// 在 global 上暂存状态，用于同步
 const STORAGE_KEY = 'st-toolbox-state';
 
-const appState = {
+let appState = {
     expandedTab: null,
     charStates: {
         emotion: 'neutral',
@@ -28,20 +27,39 @@ const appState = {
     },
 };
 
+let lastChatLength = 0;
+let lastCharacterName = '';
+
+function logInfo(message, data = null) {
+    if (data) {
+        console.log(`[ST-Toolbox] ${message}`, data);
+    } else {
+        console.log(`[ST-Toolbox] ${message}`);
+    }
+}
+
+function logError(message, error) {
+    console.error(`[ST-Toolbox] ${message}:`, error);
+}
+
 function getCurrentCharacter() {
     try {
         const context = getContext();
+        
         if (!context) {
-            console.log('[ST-Toolbox] getContext() 返回 null');
+            logInfo('getContext() 返回 null');
             return null;
         }
+        
         if (!context.name) {
-            console.log('[ST-Toolbox] 未加载角色');
+            logInfo('未加载角色（context.name 为空）');
             return null;
         }
-        console.log('[ST-Toolbox] 获取当前角色:', context.name);
+        
+        logInfo('获取当前角色成功', context.name);
+        
         return {
-            name: context.name || '未知角色',
+            name: context.name,
             description: context.description || '',
             personality: context.personality || '',
             scenario: context.scenario || '',
@@ -49,7 +67,7 @@ function getCurrentCharacter() {
             avatar: context.avatar || '',
         };
     } catch (e) {
-        console.error('[ST-Toolbox] 获取角色失败:', e);
+        logError('获取角色信息失败', e);
         return null;
     }
 }
@@ -67,7 +85,6 @@ function extractCorePoints(character) {
     for (const source of sources) {
         if (!source.text) continue;
         
-        // 更安全的分隔：支持多种换行和标点符号
         const lines = source.text.split(/[\n\r。；;!?！？]/).filter(line => {
             line = line.trim();
             return line.length > 5 && line.length < 300;
@@ -81,7 +98,7 @@ function extractCorePoints(character) {
         }
     }
     
-    return points.slice(0, 15); // 最多提取15个核心点
+    return points.slice(0, 15);
 }
 
 function generateWeightedAnchor(character, mode = 'temporary') {
@@ -124,91 +141,101 @@ function generateWeightedAnchor(character, mode = 'temporary') {
     return weightText;
 }
 
-function detectOOCConflicts(character) {
-    console.log('[ST-Toolbox] 开始 OOC 冲突检测');
-    const context = getContext();
-    
-    if (!context) {
-        console.log('[ST-Toolbox] detectOOCConflicts: getContext() 返回 null');
-        return { conflicts: [], lastMessage: null };
-    }
-    
-    console.log('[ST-Toolbox] 聊天记录数量:', context.chat?.length || 0);
-    
-    if (!context.chat || context.chat.length === 0) {
-        console.log('[ST-Toolbox] 聊天记录为空');
-        return { conflicts: [], lastMessage: null };
-    }
-    
-    const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
-    if (!lastAIMsg || !lastAIMsg.mes) {
-        console.log('[ST-Toolbox] 未找到 AI 消息');
-        return { conflicts: [], lastMessage: null };
-    }
-    
-    const message = lastAIMsg.mes;
-    console.log('[ST-Toolbox] 最后 AI 消息预览:', message.substring(0, 100) + '...');
-    
-    const conflicts = [];
-    const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
-    
-    const conflictChecks = [
-        {
-            keywords: ['哑巴', '不会说话', '沉默不语', '不说话'],
-            forbidden: ['说', '回答', '开口', '讲'],
-            type: 'speech',
-            message: '角色设定为哑巴/沉默，但回复中出现了对话',
-            severity: 'high'
-        },
-        {
-            keywords: ['害羞', '内向', '腼腆', '羞涩'],
-            forbidden: ['大笑', '热情', '主动', '拥抱', '亲吻'],
-            type: 'behavior',
-            message: '角色设定为害羞/内向，但表现过于外向',
-            severity: 'medium'
-        },
-        {
-            keywords: ['冷酷', '冷漠', '高冷', '冷淡'],
-            forbidden: ['温柔', '关心', '体贴', '温暖', '热情'],
-            type: 'emotion',
-            message: '角色设定为冷酷/高冷，但表现出温暖情感',
-            severity: 'medium'
-        },
-        {
-            keywords: ['小孩子', '年幼', '儿童', '小孩'],
-            forbidden: ['成熟', '老练', '像大人', '稳重'],
-            type: 'age',
-            message: '角色设定为年幼，但表现过于成熟',
-            severity: 'high'
-        }
-    ];
-    
-    for (const check of conflictChecks) {
-        const hasTrait = check.keywords.some(kw => allText.includes(kw));
-        if (!hasTrait) continue;
+function detectOOCConflicts() {
+    try {
+        const context = getContext();
         
-        const hasConflict = check.forbidden.some(word => message.includes(word));
-        if (hasConflict) {
+        if (!context) {
+            logInfo('detectOOCConflicts: getContext() 返回 null');
+            return { conflicts: [], lastMessage: null, characterInfo: null };
+        }
+        
+        if (!context.chat || context.chat.length === 0) {
+            logInfo('聊天记录为空');
+            return { conflicts: [], lastMessage: null, characterInfo: null };
+        }
+        
+        logInfo('聊天记录数量', context.chat.length);
+        
+        const character = getCurrentCharacter();
+        if (!character) {
+            return { conflicts: [], lastMessage: null, characterInfo: null };
+        }
+        
+        const lastAIMsg = context.chat.filter(m => !m.is_user).slice(-1)[0];
+        if (!lastAIMsg || !lastAIMsg.mes) {
+            logInfo('未找到 AI 消息');
+            return { conflicts: [], lastMessage: null, characterInfo: character };
+        }
+        
+        const message = lastAIMsg.mes;
+        logInfo('最后 AI 消息预览', message.substring(0, 50));
+        
+        const conflicts = [];
+        const allText = (character.personality + ' ' + character.description + ' ' + character.scenario).toLowerCase();
+        
+        const conflictChecks = [
+            {
+                keywords: ['哑巴', '不会说话', '沉默不语', '不说话'],
+                forbidden: ['说', '回答', '开口', '讲'],
+                type: 'speech',
+                message: '角色设定为哑巴/沉默，但回复中出现了对话',
+                severity: 'high'
+            },
+            {
+                keywords: ['害羞', '内向', '腼腆', '羞涩'],
+                forbidden: ['大笑', '热情', '主动', '拥抱', '亲吻'],
+                type: 'behavior',
+                message: '角色设定为害羞/内向，但表现过于外向',
+                severity: 'medium'
+            },
+            {
+                keywords: ['冷酷', '冷漠', '高冷', '冷淡'],
+                forbidden: ['温柔', '关心', '体贴', '温暖', '热情'],
+                type: 'emotion',
+                message: '角色设定为冷酷/高冷，但表现出温暖情感',
+                severity: 'medium'
+            },
+            {
+                keywords: ['小孩子', '年幼', '儿童', '小孩'],
+                forbidden: ['成熟', '老练', '像大人', '稳重'],
+                type: 'age',
+                message: '角色设定为年幼，但表现过于成熟',
+                severity: 'high'
+            }
+        ];
+        
+        for (const check of conflictChecks) {
+            const hasTrait = check.keywords.some(kw => allText.includes(kw));
+            if (!hasTrait) continue;
+            
+            const hasConflict = check.forbidden.some(word => message.includes(word));
+            if (hasConflict) {
+                conflicts.push({
+                    type: check.type,
+                    message: check.message,
+                    severity: check.severity,
+                    keyword: check.keywords.find(kw => allText.includes(kw)),
+                    forbidden: check.forbidden.find(word => message.includes(word))
+                });
+            }
+        }
+        
+        if (message.length < 20) {
             conflicts.push({
-                type: check.type,
-                message: check.message,
-                severity: check.severity,
-                keyword: check.keywords.find(kw => allText.includes(kw)),
-                forbidden: check.forbidden.find(word => message.includes(word))
+                type: 'length',
+                message: '回复过短，可能不符合角色设定',
+                severity: 'low'
             });
         }
+        
+        logInfo('检测到冲突数量', conflicts.length);
+        
+        return { conflicts, lastMessage: message, characterInfo: character };
+    } catch (e) {
+        logError('OOC 检测失败', e);
+        return { conflicts: [], lastMessage: null, characterInfo: null };
     }
-    
-    if (message.length < 20) {
-        conflicts.push({
-            type: 'length',
-            message: '回复过短，可能不符合角色设定',
-            severity: 'low'
-        });
-    }
-    
-    console.log('[ST-Toolbox] OOC 检测完成，发现冲突数:', conflicts.length);
-    return { conflicts, lastMessage: message };
 }
 
 function generateFixSuggestions(conflicts, character) {
@@ -241,7 +268,12 @@ function generateFixSuggestions(conflicts, character) {
         }
     });
     
-    suggestions.push(`【角色设定回顾】\n${character.name}的核心设定：${extractCorePoints(character).slice(0, 3).join('；')}`);
+    if (character && character.name) {
+        const corePoints = extractCorePoints(character);
+        if (corePoints.length > 0) {
+            suggestions.push(`【角色设定回顾】\n${character.name}的核心设定：${corePoints.slice(0, 3).join('；')}`);
+        }
+    }
     
     return [...new Set(suggestions)].slice(0, 3);
 }
@@ -270,46 +302,45 @@ function extractEmotion(message) {
 }
 
 function updateCharStates() {
-    const context = getContext();
-    if (!context || !context.chat) {
-        console.log('[ST-Toolbox] updateCharStates: 无聊天记录');
-        return;
-    }
-    
-    console.log('[ST-Toolbox] 更新角色状态，聊天记录数:', context.chat.length);
-    
-    const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
-    if (recentMessages.length === 0) {
-        console.log('[ST-Toolbox] updateCharStates: 无 AI 消息');
-        return;
-    }
-    
-    const lastMessage = recentMessages[recentMessages.length - 1];
-    if (!lastMessage.mes) return;
-    
-    const emotion = extractEmotion(lastMessage.mes);
-    console.log('[ST-Toolbox] 提取的情绪关键词:', emotion, '- 消息预览:', lastMessage.mes.substring(0, 50) + '...');
-    
-    if (appState.charStates.emotion !== emotion) {
-        appState.charStates.emotion = emotion;
-        if (appState.charStates.emotionHistory.length >= 10) {
-            appState.charStates.emotionHistory.shift();
+    try {
+        const context = getContext();
+        if (!context || !context.chat) return;
+        
+        logInfo('更新状态，聊天记录数量', context.chat.length);
+        
+        const recentMessages = context.chat.filter(m => !m.is_user).slice(-5);
+        if (recentMessages.length === 0) {
+            logInfo('无 AI 消息');
+            return;
         }
-        appState.charStates.emotionHistory.push({
-            emotion,
-            timestamp: Date.now()
-        });
+        
+        const lastMessage = recentMessages[recentMessages.length - 1];
+        if (!lastMessage.mes) return;
+        
+        logInfo('提取情绪关键词', lastMessage.mes.substring(0, 30));
+        
+        const emotion = extractEmotion(lastMessage.mes);
+        if (appState.charStates.emotion !== emotion) {
+            appState.charStates.emotion = emotion;
+            if (appState.charStates.emotionHistory.length >= 10) {
+                appState.charStates.emotionHistory.shift();
+            }
+            appState.charStates.emotionHistory.push({
+                emotion,
+                timestamp: Date.now()
+            });
+        }
+        
+        trySaveStateToCharacter();
+    } catch (e) {
+        logError('更新角色状态失败', e);
     }
-    
-    trySaveStateToCharacter();
 }
 
-// 保存状态到角色数据
 function trySaveStateToCharacter() {
     try {
         const context = getContext();
         if (context && context.name) {
-            // 将状态保存到 extension_settings 中，按角色名区分
             const stateKey = `state_${context.name}`;
             extension_settings[extensionName][stateKey] = {
                 ...appState.charStates,
@@ -318,11 +349,10 @@ function trySaveStateToCharacter() {
             saveSettingsDebounced();
         }
     } catch(e) {
-        console.log('Failed to save state:', e);
+        logError('保存状态失败', e);
     }
 }
 
-// 从角色数据加载状态
 function tryLoadStateFromCharacter() {
     try {
         const context = getContext();
@@ -334,10 +364,11 @@ function tryLoadStateFromCharacter() {
                     ...appState.charStates,
                     ...savedState
                 };
+                logInfo('已加载角色状态', context.name);
             }
         }
     } catch(e) {
-        console.log('Failed to load state:', e);
+        logError('加载状态失败', e);
     }
 }
 
@@ -380,7 +411,6 @@ function copyAnchorToClipboard(mode = 'temporary') {
 
 function injectStateToInput() {
     const character = getCurrentCharacter();
-    const states = appState.charStates;
     updateCharStates();
     
     const emotionLabels = {
@@ -394,12 +424,12 @@ function injectStateToInput() {
     
     let stateText = `\n\n【角色状态】\n`;
     stateText += `角色: ${character?.name || '未知'}\n`;
-    stateText += `当前情绪: ${emotionLabels[states.emotion] || '中性'}\n`;
+    stateText += `当前情绪: ${emotionLabels[appState.charStates.emotion] || '中性'}\n`;
     
-    if (Object.keys(states.customFields).length > 0) {
+    if (Object.keys(appState.charStates.customFields).length > 0) {
         stateText += `\n自定义状态:\n`;
-        Object.keys(states.customFields).forEach(key => {
-            stateText += `- ${key}: ${states.customFields[key]}\n`;
+        Object.keys(appState.charStates.customFields).forEach(key => {
+            stateText += `- ${key}: ${appState.charStates.customFields[key]}\n`;
         });
     }
     
@@ -418,7 +448,7 @@ function toggleTab(tab) {
     } else {
         appState.expandedTab = tab;
         if (tab === 'state') {
-            tryLoadStateFromCharacter(); // 切换到状态面板时先尝试加载
+            tryLoadStateFromCharacter();
             updateCharStates();
         }
     }
@@ -512,9 +542,8 @@ function renderAnchorContent() {
 }
 
 function renderOocContent() {
-    const character = getCurrentCharacter();
-    const result = detectOOCConflicts(character);
-    const suggestions = character ? generateFixSuggestions(result.conflicts, character) : [];
+    const result = detectOOCConflicts();
+    const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
     const settings = extension_settings[extensionName];
     const threshold = settings?.oocDetectThreshold || defaultSettings.oocDetectThreshold;
     
@@ -524,6 +553,13 @@ function renderOocContent() {
                 <span class="toolbox-content-title">OOC 实时检测</span>
                 <span class="toolbox-content-close" onclick="toggleTab(null)">×</span>
             </div>
+            
+            ${result.characterInfo ? `
+                <div class="toolbox-ooc-char">
+                    <span class="toolbox-ooc-label">检测角色:</span>
+                    <span class="toolbox-ooc-value">${result.characterInfo.name}</span>
+                </div>
+            ` : '<div class="toolbox-no-char">请先加载角色</div>'}
             
             <div class="toolbox-threshold-container">
                 <span class="toolbox-section-label">检测阈值</span>
@@ -693,7 +729,6 @@ function bindContentEvents() {
         renderExpandedContent();
     });
     
-    // 阈值设置事件
     $('#toolbox-ooc-threshold').off('input').on('input', function() {
         const value = parseFloat($(this).val());
         extension_settings[extensionName].oocDetectThreshold = value;
@@ -712,9 +747,8 @@ function bindContentEvents() {
     });
     
     $('#toolbox-fix-ooc').off('click').on('click', function() {
-        const character = getCurrentCharacter();
-        const result = detectOOCConflicts(character);
-        const suggestions = character ? generateFixSuggestions(result.conflicts, character) : [];
+        const result = detectOOCConflicts();
+        const suggestions = result.characterInfo ? generateFixSuggestions(result.conflicts, result.characterInfo) : [];
         
         if (suggestions.length > 0) {
             const input = getMessageInput();
@@ -805,20 +839,44 @@ function onToolVisibilityChange(toolKey) {
     };
 }
 
+function startMonitoring() {
+    setInterval(() => {
+        try {
+            const context = getContext();
+            if (!context) return;
+            
+            if (context.name && context.name !== lastCharacterName) {
+                logInfo('角色切换', `${lastCharacterName} -> ${context.name}`);
+                lastCharacterName = context.name;
+                lastChatLength = context.chat?.length || 0;
+                tryLoadStateFromCharacter();
+            }
+            
+            if (context.chat && context.chat.length !== lastChatLength) {
+                logInfo('新消息', `聊天记录数: ${context.chat.length}`);
+                lastChatLength = context.chat.length;
+                
+                if (appState.expandedTab === 'state') {
+                    updateCharStates();
+                    renderExpandedContent();
+                }
+            }
+        } catch (e) {
+            logError('监控出错', e);
+        }
+    }, 1000);
+}
+
 jQuery(async function() {
-    console.log('[ST-Toolbox] 开始初始化');
+    logInfo('开始初始化扩展');
     
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-        const settingsContainer = $('#extensions_settings');
-        if (settingsContainer.length) {
-            settingsContainer.append(settingsHtml);
-            console.log('[ST-Toolbox] 设置面板加载成功');
-        } else {
-            console.log('[ST-Toolbox] 警告: #extensions_settings 元素不存在');
-        }
+        $('#extensions_settings').append(settingsHtml);
+        logInfo('设置面板加载成功');
     } catch (e) {
-        console.error('[ST-Toolbox] 加载设置面板失败:', e);
+        logError('加载设置面板失败', e);
+        return;
     }
     
     const toolbarHtml = `
@@ -835,6 +893,10 @@ jQuery(async function() {
     const sendForm = $('#send_form');
     if (sendForm.length) {
         sendForm.before(toolbarHtml);
+        logInfo('工具栏已添加到 DOM');
+    } else {
+        logError('找不到 #send_form 元素');
+        return;
     }
     
     $('#toolbox-anchor-btn').on('click', () => toggleTab('anchor'));
@@ -846,37 +908,19 @@ jQuery(async function() {
     $('#tool_ooc_detect').on('input', onToolVisibilityChange('oocDetect'));
     $('#tool_char_state').on('input', onToolVisibilityChange('charState'));
     
-    loadSettings();
+    await loadSettings();
+    
+    startMonitoring();
+    logInfo('启动角色和对话监控');
+    
+    const initialCharacter = getCurrentCharacter();
+    if (initialCharacter) {
+        logInfo('检测到已加载角色', initialCharacter.name);
+    } else {
+        logInfo('未检测到角色，请在 SillyTavern 中加载角色');
+    }
+    
     window.toggleTab = toggleTab;
-    console.log('[ST-Toolbox] 初始化完成');
     
-    let lastChatLength = 0;
-    let lastCharacterName = '';
-    
-    setInterval(() => {
-        try {
-            const context = getContext();
-            if (!context) return;
-            
-            if (context.name && context.name !== lastCharacterName) {
-                console.log('[ST-Toolbox] 角色切换:', lastCharacterName, '->', context.name);
-                lastCharacterName = context.name;
-                lastChatLength = context.chat?.length || 0;
-                
-                tryLoadStateFromCharacter();
-            }
-            
-            if (context.chat && context.chat.length !== lastChatLength) {
-                console.log('[ST-Toolbox] 检测到新消息，聊天记录数:', context.chat.length);
-                lastChatLength = context.chat.length;
-                
-                if (appState.expandedTab === 'state') {
-                    updateCharStates();
-                    renderExpandedContent();
-                }
-            }
-        } catch (e) {
-            console.error('[ST-Toolbox] 监听出错:', e);
-        }
-    }, 1000);
+    logInfo('扩展初始化完成');
 });
