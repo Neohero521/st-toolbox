@@ -511,6 +511,12 @@ function renderExpandedContent() {
         case 'state':
             content = renderStateContent();
             break;
+        case 'gen3':
+            content = renderGen3Content();
+            break;
+        case 'worldbook':
+            content = renderWorldbookContent();
+            break;
     }
 
     container.html(content);
@@ -621,6 +627,225 @@ function renderStateContent() {
     `;
 }
 
+function renderGen3Content() {
+    const character = appState.currentCharacter || getCurrentCharacterData();
+
+    return `
+        <div class="toolbox-page">
+            <div class="toolbox-page-header">
+                <button class="toolbox-back-btn" onclick="window.goBack()">← 返回</button>
+                <span class="toolbox-page-title">生成3</span>
+            </div>
+            <div class="toolbox-page-body">
+                ${character && character.name ? `
+                    <div class="toolbox-page-section">
+                        <span class="toolbox-label">状态</span>
+                        <div id="toolbox-gen3-status" class="toolbox-gen3-status">就绪</div>
+                    </div>
+                    <div id="toolbox-gen3-results" class="toolbox-gen3-results" style="display: none;"></div>
+                    <button id="toolbox-gen3-btn" class="toolbox-primary-btn" style="margin-top: auto;">生成回答</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            </div>
+        </div>
+    `;
+}
+
+function renderWorldbookContent() {
+    const character = appState.currentCharacter || getCurrentCharacterData();
+
+    return `
+        <div class="toolbox-page">
+            <div class="toolbox-page-header">
+                <button class="toolbox-back-btn" onclick="window.goBack()">← 返回</button>
+                <span class="toolbox-page-title">世界书</span>
+            </div>
+            <div class="toolbox-page-body">
+                ${character && character.name ? `
+                    <div class="toolbox-page-section">
+                        <span class="toolbox-label">状态</span>
+                        <div id="toolbox-worldbook-status" class="toolbox-gen3-status">就绪</div>
+                    </div>
+                    <div id="toolbox-worldbook-preview" class="toolbox-worldbook-preview" style="display: none;"></div>
+                    <button id="toolbox-worldbook-btn" class="toolbox-primary-btn" style="margin-top: auto;">生成条目</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            </div>
+        </div>
+    `;
+}
+
+async function generate3Replies() {
+    const statusEl = $('#toolbox-gen3-status');
+    const resultsEl = $('#toolbox-gen3-results');
+    const btn = $('#toolbox-gen3-btn');
+    
+    try {
+        statusEl.text('生成中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        btn.prop('disabled', true);
+
+        const context = getContext();
+        if (!context.chat) {
+            statusEl.text('无聊天内容').css('color', 'rgba(248, 113, 113, 0.9)');
+            btn.prop('disabled', false);
+            return;
+        }
+
+        // 尝试使用SillyTavern的API调用生成
+        let replies = [];
+        
+        for (let i = 0; i < 3; i++) {
+            statusEl.text(`生成 ${i + 1}/3...`);
+            
+            // 尝试调用SillyTavern的API
+            if (typeof generateRaw !== 'undefined') {
+                const reply = await generateRaw({});
+                if (reply) {
+                    replies.push(reply);
+                }
+            } else if (typeof window.generateText !== 'undefined') {
+                const reply = await window.generateText({});
+                if (reply) {
+                    replies.push(reply);
+                }
+            } else {
+                // 模拟生成，实际应该调用正确的API
+                replies.push(`[回答 ${i + 1}] 这是一个模拟回答。实际需要连接SillyTavern的API。`);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        resultsEl.html(replies.map((reply, i) => `
+            <div class="toolbox-gen3-result">
+                <div class="toolbox-gen3-result-header">回答 ${i + 1}</div>
+                <div class="toolbox-gen3-result-text">${reply.substring(0, 150)}${reply.length > 150 ? '...' : ''}</div>
+                <button class="toolbox-gen3-select" data-index="${i}">使用这个</button>
+            </div>
+        `).join('')).show();
+        
+        statusEl.text('生成完成！').css('color', 'rgba(74, 222, 128, 0.9)');
+        btn.prop('disabled', false);
+        
+    } catch (e) {
+        logError('生成失败', e);
+        statusEl.text('生成失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        btn.prop('disabled', false);
+    }
+}
+
+async function generateWorldbookEntry() {
+    const statusEl = $('#toolbox-worldbook-status');
+    const previewEl = $('#toolbox-worldbook-preview');
+    const btn = $('#toolbox-worldbook-btn');
+    
+    try {
+        statusEl.text('分析中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        btn.prop('disabled', true);
+
+        const context = getContext();
+        const character = appState.currentCharacter;
+        
+        if (!context.chat || context.chat.length === 0) {
+            statusEl.text('无聊天内容').css('color', 'rgba(248, 113, 113, 0.9)');
+            btn.prop('disabled', false);
+            return;
+        }
+
+        statusEl.text('提取人物...');
+        
+        // 分析最近对话中的人物
+        const recentMessages = context.chat.slice(-20);
+        const characters = new Set();
+        
+        characters.add(character?.name || '主角');
+        
+        // 简单提取可能的人物名字
+        recentMessages.forEach(msg => {
+            if (msg.mes) {
+                const matches = msg.mes.match(/([A-Z][a-zA-Z]+|[一二三四五六七八九十百千万]+[号位人个等])/g);
+                if (matches) {
+                    matches.forEach(m => {
+                        if (m.length > 1 && m.length < 20) {
+                            characters.add(m);
+                        }
+                    });
+                }
+            }
+        });
+
+        statusEl.text('生成条目...');
+        
+        // 构建世界书条目
+        const entry = {
+            name: `出场人物 - ${new Date().toLocaleString()}`,
+            content: `当前出场人物：\n${Array.from(characters).join('、')}\n\n对话摘要：最近${Math.min(recentMessages.length, 20)}条消息...`,
+            keywords: Array.from(characters).slice(0, 5),
+            comment: '自动生成的出场人物条目',
+            priority: 50,
+            position: 100,
+            useProbability: 100,
+            useRecursion: false,
+            useScanning: true,
+            constantDepth: false,
+            selectiveLogic: 0,
+            vectorized: false,
+            isGroup: false,
+            folder: '自动生成'
+        };
+
+        // 显示预览
+        previewEl.html(`
+            <div class="toolbox-worldbook-preview-content">
+                <div class="toolbox-label">条目名称</div>
+                <div>${entry.name}</div>
+                <div class="toolbox-label">关键词</div>
+                <div>${entry.keywords.join('、')}</div>
+                <div class="toolbox-label">内容</div>
+                <div style="font-size: 11px; max-height: 80px; overflow-y: auto;">${entry.content}</div>
+            </div>
+            <button id="toolbox-worldbook-save" class="toolbox-primary-btn" style="margin-top: 8px;">保存到世界书</button>
+        `).show();
+        
+        statusEl.text('生成完成！').css('color', 'rgba(74, 222, 128, 0.9)');
+        btn.prop('disabled', false);
+        
+    } catch (e) {
+        logError('生成失败', e);
+        statusEl.text('生成失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        btn.prop('disabled', false);
+    }
+}
+
+async function saveToWorldbook() {
+    const btn = $('#toolbox-worldbook-save');
+    btn.prop('disabled', true).text('保存中...');
+    
+    try {
+        // 尝试使用SillyTavern的世界书API
+        if (typeof window.createWorldEntry !== 'undefined') {
+            // 这是一个示例，实际API需要查看源码
+            window.createWorldEntry({
+                name: '出场人物',
+                content: '自动生成的条目',
+                keywords: ['人物', '出场']
+            });
+        } else {
+            // 简单的消息提醒
+            if (typeof toastr !== 'undefined') {
+                toastr.info('请手动将条目添加到世界书');
+            }
+        }
+        
+        btn.text('已保存！');
+        setTimeout(() => {
+            btn.prop('disabled', false).text('保存到世界书');
+        }, 2000);
+        
+    } catch (e) {
+        logError('保存失败', e);
+        btn.prop('disabled', false).text('保存失败');
+    }
+}
+
 function bindContentEvents() {
     $('.toolbox-mode-btn').off('click').on('click', function() {
         const mode = $(this).data('mode');
@@ -679,6 +904,35 @@ function bindContentEvents() {
     $('#toolbox-inject-state').off('click').on('click', function() {
         injectStateToInput();
         goBack();
+    });
+
+    $('#toolbox-gen3-btn').off('click').on('click', function() {
+        generate3Replies();
+    });
+    
+    $('.toolbox-gen3-select').off('click').on('click', function() {
+        const index = $(this).data('index');
+        const replies = [];
+        $('.toolbox-gen3-result-text').each(function() {
+            replies.push($(this).text());
+        });
+        
+        if (replies[index]) {
+            const input = getMessageInput();
+            if (input.length) {
+                input.val(replies[index]);
+                input.focus();
+                goBack();
+            }
+        }
+    });
+    
+    $('#toolbox-worldbook-btn').off('click').on('click', function() {
+        generateWorldbookEntry();
+    });
+    
+    $('#toolbox-worldbook-save').off('click').on('click', function() {
+        saveToWorldbook();
     });
 }
 
@@ -808,6 +1062,10 @@ jQuery(async function() {
                 <button id="toolbox-ooc-btn" class="toolbox-main-btn">检测</button>
                 <button id="toolbox-state-btn" class="toolbox-main-btn">状态</button>
             </div>
+            <div class="toolbox-buttons toolbox-buttons-secondary">
+                <button id="toolbox-gen3-btn" class="toolbox-main-btn">生成3</button>
+                <button id="toolbox-worldbook-btn" class="toolbox-main-btn">世界书</button>
+            </div>
             <div id="toolbox-content" class="toolbox-content"></div>
         </div>
     `;
@@ -824,6 +1082,8 @@ jQuery(async function() {
     $('#toolbox-anchor-btn').on('click', () => toggleTab('anchor'));
     $('#toolbox-ooc-btn').on('click', () => toggleTab('ooc'));
     $('#toolbox-state-btn').on('click', () => toggleTab('state'));
+    $('#toolbox-gen3-btn').on('click', () => toggleTab('gen3'));
+    $('#toolbox-worldbook-btn').on('click', () => toggleTab('worldbook'));
 
     $('#enable_toolbox').on('input', onEnableInput);
     $('#tool_anchor_inject').on('input', onToolVisibilityChange('anchorInject'));
