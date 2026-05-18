@@ -307,35 +307,58 @@ async function generate3Replies() {
 
         appState.gen3Replies = [];
         
-        for (let i = 0; i < genCount; i++) {
-            statusEl.text(`生成 ${i + 1}/${genCount}...`);
-            
-            let reply = '';
-            
-            try {
-                const prompt = `作为角色${character?.name || ''}，根据以下对话生成一个回复（简洁，50字以内）：\n\n${chatHistory}`;
-                reply = await callParentApiForSummary(chatHistory, prompt);
-            } catch (apiError) {
-                logError('API调用失败，使用模拟数据', apiError);
-                reply = `[回复 ${i + 1}] 模拟回复内容`;
+        let repliesText = '';
+        
+        try {
+            const prompt = `作为角色${character?.name || ''}，根据以下对话生成${genCount}条不同风格的回复选项。
+请严格按格式返回，每一行一条回复：
+1. [第一条回复]
+2. [第二条回复]
+...
+
+对话内容：
+${chatHistory}
+
+要求：每条回复简洁，50字以内，${genCount}条风格要有差异。`;
+            repliesText = await callParentApiForSummary(chatHistory, prompt);
+        } catch (apiError) {
+            logError('API调用失败，使用模拟数据', apiError);
+            for (let i = 1; i <= genCount; i++) {
+                appState.gen3Replies.push(`[回复 ${i}] 模拟回复内容 ${i}`);
             }
-            
-            if (reply) {
-                appState.gen3Replies.push(reply);
-                resultsEl.append(`
-                    <div class="toolbox-result-item">
-                        <div class="toolbox-result-header">${i + 1}</div>
-                        <div class="toolbox-result-text">${reply.substring(0, 80)}${reply.length > 80 ? '...' : ''}</div>
-                        <div class="toolbox-result-actions">
-                            <button class="toolbox-use-btn" data-index="${i}" title="使用">用</button>
-                            <button class="toolbox-copy-btn" data-index="${i}" title="复制">复</button>
-                        </div>
-                    </div>
-                `);
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 200));
         }
+        
+        if (repliesText && appState.gen3Replies.length === 0) {
+            const lines = repliesText.split('\n').filter(line => line.trim().length > 0);
+            let index = 1;
+            
+            for (const line of lines) {
+                const cleanedLine = line.replace(/^\d+[\.\)\s]*|^\s*[-*]\s*/, '').trim();
+                if (cleanedLine.length > 0 && appState.gen3Replies.length < genCount) {
+                    appState.gen3Replies.push(cleanedLine);
+                    index++;
+                }
+            }
+            
+            if (appState.gen3Replies.length === 0) {
+                for (let i = 1; i <= genCount; i++) {
+                    appState.gen3Replies.push(`[回复 ${i}] ${repliesText.substring((i - 1) * 40, i * 40) || '模拟内容'}`);
+                }
+            }
+        }
+        
+        appState.gen3Replies.forEach((reply, i) => {
+            resultsEl.append(`
+                <div class="toolbox-result-item">
+                    <div class="toolbox-result-header">${i + 1}</div>
+                    <div class="toolbox-result-text">${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}</div>
+                    <div class="toolbox-result-actions">
+                        <button class="toolbox-use-btn" data-index="${i}" title="发送">发</button>
+                        <button class="toolbox-copy-btn" data-index="${i}" title="复制">复</button>
+                    </div>
+                </div>
+            `);
+        });
         
         statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
         btn.prop('disabled', false);
@@ -647,6 +670,28 @@ function copyToClipboard(text) {
     });
 }
 
+function sendMessageToChat(message) {
+    const input = getMessageInput();
+    if (input.length) {
+        input.val(message);
+        
+        const sendButton = $('#send_but');
+        if (sendButton.length) {
+            sendButton.click();
+        } else {
+            const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                bubbles: true,
+                cancelable: true,
+                code: 'Enter'
+            });
+            input[0].dispatchEvent(event);
+        }
+        
+        goBack();
+    }
+}
+
 function bindContentEvents() {
     $('#toolbox-gen3-count').on('change', function() {
         extension_settings[extensionName].genCount = parseInt($(this).val());
@@ -662,12 +707,7 @@ function bindContentEvents() {
         const reply = appState.gen3Replies[index];
         
         if (reply) {
-            const input = getMessageInput();
-            if (input.length) {
-                input.val(reply);
-                input.focus();
-                goBack();
-            }
+            sendMessageToChat(reply);
         }
     });
     
@@ -691,12 +731,7 @@ function bindContentEvents() {
     
     $(document).off('click', '#toolbox-summary-use-btn').on('click', '#toolbox-summary-use-btn', function() {
         if (appState.summaryText) {
-            const input = getMessageInput();
-            if (input.length) {
-                input.val(appState.summaryText);
-                input.focus();
-                goBack();
-            }
+            sendMessageToChat(appState.summaryText);
         }
     });
     
@@ -718,12 +753,7 @@ function bindContentEvents() {
     
     $(document).off('click', '#toolbox-suggestion-use-btn').on('click', '#toolbox-suggestion-use-btn', function() {
         if (appState.suggestionText) {
-            const input = getMessageInput();
-            if (input.length) {
-                input.val(appState.suggestionText);
-                input.focus();
-                goBack();
-            }
+            sendMessageToChat(appState.suggestionText);
         }
     });
     
