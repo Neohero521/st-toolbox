@@ -273,36 +273,38 @@ async function generate3Replies() {
         }).join('\n');
 
         appState.gen3Replies = [];
-        resultsEl.html('');
         
-        for (let i = 0; i < 3; i++) {
-            updateGen3UI('generating', `生成 ${i + 1}/3...`, startBtn);
-            
-            let reply = '';
-            
-            try {
-                const styles = ['热情活泼', '冷静理性', '含蓄内敛'];
-                const prompt = `作为"${character?.name || '角色'}"，根据以下对话生成3个不同风格的回复（只输出回复内容，每条用|||分隔）：
+        try {
+            const prompt = `作为"${character?.name || '角色'}"，根据以下对话生成3个不同风格的回复。输出格式：用|||分隔三条回复，每条回复前加上风格标签，如：
+【热情活泼】回复内容1|||【冷静理性】回复内容2|||【含蓄内敛】回复内容3
 
-【回复风格】${styles[i]}
 【对话】\n${chatHistory}`;
-                
-                const response = await callParentApiForSummary(chatHistory, prompt);
-                
-                const replies = response.split('|||').map(r => r.trim()).filter(r => r.length > 0);
-                reply = replies[i] || replies[0] || response;
-            } catch (apiError) {
-                logError('API调用失败', apiError);
-                reply = `[${styles[i]}回复] 模拟内容 ${i + 1}`;
-            }
             
-            if (reply) {
-                appState.gen3Replies.push(reply);
-                addGen3ResultItem(i, reply, styles[i]);
-            }
+            const response = await callParentApiForSummary(chatHistory, prompt);
             
-            await new Promise(resolve => setTimeout(resolve, 200));
+            const replies = response.split('|||').map(r => r.trim()).filter(r => r.length > 0);
+            
+            if (replies.length >= 3) {
+                appState.gen3Replies = replies;
+            } else if (replies.length > 0) {
+                appState.gen3Replies = [...replies, ...Array(3 - replies.length).fill('')].map((r, i) => r || `回复 ${i + 1}`);
+            } else {
+                throw new Error('API返回空结果');
+            }
+        } catch (apiError) {
+            logError('API调用失败', apiError);
+            const styles = ['热情活泼', '冷静理性', '含蓄内敛'];
+            appState.gen3Replies = styles.map((style, i) => `【${style}】模拟回复 ${i + 1}`);
         }
+        
+        resultsEl.html('');
+        const styles = ['热情活泼', '冷静理性', '含蓄内敛'];
+        appState.gen3Replies.forEach((reply, i) => {
+            const styleMatch = reply.match(/【([^】]+)】/);
+            const style = styleMatch ? styleMatch[1] : styles[i];
+            const content = reply.replace(/【[^】]+】/, '').trim() || reply;
+            addGen3ResultItem(i, content, style);
+        });
         
         updateGen3UI('success', '完成', startBtn, true);
         
@@ -506,12 +508,37 @@ async function saveToWorldbook() {
 
 function useGen3Reply(index) {
     const reply = appState.gen3Replies[index];
-    if (reply) {
+    if (!reply) return;
+    
+    try {
+        const content = reply.replace(/【[^】]+】/, '').trim() || reply;
+        
         const input = getMessageInput();
         if (input.length) {
-            input.val(reply);
+            input.val(content);
+        }
+        
+        if (typeof window.sendMessage === 'function') {
+            window.sendMessage(content);
+        } else if (typeof sendMessage !== 'undefined') {
+            sendMessage(content);
+        } else if (typeof chat.send !== 'undefined') {
+            chat.send(content);
+        } else {
+            console.log('尝试发送:', content);
+            if (input.length) {
+                input.trigger('keydown', { which: 13, keyCode: 13 });
+            }
+        }
+        
+        goBack();
+        
+    } catch (e) {
+        logError('发送失败', e);
+        const input = getMessageInput();
+        if (input.length) {
+            input.val(reply.replace(/【[^】]+】/, '').trim());
             input.focus();
-            goBack();
         }
     }
 }
