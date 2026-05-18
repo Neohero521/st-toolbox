@@ -4,499 +4,467 @@ import { eventSource, event_types } from '../../../../script.js';
 
 const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+
 const defaultSettings = {
     enabled: true,
+    gen3PromptStyle: 'varied',
+    worldbookMaxChars: 10,
 };
 
-let appState = {
+const appState = {
     expandedTab: null,
     currentCharacter: null,
     gen3Replies: [],
     worldbookEntry: null,
+    isGenerating: false,
 };
 
-function logInfo(message, data = null) {
+const selectors = {
+    toolbar: '#toolbox-toolbar',
+    status: '#toolbox-char-name',
+    buttons: '.toolbox-buttons',
+    content: '#toolbox-content',
+    gen3Btn: '#toolbox-gen3-btn',
+    worldbookBtn: '#toolbox-worldbook-btn',
+    enableCheckbox: '#enable_toolbox',
+};
+
+function log(message, data = null, type = 'info') {
     const prefix = `[${extensionName}]`;
-    if (data !== null) {
-        console.log(prefix, message, data);
-    } else {
-        console.log(prefix, message);
-    }
+    const logFn = type === 'error' ? console.error : console.log;
+    logFn(prefix, message, data || '');
 }
 
-function logError(message, error = null) {
-    const prefix = `[${extensionName}]`;
-    if (error !== null) {
-        console.error(prefix, message, error);
-    } else {
-        console.error(prefix, message);
-    }
-}
-
-async function callParentApiForSummary(textToSummarize, promptToUse) {
-    if (window.parent && window.parent.TavernHelper && 
-        typeof window.parent.TavernHelper.generate === 'function') {
-        const tavernGenerateFunc = window.parent.TavernHelper.generate;
-        const params = {
-            user_input: promptToUse,
-            should_stream: false,
-            disable_extras: true,
-            stop_everything: true
-        };
+async function callTavernApi(prompt, systemPrompt = '') {
+    if (window.parent?.TavernHelper?.generate) {
         try {
-            const response = await tavernGenerateFunc(params);
-            return response.trim();
+            const params = {
+                user_input: systemPrompt + prompt,
+                should_stream: false,
+                disable_extras: true,
+                stop_everything: true,
+            };
+            const response = await window.parent.TavernHelper.generate(params);
+            return response?.trim() || '';
         } catch (e) {
-            console.error("父级API调用失败:", e);
-            throw new Error('父窗口AI生成失败');
+            log('Tavern API调用失败', e, 'error');
+            throw new Error('AI生成失败');
         }
-    } else {
-        throw new Error('父窗口API未找到');
+    }
+    throw new Error('Tavern API不可用');
+}
+
+function getContextSafe() {
+    try {
+        return getContext();
+    } catch (e) {
+        log('获取上下文失败', e, 'error');
+        return null;
     }
 }
 
 function getCurrentCharacterData() {
-    try {
-        const context = getContext();
-        
-        let character = null;
-        let charData = null;
-        
-        if (context.characterId !== undefined && context.characters) {
-            character = context.characters[context.characterId];
-            if (character) {
-                charData = character.data || character;
-                logInfo('Got character via characters[characterId]', character.name);
-            }
-        }
-        
-        if (!character && context.character) {
-            character = context.character;
-            charData = character.data || character;
-            logInfo('Got character via context.character', character.name);
-        }
-        
-        if (!character && context.selectedCharacter) {
-            character = context.selectedCharacter;
-            charData = character.data || character;
-            logInfo('Got character via selectedCharacter', character.name);
-        }
-        
-        if (!character || !character.name) {
-            logInfo('No character found');
-            return null;
-        }
-        
-        return {
-            name: character.name,
-            description: charData.description || '',
-            personality: charData.personality || '',
-            scenario: charData.scenario || '',
-            first_mes: charData.first_mes || '',
-            mes_example: charData.mes_example || '',
-            world_info: charData.world_info || '',
-            avatar: character.avatar || charData.avatar || '',
-            charId: context.characterId,
-            raw: character,
-        };
-    } catch (e) {
-        logError('Error getting character data', e);
-        return null;
+    const context = getContextSafe();
+    if (!context) return null;
+
+    let character = null;
+    let charData = null;
+
+    if (context.characterId >= 0 && context.characters?.[context.characterId]) {
+        character = context.characters[context.characterId];
+        charData = character?.data || character;
+    } else if (context.character) {
+        character = context.character;
+        charData = character?.data || character;
+    } else if (context.selectedCharacter) {
+        character = context.selectedCharacter;
+        charData = character?.data || character;
     }
+
+    if (!character?.name) return null;
+
+    return {
+        name: character.name,
+        description: charData?.description || '',
+        personality: charData?.personality || '',
+        scenario: charData?.scenario || '',
+        first_mes: charData?.first_mes || '',
+        mes_example: charData?.mes_example || '',
+        world_info: charData?.world_info || '',
+        avatar: character.avatar || charData?.avatar || '',
+        charId: context.characterId,
+        raw: character,
+    };
 }
 
 function getMessageInput() {
     return $('#send_textarea, #prompt_textarea').first();
 }
 
-function toggleTab(tab) {
-    if (appState.expandedTab === tab && tab !== null) {
-        appState.expandedTab = null;
-    } else {
-        appState.expandedTab = tab;
-    }
-    
-    const container = $('#toolbox-content');
-    const buttons = $('.toolbox-buttons');
-    
-    if (appState.expandedTab) {
-        buttons.hide();
-        renderExpandedContent();
-    } else {
-        container.html('');
-        buttons.show();
-    }
-}
-
 function goBack() {
     appState.expandedTab = null;
-    const container = $('#toolbox-content');
-    const buttons = $('.toolbox-buttons');
-    container.html('');
-    buttons.show();
+    appState.isGenerating = false;
+    $(selectors.content).html('');
+    $(selectors.buttons).show();
 }
 
-function renderExpandedContent() {
-    const container = $('#toolbox-content');
-    if (!appState.expandedTab) {
-        container.html('');
-        return;
-    }
+function toggleTab(tab) {
+    appState.expandedTab = appState.expandedTab === tab ? null : tab;
+    appState.gen3Replies = [];
+    appState.worldbookEntry = null;
+    appState.isGenerating = false;
 
-    let content = '';
-    switch(appState.expandedTab) {
-        case 'gen3':
-            content = renderGen3Content();
-            break;
-        case 'worldbook':
-            content = renderWorldbookContent();
-            break;
+    if (appState.expandedTab) {
+        $(selectors.buttons).hide();
+        renderPage();
+    } else {
+        goBack();
     }
-
-    container.html(content);
-    bindContentEvents();
 }
 
-function renderGen3Content() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
+function renderPage() {
+    const html = appState.expandedTab === 'gen3' 
+        ? renderGen3Page() 
+        : renderWorldbookPage();
+    $(selectors.content).html(html);
+    bindPageEvents();
+}
+
+function renderGen3Page() {
+    const char = appState.currentCharacter || getCurrentCharacterData();
+    const hasChat = getContextSafe()?.chat?.length > 0;
 
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
+                <button class="toolbox-back-btn" onclick="window.toolboxGoBack()">←</button>
                 <span class="toolbox-page-title">生成3</span>
             </div>
             <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-gen3-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-gen3-results" class="toolbox-gen3-results"></div>
-                    <button id="toolbox-gen3-start-btn" class="toolbox-primary-btn">生成</button>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+                ${char?.name ? `
+                    <div class="toolbox-info-bar">
+                        <span class="toolbox-info-label">角色:</span>
+                        <span class="toolbox-info-value">${char.name}</span>
+                        <span class="toolbox-info-status ${hasChat ? 'active' : 'inactive'}">
+                            ${hasChat ? '● ' + (getContextSafe()?.chat?.length || 0) + '条' : '○ 无对话'}
+                        </span>
+                    </div>
+                    <div id="gen3-status" class="toolbox-status-text">准备就绪</div>
+                    <div id="gen3-results" class="toolbox-results"></div>
+                    <button id="gen3-start" class="toolbox-btn toolbox-btn-primary" ${!hasChat ? 'disabled' : ''}>
+                        ${hasChat ? '生成回复' : '无对话'}
+                    </button>
+                ` : `
+                    <div class="toolbox-empty">
+                        <span>请先加载角色</span>
+                    </div>
+                `}
             </div>
         </div>
     `;
 }
 
-function renderWorldbookContent() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
+function renderWorldbookPage() {
+    const char = appState.currentCharacter || getCurrentCharacterData();
+    const hasChat = getContextSafe()?.chat?.length > 0;
 
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
+                <button class="toolbox-back-btn" onclick="window.toolboxGoBack()">←</button>
                 <span class="toolbox-page-title">世界书</span>
             </div>
             <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-worldbook-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-worldbook-preview" class="toolbox-worldbook-preview"></div>
-                    <div class="toolbox-worldbook-actions">
-                        <button id="toolbox-worldbook-start-btn" class="toolbox-primary-btn">生成</button>
-                        <button id="toolbox-worldbook-save-btn" class="toolbox-secondary-btn" disabled>保存</button>
+                ${char?.name ? `
+                    <div class="toolbox-info-bar">
+                        <span class="toolbox-info-label">角色:</span>
+                        <span class="toolbox-info-value">${char.name}</span>
+                        <span class="toolbox-info-status ${hasChat ? 'active' : 'inactive'}">
+                            ${hasChat ? '● ' + (getContextSafe()?.chat?.length || 0) + '条' : '○ 无对话'}
+                        </span>
                     </div>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+                    <div id="wb-status" class="toolbox-status-text">准备就绪</div>
+                    <div id="wb-preview" class="toolbox-wb-preview"></div>
+                    <div class="toolbox-wb-actions">
+                        <button id="wb-generate" class="toolbox-btn toolbox-btn-primary" ${!hasChat ? 'disabled' : ''}>
+                            ${hasChat ? '分析生成' : '无对话'}
+                        </button>
+                        <button id="wb-save" class="toolbox-btn toolbox-btn-secondary" disabled>保存</button>
+                    </div>
+                ` : `
+                    <div class="toolbox-empty">
+                        <span>请先加载角色</span>
+                    </div>
+                `}
             </div>
         </div>
     `;
 }
 
-async function generate3Replies() {
-    const statusEl = $('#toolbox-gen3-status');
-    const resultsEl = $('#toolbox-gen3-results');
-    const btn = $('#toolbox-gen3-start-btn');
+async function handleGen3Generate() {
+    if (appState.isGenerating) return;
     
+    const context = getContextSafe();
+    if (!context?.chat?.length) {
+        setStatus('gen3-status', '无对话内容', 'error');
+        return;
+    }
+
+    appState.isGenerating = true;
+    appState.gen3Replies = [];
+    
+    const char = appState.currentCharacter;
+    const recentMsgs = context.chat.slice(-5);
+    const chatHistory = recentMsgs.map(m => m.mes).join('\n');
+    const resultsEl = $('#gen3-results');
+    const btn = $('#gen3-start');
+
     try {
-        statusEl.text('生成中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        setStatus('gen3-status', '生成中...', 'loading');
         btn.prop('disabled', true);
         resultsEl.html('');
 
-        const context = getContext();
-        if (!context.chat) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            return;
-        }
+        const systemPrompt = `你是角色"${char?.name || 'AI'}"，根据对话历史生成3个不同风格的回复选项。
+要求：
+1. 风格差异化（正式/随和/调皮等）
+2. 符合角色性格
+3. 每条回复不超过50字
+4. 直接输出3条，用换行分隔，不要编号`;
 
-        const character = appState.currentCharacter || getCurrentCharacterData();
-        const recentMessages = context.chat.slice(-5);
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
-
-        appState.gen3Replies = [];
-        
         for (let i = 0; i < 3; i++) {
-            statusEl.text(`生成 ${i + 1}/3...`);
+            setStatus('gen3-status', `生成 ${i + 1}/3...`, 'loading');
             
             let reply = '';
-            
             try {
-                const prompt = `作为角色${character?.name || ''}，请根据以下对话历史生成3个不同风格的回复选项（只回复内容，不需要编号）：\n\n${chatHistory}`;
-                reply = await callParentApiForSummary(chatHistory, prompt);
-            } catch (apiError) {
-                logError('API调用失败，使用模拟数据', apiError);
-                reply = `[回复 ${i + 1}] 这是模拟回复 ${i + 1}`;
+                reply = await callTavernApi(chatHistory, systemPrompt);
+                const lines = reply.split('\n').filter(l => l.trim());
+                reply = lines[i % lines.length] || reply.split('\n')[0];
+            } catch (e) {
+                log('API调用失败', e, 'error');
+                reply = `[回复 ${i + 1}] 模拟回复内容 ${i + 1}`;
             }
-            
-            if (reply) {
-                appState.gen3Replies.push(reply);
-                resultsEl.append(`
-                    <div class="toolbox-result-item">
-                        <div class="toolbox-result-header">${i + 1}</div>
-                        <div class="toolbox-result-text">${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}</div>
-                        <button class="toolbox-use-btn" data-index="${i}">使用</button>
-                    </div>
-                `);
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 300));
+
+            appState.gen3Replies.push(reply);
+            resultsEl.append(`
+                <div class="toolbox-result-item" data-index="${i}">
+                    <div class="toolbox-result-num">${i + 1}</div>
+                    <div class="toolbox-result-text">${reply.substring(0, 60)}${reply.length > 60 ? '...' : ''}</div>
+                    <button class="toolbox-result-use">使用</button>
+                </div>
+            `);
         }
-        
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
-        
+
+        setStatus('gen3-status', '完成', 'success');
     } catch (e) {
-        logError('生成失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        log('生成失败', e, 'error');
+        setStatus('gen3-status', '生成失败', 'error');
+    } finally {
+        appState.isGenerating = false;
         btn.prop('disabled', false);
     }
 }
 
-async function generateWorldbookEntry() {
-    const statusEl = $('#toolbox-worldbook-status');
-    const previewEl = $('#toolbox-worldbook-preview');
-    const btn = $('#toolbox-worldbook-start-btn');
-    const saveBtn = $('#toolbox-worldbook-save-btn');
+async function handleWorldbookGenerate() {
+    if (appState.isGenerating) return;
     
+    const context = getContextSafe();
+    if (!context?.chat?.length) {
+        setStatus('wb-status', '无对话内容', 'error');
+        return;
+    }
+
+    appState.isGenerating = true;
+    const char = appState.currentCharacter;
+    const previewEl = $('#wb-preview');
+    const btn = $('#wb-generate');
+    const saveBtn = $('#wb-save');
+
     try {
-        statusEl.text('分析中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        setStatus('wb-status', '分析中...', 'loading');
         btn.prop('disabled', true);
-        previewEl.html('<div class="toolbox-loading">生成中...</div>');
+        previewEl.html('<div class="toolbox-loading">处理中...</div>');
 
-        const context = getContext();
-        const character = appState.currentCharacter;
-        
-        if (!context.chat || context.chat.length === 0) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            previewEl.html('');
-            return;
-        }
+        const recentMsgs = context.chat.slice(-20);
+        const chatHistory = recentMsgs.map(m => m.mes).join('\n');
 
-        statusEl.text('提取...');
-        
-        const recentMessages = context.chat.slice(-20);
-        const characters = new Set();
-        
-        characters.add(character?.name || '主角');
-        
-        recentMessages.forEach(msg => {
+        const characters = new Set([char?.name || '主角']);
+        recentMsgs.forEach(msg => {
             if (msg.mes) {
-                const matches = msg.mes.match(/([A-Z][a-zA-Z]+|[一二三四五六七八九十百千万]+[号位人个等])/g);
-                if (matches) {
-                    matches.forEach(m => {
-                        if (m.length > 1 && m.length < 20) {
-                            characters.add(m);
-                        }
-                    });
-                }
+                const matches = msg.mes.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g);
+                matches?.forEach(m => {
+                    if (m.length > 2 && m.length < 25) characters.add(m);
+                });
             }
         });
 
-        statusEl.text('生成...');
-        
         const charList = Array.from(characters).slice(0, 8);
-        const entryName = `${character?.name || '角色'}的出场人物`;
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
-        
-        let generatedContent = '';
-        
+        const entryName = `${char?.name || '当前'}场景`;
+
+        setStatus('wb-status', '生成内容...', 'loading');
+
+        let content = '';
         try {
-            const prompt = `请根据以下对话内容，生成一个世界书条目，包含：1. 角色简介 2. 人物关系 3. 当前场景描述。用简洁的语言概括。\n\n对话内容：\n${chatHistory.substring(0, 500)}`;
-            generatedContent = await callParentApiForSummary(chatHistory, prompt);
-        } catch (apiError) {
-            logError('API调用失败，使用默认内容', apiError);
-            generatedContent = `出场人物：${charList.join('、')}\n场景：最近${recentMessages.length}条对话`;
+            const prompt = `基于以下对话，生成世界书条目：
+1. 角色简介
+2. 人物关系  
+3. 当前场景
+用简洁的关键词风格描述，每项不超过30字。\n\n${chatHistory.substring(0, 600)}`;
+            content = await callTavernApi(prompt);
+        } catch (e) {
+            log('API调用失败', e, 'error');
+            content = `角色: ${charList.slice(0, 3).join(', ')}\n关系: 共同出场\n场景: 最近${recentMsgs.length}条对话`;
         }
-        
+
         appState.worldbookEntry = {
             name: entryName,
             keywords: charList,
-            content: generatedContent || `出场人物：${charList.join('、')}`
+            content: content,
+            timestamp: Date.now(),
         };
-        
+
         previewEl.html(`
-            <div class="toolbox-worldbook-entry">
-                <div class="toolbox-entry-name">${appState.worldbookEntry.name}</div>
-                <div class="toolbox-entry-keywords">${appState.worldbookEntry.keywords.join('、')}</div>
-                <div class="toolbox-entry-content">${appState.worldbookEntry.content}</div>
+            <div class="toolbox-wb-entry">
+                <div class="toolbox-wb-name">${entryName}</div>
+                <div class="toolbox-wb-tags">${charList.slice(0, 5).map(c => `<span>${c}</span>`).join('')}</div>
+                <div class="toolbox-wb-content">${content}</div>
             </div>
         `);
-        
+
         saveBtn.prop('disabled', false);
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
-        
+        setStatus('wb-status', '完成', 'success');
     } catch (e) {
-        logError('生成失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
+        log('生成失败', e, 'error');
+        setStatus('wb-status', '生成失败', 'error');
         previewEl.html('');
+    } finally {
+        appState.isGenerating = false;
+        btn.prop('disabled', false);
     }
 }
 
-async function saveToWorldbook() {
-    const btn = $('#toolbox-worldbook-save-btn');
-    const statusEl = $('#toolbox-worldbook-status');
+function handleSaveWorldbook() {
+    if (!appState.worldbookEntry) return;
     
-    if (!appState.worldbookEntry) {
-        statusEl.text('无内容').css('color', 'rgba(248, 113, 113, 0.9)');
-        return;
-    }
-    
+    const btn = $('#wb-save');
     btn.prop('disabled', true).text('保存中...');
-    
+
     try {
-        if (typeof window.createWorldEntry !== 'undefined') {
+        if (window.createWorldEntry) {
             window.createWorldEntry({
                 name: appState.worldbookEntry.name,
                 content: appState.worldbookEntry.content,
-                keywords: appState.worldbookEntry.keywords
+                keywords: appState.worldbookEntry.keywords,
             });
-        } else if (typeof toastr !== 'undefined') {
-            toastr.info('已复制到剪贴板');
+        } else if (navigator.clipboard) {
             navigator.clipboard.writeText(JSON.stringify(appState.worldbookEntry, null, 2));
         }
-        
-        statusEl.text('已保存').css('color', 'rgba(74, 222, 128, 0.9)');
+
+        setStatus('wb-status', '已保存', 'success');
         btn.text('已保存');
-        
+
         setTimeout(() => {
             btn.prop('disabled', false).text('保存');
         }, 2000);
-        
     } catch (e) {
-        logError('保存失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        log('保存失败', e, 'error');
+        setStatus('wb-status', '保存失败', 'error');
         btn.prop('disabled', false).text('保存');
     }
 }
 
-function bindContentEvents() {
-    $('#toolbox-gen3-start-btn').off('click').on('click', function() {
-        generate3Replies();
-    });
-    
-    $(document).off('click', '.toolbox-use-btn').on('click', '.toolbox-use-btn', function() {
-        const index = $(this).data('index');
-        const reply = appState.gen3Replies[index];
-        
-        if (reply) {
-            const input = getMessageInput();
-            if (input.length) {
-                input.val(reply);
-                input.focus();
-                goBack();
-            }
-        }
-    });
-    
-    $('#toolbox-worldbook-start-btn').off('click').on('click', function() {
-        generateWorldbookEntry();
-    });
-    
-    $(document).off('click', '#toolbox-worldbook-save-btn').on('click', '#toolbox-worldbook-save-btn', function() {
-        saveToWorldbook();
-    });
-}
+function handleUseReply(index) {
+    const reply = appState.gen3Replies[index];
+    if (!reply) return;
 
-async function loadSettings() {
-    extension_settings[extensionName] = extension_settings[extensionName] || {};
-    if (Object.keys(extension_settings[extensionName]).length === 0) {
-        Object.assign(extension_settings[extensionName], defaultSettings);
+    const input = getMessageInput();
+    if (input.length) {
+        input.val(reply).focus();
+        goBack();
     }
-
-    const settings = extension_settings[extensionName];
-    $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
-    updateToolVisibility();
 }
 
-function updateToolVisibility() {
-    const settings = extension_settings[extensionName];
+function setStatus(id, text, type) {
+    const el = $(`#${id}`);
+    if (!el.length) return;
 
-    if (!settings.enabled) {
-        $('#toolbox-toolbar').hide();
+    el.text(text).removeClass('status-loading status-success status-error');
+    
+    switch (type) {
+        case 'loading':
+            el.addClass('status-loading');
+            break;
+        case 'success':
+            el.addClass('status-success');
+            break;
+        case 'error':
+            el.addClass('status-error');
+            break;
+    }
+}
+
+function bindPageEvents() {
+    $('#gen3-start').off('click').on('click', handleGen3Generate);
+    $('#wb-generate').off('click').on('click', handleWorldbookGenerate);
+    $('#wb-save').off('click').on('click', handleSaveWorldbook);
+
+    $(document).off('click', '.toolbox-result-use').on('click', '.toolbox-result-use', function() {
+        const index = $(this).closest('.toolbox-result-item').data('index');
+        handleUseReply(index);
+    });
+}
+
+function updateStatusDisplay() {
+    const el = $(selectors.status);
+    if (!el.length) return;
+
+    if (appState.currentCharacter) {
+        const chatLen = getContextSafe()?.chat?.length || 0;
+        el.html(`<span class="char-name">${appState.currentCharacter.name}</span><span class="chat-count">${chatLen}条</span>`);
     } else {
-        $('#toolbox-toolbar').show();
+        el.html('<span class="no-char">未加载</span>');
     }
 }
 
-function onEnableInput(event) {
-    const value = Boolean($(event.target).prop('checked'));
-    extension_settings[extensionName].enabled = value;
-    saveSettingsDebounced();
-    updateToolVisibility();
-}
-
-function updateToolbarStatus() {
-    const statusEl = $('#toolbox-char-name');
-    if (statusEl.length) {
-        if (appState.currentCharacter) {
-            statusEl.text(`✓ ${appState.currentCharacter.name}`);
-            statusEl.css('color', 'rgba(74, 222, 128, 0.95)');
-        } else {
-            statusEl.text('未加载');
-            statusEl.css('color', 'rgba(148, 163, 184, 0.7)');
-        }
-    }
-}
-
-function tryLoadCharacter() {
-    logInfo('Attempting to load character...');
-    const character = getCurrentCharacterData();
-    if (character) {
-        appState.currentCharacter = character;
-        logInfo('Character loaded successfully:', character.name);
-        updateToolbarStatus();
-        if (appState.expandedTab) {
-            renderExpandedContent();
-        }
+function loadCharacter() {
+    log('Loading character...');
+    const char = getCurrentCharacterData();
+    if (char) {
+        appState.currentCharacter = char;
+        log('Character loaded:', char.name);
+        updateStatusDisplay();
+        if (appState.expandedTab) renderPage();
         return true;
-    } else {
-        logInfo('Failed to load character');
-        updateToolbarStatus();
-        return false;
+    }
+    updateStatusDisplay();
+    return false;
+}
+
+function setupEventListeners() {
+    if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
+        const events = [
+            [event_types.CHAT_CHANGED, () => setTimeout(loadCharacter, 100)],
+            [event_types.MESSAGE_RECEIVED, () => setTimeout(updateStatusDisplay, 100)],
+            [event_types.CHARACTER_CHANGED, () => setTimeout(loadCharacter, 100)],
+            [event_types.CHARACTER_LOADED, () => setTimeout(loadCharacter, 100)],
+        ];
+
+        events.forEach(([event, handler]) => {
+            if (event) eventSource.on(event, handler);
+        });
     }
 }
 
-function handleChatChanged(chatId) {
-    logInfo('CHAT_CHANGED event received!', chatId);
-    setTimeout(() => tryLoadCharacter(), 100);
-}
+async function initializeToolbar() {
+    log('Initializing toolbar...');
 
-function handleCharacterChanged() {
-    logInfo('CHARACTER_CHANGED event received!');
-    setTimeout(() => tryLoadCharacter(), 100);
-}
-
-jQuery(async function() {
-    logInfo('Extension initializing...');
-
-    try {
-        const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-        $('#extensions_settings').append(settingsHtml);
-        logInfo('Settings panel loaded');
-    } catch (e) {
-        logError('Settings panel load error', e);
-        return;
-    }
-
-    const toolbarHtml = `
+    const html = `
         <div id="toolbox-toolbar" style="display: none;">
-            <div id="toolbox-status" class="toolbox-status">
-                <span id="toolbox-char-name" class="toolbox-char-status">未加载</span>
+            <div class="toolbox-status-bar">
+                <span id="toolbox-char-name" class="toolbox-status-text">未加载</span>
             </div>
             <div class="toolbox-buttons">
-                <button id="toolbox-gen3-btn" class="toolbox-main-btn">生成3</button>
-                <button id="toolbox-worldbook-btn" class="toolbox-main-btn">世界书</button>
+                <button id="toolbox-gen3-btn" class="toolbox-btn toolbox-btn-tab">生成3</button>
+                <button id="toolbox-worldbook-btn" class="toolbox-btn toolbox-btn-tab">世界书</button>
             </div>
             <div id="toolbox-content" class="toolbox-content"></div>
         </div>
@@ -504,57 +472,44 @@ jQuery(async function() {
 
     const sendForm = $('#send_form');
     if (sendForm.length) {
-        sendForm.before(toolbarHtml);
-        logInfo('Toolbar added to DOM');
+        sendForm.before(html);
+        log('Toolbar DOM inserted');
     } else {
-        logError('#send_form not found');
+        log('Target element not found', null, 'error');
         return;
     }
 
-    $('#toolbox-gen3-btn').on('click', () => toggleTab('gen3'));
-    $('#toolbox-worldbook-btn').on('click', () => toggleTab('worldbook'));
+    $(selectors.gen3Btn).on('click', () => toggleTab('gen3'));
+    $(selectors.worldbookBtn).on('click', () => toggleTab('worldbook'));
+    $(selectors.enableCheckbox).on('input', handleEnableChange);
 
-    $('#enable_toolbox').on('input', onEnableInput);
+    await loadStoredSettings();
 
-    await loadSettings();
+    setupEventListeners();
 
-    try {
-        if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
-            logInfo('eventSource is available');
-            
-            const events = [
-                'CHAT_CHANGED',
-                'MESSAGE_RECEIVED',
-                'CHARACTER_CHANGED',
-                'CHARACTER_LOADED',
-                'CHARACTER_SELECTED',
-                'GROUP_CHANGED'
-            ];
-            
-            events.forEach(eventName => {
-                if (event_types[eventName]) {
-                    if (eventName === 'CHAT_CHANGED') {
-                        eventSource.on(event_types[eventName], handleChatChanged);
-                    } else {
-                        eventSource.on(event_types[eventName], handleCharacterChanged);
-                    }
-                }
-            });
-        }
-    } catch (e) {
-        logError('Event registration error', e);
+    window.toolboxGoBack = goBack;
+
+    loadCharacter();
+    [500, 1500, 3000, 5000].forEach(ms => setTimeout(loadCharacter, ms));
+
+    log('Initialization complete');
+}
+
+async function loadStoredSettings() {
+    extension_settings[extensionName] = extension_settings[extensionName] || {};
+    if (!Object.keys(extension_settings[extensionName]).length) {
+        Object.assign(extension_settings[extensionName], defaultSettings);
     }
 
-    window.toggleTab = toggleTab;
-    window.goBack = goBack;
+    const enabled = extension_settings[extensionName].enabled;
+    $(selectors.enableCheckbox).prop('checked', enabled).trigger('input');
+}
 
-    logInfo('Checking initial character...');
-    tryLoadCharacter();
+function handleEnableChange(e) {
+    const enabled = Boolean($(e.target).prop('checked'));
+    extension_settings[extensionName].enabled = enabled;
+    saveSettingsDebounced();
+    $(selectors.toolbar).toggle(enabled);
+}
 
-    setTimeout(() => tryLoadCharacter(), 500);
-    setTimeout(() => tryLoadCharacter(), 1500);
-    setTimeout(() => tryLoadCharacter(), 3000);
-    setTimeout(() => tryLoadCharacter(), 5000);
-
-    logInfo('Extension initialized successfully');
-});
+jQuery(initializeToolbar);
