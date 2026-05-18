@@ -6,13 +6,17 @@ const extensionName = 'st-toolbox';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: true,
+    genCount: 3,
 };
 
 let appState = {
     expandedTab: null,
     currentCharacter: null,
     gen3Replies: [],
-    worldbookEntry: null,
+    worldbookEntries: [],
+    summaryText: '',
+    analysisText: '',
+    suggestionText: '',
 };
 
 function logInfo(message, data = null) {
@@ -151,6 +155,15 @@ function renderExpandedContent() {
         case 'worldbook':
             content = renderWorldbookContent();
             break;
+        case 'summary':
+            content = renderSummaryContent();
+            break;
+        case 'analysis':
+            content = renderAnalysisContent();
+            break;
+        case 'suggestion':
+            content = renderSuggestionContent();
+            break;
     }
 
     container.html(content);
@@ -159,12 +172,20 @@ function renderExpandedContent() {
 
 function renderGen3Content() {
     const character = appState.currentCharacter || getCurrentCharacterData();
+    const genCount = extension_settings[extensionName]?.genCount || 3;
 
     return `
         <div class="toolbox-page">
             <div class="toolbox-page-header">
                 <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">生成3</span>
+                <span class="toolbox-page-title">生成</span>
+                <div class="toolbox-page-actions">
+                    <select id="toolbox-gen3-count" class="toolbox-select">
+                        <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
+                        <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
+                        <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
+                    </select>
+                </div>
             </div>
             <div class="toolbox-page-body">
                 ${character && character.name ? `
@@ -200,10 +221,73 @@ function renderWorldbookContent() {
     `;
 }
 
+function renderSummaryContent() {
+    const character = appState.currentCharacter || getCurrentCharacterData();
+
+    return `
+        <div class="toolbox-page">
+            <div class="toolbox-page-header">
+                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
+                <span class="toolbox-page-title">总结</span>
+            </div>
+            <div class="toolbox-page-body">
+                ${character && character.name ? `
+                    <div id="toolbox-summary-status" class="toolbox-status-text">就绪</div>
+                    <div id="toolbox-summary-content" class="toolbox-summary-content"></div>
+                    <button id="toolbox-summary-start-btn" class="toolbox-primary-btn">总结</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            </div>
+        </div>
+    `;
+}
+
+function renderAnalysisContent() {
+    const character = appState.currentCharacter || getCurrentCharacterData();
+
+    return `
+        <div class="toolbox-page">
+            <div class="toolbox-page-header">
+                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
+                <span class="toolbox-page-title">分析</span>
+            </div>
+            <div class="toolbox-page-body">
+                ${character && character.name ? `
+                    <div id="toolbox-analysis-status" class="toolbox-status-text">就绪</div>
+                    <div id="toolbox-analysis-content" class="toolbox-analysis-content"></div>
+                    <button id="toolbox-analysis-start-btn" class="toolbox-primary-btn">分析</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            </div>
+        </div>
+    `;
+}
+
+function renderSuggestionContent() {
+    const character = appState.currentCharacter || getCurrentCharacterData();
+
+    return `
+        <div class="toolbox-page">
+            <div class="toolbox-page-header">
+                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
+                <span class="toolbox-page-title">建议</span>
+            </div>
+            <div class="toolbox-page-body">
+                ${character && character.name ? `
+                    <div id="toolbox-suggestion-status" class="toolbox-status-text">就绪</div>
+                    <div id="toolbox-suggestion-content" class="toolbox-suggestion-content"></div>
+                    <button id="toolbox-suggestion-start-btn" class="toolbox-primary-btn">建议</button>
+                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
+            </div>
+        </div>
+    `;
+}
+
 async function generate3Replies() {
     const statusEl = $('#toolbox-gen3-status');
     const resultsEl = $('#toolbox-gen3-results');
     const btn = $('#toolbox-gen3-start-btn');
+    const countSelect = $('#toolbox-gen3-count');
+    
+    const genCount = parseInt(countSelect.val()) || 3;
     
     try {
         statusEl.text('生成中...').css('color', 'rgba(255, 165, 0, 0.9)');
@@ -223,17 +307,17 @@ async function generate3Replies() {
 
         appState.gen3Replies = [];
         
-        for (let i = 0; i < 3; i++) {
-            statusEl.text(`生成 ${i + 1}/3...`);
+        for (let i = 0; i < genCount; i++) {
+            statusEl.text(`生成 ${i + 1}/${genCount}...`);
             
             let reply = '';
             
             try {
-                const prompt = `作为角色${character?.name || ''}，请根据以下对话历史生成3个不同风格的回复选项（只回复内容，不需要编号）：\n\n${chatHistory}`;
+                const prompt = `作为角色${character?.name || ''}，根据以下对话生成一个回复（简洁，50字以内）：\n\n${chatHistory}`;
                 reply = await callParentApiForSummary(chatHistory, prompt);
             } catch (apiError) {
                 logError('API调用失败，使用模拟数据', apiError);
-                reply = `[回复 ${i + 1}] 这是模拟回复 ${i + 1}`;
+                reply = `[回复 ${i + 1}] 模拟回复内容`;
             }
             
             if (reply) {
@@ -241,13 +325,16 @@ async function generate3Replies() {
                 resultsEl.append(`
                     <div class="toolbox-result-item">
                         <div class="toolbox-result-header">${i + 1}</div>
-                        <div class="toolbox-result-text">${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}</div>
-                        <button class="toolbox-use-btn" data-index="${i}">使用</button>
+                        <div class="toolbox-result-text">${reply.substring(0, 80)}${reply.length > 80 ? '...' : ''}</div>
+                        <div class="toolbox-result-actions">
+                            <button class="toolbox-use-btn" data-index="${i}" title="使用">用</button>
+                            <button class="toolbox-copy-btn" data-index="${i}" title="复制">复</button>
+                        </div>
                     </div>
                 `);
             }
             
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
         
         statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
@@ -310,24 +397,26 @@ async function generateWorldbookEntry() {
         let generatedContent = '';
         
         try {
-            const prompt = `请根据以下对话内容，生成一个世界书条目，包含：1. 角色简介 2. 人物关系 3. 当前场景描述。用简洁的语言概括。\n\n对话内容：\n${chatHistory.substring(0, 500)}`;
+            const prompt = `根据以下对话生成世界书条目，包含角色简介和场景描述（简洁）：\n\n${chatHistory.substring(0, 500)}`;
             generatedContent = await callParentApiForSummary(chatHistory, prompt);
         } catch (apiError) {
             logError('API调用失败，使用默认内容', apiError);
             generatedContent = `出场人物：${charList.join('、')}\n场景：最近${recentMessages.length}条对话`;
         }
         
-        appState.worldbookEntry = {
+        const entry = {
             name: entryName,
             keywords: charList,
             content: generatedContent || `出场人物：${charList.join('、')}`
         };
         
+        appState.worldbookEntries = [entry];
+        
         previewEl.html(`
             <div class="toolbox-worldbook-entry">
-                <div class="toolbox-entry-name">${appState.worldbookEntry.name}</div>
-                <div class="toolbox-entry-keywords">${appState.worldbookEntry.keywords.join('、')}</div>
-                <div class="toolbox-entry-content">${appState.worldbookEntry.content}</div>
+                <div class="toolbox-entry-name">${entry.name}</div>
+                <div class="toolbox-entry-keywords">${entry.keywords.join('、')}</div>
+                <div class="toolbox-entry-content">${entry.content}</div>
             </div>
         `);
         
@@ -347,7 +436,7 @@ async function saveToWorldbook() {
     const btn = $('#toolbox-worldbook-save-btn');
     const statusEl = $('#toolbox-worldbook-status');
     
-    if (!appState.worldbookEntry) {
+    if (appState.worldbookEntries.length === 0) {
         statusEl.text('无内容').css('color', 'rgba(248, 113, 113, 0.9)');
         return;
     }
@@ -356,14 +445,16 @@ async function saveToWorldbook() {
     
     try {
         if (typeof window.createWorldEntry !== 'undefined') {
-            window.createWorldEntry({
-                name: appState.worldbookEntry.name,
-                content: appState.worldbookEntry.content,
-                keywords: appState.worldbookEntry.keywords
+            appState.worldbookEntries.forEach(entry => {
+                window.createWorldEntry({
+                    name: entry.name,
+                    content: entry.content,
+                    keywords: entry.keywords
+                });
             });
         } else if (typeof toastr !== 'undefined') {
-            toastr.info('已复制到剪贴板');
-            navigator.clipboard.writeText(JSON.stringify(appState.worldbookEntry, null, 2));
+            toastr.success(`已复制${appState.worldbookEntries.length}个条目`);
+            navigator.clipboard.writeText(JSON.stringify(appState.worldbookEntries, null, 2));
         }
         
         statusEl.text('已保存').css('color', 'rgba(74, 222, 128, 0.9)');
@@ -380,7 +471,188 @@ async function saveToWorldbook() {
     }
 }
 
+async function generateSummary() {
+    const statusEl = $('#toolbox-summary-status');
+    const contentEl = $('#toolbox-summary-content');
+    const btn = $('#toolbox-summary-start-btn');
+    
+    try {
+        statusEl.text('总结中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        btn.prop('disabled', true);
+        contentEl.html('<div class="toolbox-loading">生成中...</div>');
+
+        const context = getContext();
+        if (!context.chat || context.chat.length === 0) {
+            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
+            btn.prop('disabled', false);
+            contentEl.html('');
+            return;
+        }
+
+        const character = appState.currentCharacter;
+        const recentMessages = context.chat.slice(-10);
+        const chatHistory = recentMessages.map(m => m.mes).join('\n');
+        
+        let summary = '';
+        
+        try {
+            const prompt = `总结以下对话的关键内容（简洁，100字以内）：\n\n${chatHistory}`;
+            summary = await callParentApiForSummary(chatHistory, prompt);
+        } catch (apiError) {
+            logError('API调用失败', apiError);
+            summary = '对话总结（模拟数据）';
+        }
+        
+        appState.summaryText = summary;
+        
+        contentEl.html(`
+            <div class="toolbox-summary-item">
+                <div class="toolbox-summary-text">${summary}</div>
+                <div class="toolbox-summary-actions">
+                    <button id="toolbox-summary-use-btn" class="toolbox-use-btn">使用</button>
+                    <button id="toolbox-summary-copy-btn" class="toolbox-copy-btn">复制</button>
+                </div>
+            </div>
+        `);
+        
+        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
+        btn.prop('disabled', false);
+        
+    } catch (e) {
+        logError('总结失败', e);
+        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        btn.prop('disabled', false);
+        contentEl.html('');
+    }
+}
+
+async function generateAnalysis() {
+    const statusEl = $('#toolbox-analysis-status');
+    const contentEl = $('#toolbox-analysis-content');
+    const btn = $('#toolbox-analysis-start-btn');
+    
+    try {
+        statusEl.text('分析中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        btn.prop('disabled', true);
+        contentEl.html('<div class="toolbox-loading">生成中...</div>');
+
+        const character = appState.currentCharacter || getCurrentCharacterData();
+        
+        if (!character) {
+            statusEl.text('无角色').css('color', 'rgba(248, 113, 113, 0.9)');
+            btn.prop('disabled', false);
+            contentEl.html('');
+            return;
+        }
+
+        const context = getContext();
+        const recentMessages = context.chat?.slice(-5) || [];
+        const chatHistory = recentMessages.map(m => m.mes).join('\n');
+        
+        let analysis = '';
+        
+        try {
+            const prompt = `分析角色${character.name}的性格特点：\n\n角色设定：${character.personality || character.description}\n\n近期对话：${chatHistory}`;
+            analysis = await callParentApiForSummary(chatHistory, prompt);
+        } catch (apiError) {
+            logError('API调用失败', apiError);
+            analysis = `${character.name}的性格分析（模拟数据）`;
+        }
+        
+        appState.analysisText = analysis;
+        
+        contentEl.html(`
+            <div class="toolbox-analysis-item">
+                <div class="toolbox-analysis-name">${character.name}</div>
+                <div class="toolbox-analysis-text">${analysis}</div>
+                <div class="toolbox-summary-actions">
+                    <button id="toolbox-analysis-copy-btn" class="toolbox-copy-btn">复制</button>
+                </div>
+            </div>
+        `);
+        
+        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
+        btn.prop('disabled', false);
+        
+    } catch (e) {
+        logError('分析失败', e);
+        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        btn.prop('disabled', false);
+        contentEl.html('');
+    }
+}
+
+async function generateSuggestion() {
+    const statusEl = $('#toolbox-suggestion-status');
+    const contentEl = $('#toolbox-suggestion-content');
+    const btn = $('#toolbox-suggestion-start-btn');
+    
+    try {
+        statusEl.text('构思中...').css('color', 'rgba(255, 165, 0, 0.9)');
+        btn.prop('disabled', true);
+        contentEl.html('<div class="toolbox-loading">生成中...</div>');
+
+        const context = getContext();
+        if (!context.chat || context.chat.length === 0) {
+            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
+            btn.prop('disabled', false);
+            contentEl.html('');
+            return;
+        }
+
+        const character = appState.currentCharacter;
+        const recentMessages = context.chat.slice(-5);
+        const chatHistory = recentMessages.map(m => m.mes).join('\n');
+        
+        let suggestion = '';
+        
+        try {
+            const prompt = `基于以下对话，给出一个情节发展建议（简洁，80字以内）：\n\n${chatHistory}`;
+            suggestion = await callParentApiForSummary(chatHistory, prompt);
+        } catch (apiError) {
+            logError('API调用失败', apiError);
+            suggestion = '情节发展建议（模拟数据）';
+        }
+        
+        appState.suggestionText = suggestion;
+        
+        contentEl.html(`
+            <div class="toolbox-suggestion-item">
+                <div class="toolbox-suggestion-text">${suggestion}</div>
+                <div class="toolbox-summary-actions">
+                    <button id="toolbox-suggestion-use-btn" class="toolbox-use-btn">使用</button>
+                    <button id="toolbox-suggestion-copy-btn" class="toolbox-copy-btn">复制</button>
+                </div>
+            </div>
+        `);
+        
+        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
+        btn.prop('disabled', false);
+        
+    } catch (e) {
+        logError('建议失败', e);
+        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
+        btn.prop('disabled', false);
+        contentEl.html('');
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        if (typeof toastr !== 'undefined') {
+            toastr.success('已复制');
+        }
+    }).catch(err => {
+        console.error('复制失败:', err);
+    });
+}
+
 function bindContentEvents() {
+    $('#toolbox-gen3-count').on('change', function() {
+        extension_settings[extensionName].genCount = parseInt($(this).val());
+        saveSettingsDebounced();
+    });
+    
     $('#toolbox-gen3-start-btn').off('click').on('click', function() {
         generate3Replies();
     });
@@ -399,12 +671,64 @@ function bindContentEvents() {
         }
     });
     
+    $(document).off('click', '.toolbox-copy-btn').on('click', '.toolbox-copy-btn', function() {
+        const index = $(this).data('index');
+        const text = $(this).closest('.toolbox-result-item, .toolbox-summary-item, .toolbox-analysis-item, .toolbox-suggestion-item').find('.toolbox-result-text, .toolbox-summary-text, .toolbox-analysis-text, .toolbox-suggestion-text').text();
+        copyToClipboard(text);
+    });
+    
     $('#toolbox-worldbook-start-btn').off('click').on('click', function() {
         generateWorldbookEntry();
     });
     
     $(document).off('click', '#toolbox-worldbook-save-btn').on('click', '#toolbox-worldbook-save-btn', function() {
         saveToWorldbook();
+    });
+    
+    $('#toolbox-summary-start-btn').off('click').on('click', function() {
+        generateSummary();
+    });
+    
+    $(document).off('click', '#toolbox-summary-use-btn').on('click', '#toolbox-summary-use-btn', function() {
+        if (appState.summaryText) {
+            const input = getMessageInput();
+            if (input.length) {
+                input.val(appState.summaryText);
+                input.focus();
+                goBack();
+            }
+        }
+    });
+    
+    $(document).off('click', '#toolbox-summary-copy-btn').on('click', '#toolbox-summary-copy-btn', function() {
+        copyToClipboard(appState.summaryText);
+    });
+    
+    $('#toolbox-analysis-start-btn').off('click').on('click', function() {
+        generateAnalysis();
+    });
+    
+    $(document).off('click', '#toolbox-analysis-copy-btn').on('click', '#toolbox-analysis-copy-btn', function() {
+        copyToClipboard(appState.analysisText);
+    });
+    
+    $('#toolbox-suggestion-start-btn').off('click').on('click', function() {
+        generateSuggestion();
+    });
+    
+    $(document).off('click', '#toolbox-suggestion-use-btn').on('click', '#toolbox-suggestion-use-btn', function() {
+        if (appState.suggestionText) {
+            const input = getMessageInput();
+            if (input.length) {
+                input.val(appState.suggestionText);
+                input.focus();
+                goBack();
+            }
+        }
+    });
+    
+    $(document).off('click', '#toolbox-suggestion-copy-btn').on('click', '#toolbox-suggestion-copy-btn', function() {
+        copyToClipboard(appState.suggestionText);
     });
 }
 
@@ -495,8 +819,11 @@ jQuery(async function() {
                 <span id="toolbox-char-name" class="toolbox-char-status">未加载</span>
             </div>
             <div class="toolbox-buttons">
-                <button id="toolbox-gen3-btn" class="toolbox-main-btn">生成3</button>
+                <button id="toolbox-gen3-btn" class="toolbox-main-btn">生成</button>
                 <button id="toolbox-worldbook-btn" class="toolbox-main-btn">世界书</button>
+                <button id="toolbox-summary-btn" class="toolbox-main-btn">总结</button>
+                <button id="toolbox-analysis-btn" class="toolbox-main-btn">分析</button>
+                <button id="toolbox-suggestion-btn" class="toolbox-main-btn">建议</button>
             </div>
             <div id="toolbox-content" class="toolbox-content"></div>
         </div>
@@ -513,6 +840,9 @@ jQuery(async function() {
 
     $('#toolbox-gen3-btn').on('click', () => toggleTab('gen3'));
     $('#toolbox-worldbook-btn').on('click', () => toggleTab('worldbook'));
+    $('#toolbox-summary-btn').on('click', () => toggleTab('summary'));
+    $('#toolbox-analysis-btn').on('click', () => toggleTab('analysis'));
+    $('#toolbox-suggestion-btn').on('click', () => toggleTab('suggestion'));
 
     $('#enable_toolbox').on('input', onEnableInput);
 
