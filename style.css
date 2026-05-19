@@ -7,9 +7,11 @@
     margin-bottom: 0;
     display: flex;
     flex-direction: column;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 0 60px rgba(168, 85, 247, 0.05);
 }
 
 .smart-toolbar-bg {
@@ -18,9 +20,41 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #1a0f2e 0%, #2d1b44 50%, #3d1f5c 100%);
-    border-radius: 8px;
+    background: linear-gradient(135deg, #1a0f2e 0%, #2d1b44 30%, #3d1f5c 60%, #2d1b44 100%);
+    border-radius: 12px;
     z-index: 0;
+    overflow: hidden;
+}
+
+.smart-toolbar-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(168, 85, 247, 0.1) 30deg,
+        transparent 60deg,
+        transparent 90deg,
+        rgba(236, 72, 153, 0.08) 120deg,
+        transparent 150deg,
+        transparent 180deg,
+        rgba(168, 85, 247, 0.1) 210deg,
+        transparent 240deg,
+        transparent 270deg,
+        rgba(236, 72, 153, 0.08) 300deg,
+        transparent 330deg,
+        transparent 360deg
+    );
+    animation: smart-toolbar-rotate 20s linear infinite;
+}
+
+@keyframes smart-toolbar-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .smart-toolbar-border {
@@ -30,17 +64,44 @@
     right: 0;
     bottom: 0;
     border: 2px solid transparent;
-    border-radius: 8px;
+    border-radius: 12px;
     background: linear-gradient(#1a0f2e, #1a0f2e) padding-box,
-                linear-gradient(135deg, #a855f7, #ec4899, #8b5cf6) border-box;
+                linear-gradient(135deg, #a855f7, #ec4899, #8b5cf6, #a855f7) border-box;
+    background-size: 200% 200%;
     pointer-events: none;
     z-index: 1;
-    animation: smart-toolbar-pulse 3s ease-in-out infinite;
+    animation: smart-toolbar-border-shift 4s ease-in-out infinite;
 }
 
-@keyframes smart-toolbar-pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
+@keyframes smart-toolbar-border-shift {
+    0%, 100% { 
+        background-position: 0% 50%;
+        opacity: 0.7;
+    }
+    50% { 
+        background-position: 100% 50%;
+        opacity: 1;
+    }
+}
+
+.smart-toolbar-glow {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 14px;
+    background: radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+    filter: blur(15px);
+    opacity: 0.6;
+    z-index: -1;
+    animation: smart-toolbar-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes smart-toolbar-glow-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
 }
 
 .smart-toolbar-view {
@@ -50,155 +111,232 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .smart-toolbar-header {
     display: flex;
     align-items: center;
-    padding: 6px 12px;
-    background: rgba(0, 0, 0, 0.35);
-    border-bottom: 1px solid rgba(180, 130, 200, 0.25);
-    height: 26px;
+    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.15);
+    height: 28px;
     flex-shrink: 0;
 }
 
 .smart-toolbar-status {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 600;
-    color: rgba(148, 163, 184, 0.7);
+    color: rgba(148, 163, 184, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.smart-toolbar-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.5);
+    transition: all 0.3s ease;
 }
 
 .smart-toolbar-status-loaded {
-    color: rgba(74, 222, 128, 0.98);
+    color: rgba(74, 222, 128, 0.95);
+}
+
+.smart-toolbar-status-loaded::before {
+    background: rgba(74, 222, 128, 0.95);
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
 }
 
 .smart-toolbar-title {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-left: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin-left: 10px;
+    letter-spacing: 0.5px;
 }
 
 .smart-toolbar-buttons {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 10px;
+    padding: 10px 14px;
     flex: 1;
 }
 
 .smart-toolbar-btn {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.6);
-    border-radius: 5px;
-    padding: 6px 14px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 8px;
+    padding: 7px 16px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.smart-toolbar-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.4s ease;
 }
 
 .smart-toolbar-btn:hover {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(109, 40, 217, 0.4),
+                0 0 15px rgba(168, 85, 247, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(180, 130, 200, 0.6);
+}
+
+.smart-toolbar-btn:hover::before {
+    left: 100%;
 }
 
 .smart-toolbar-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-icon {
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.3);
     color: #a855f7;
-    border: 1px solid rgba(180, 130, 200, 0.5);
+    border: 1px solid rgba(180, 130, 200, 0.3);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .smart-toolbar-btn-icon:hover {
-    background: rgba(0, 0, 0, 0.35);
-    transform: rotate(30deg);
+    background: rgba(109, 40, 217, 0.3);
+    border-color: rgba(180, 130, 200, 0.5);
+    transform: rotate(30deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
 }
 
 .smart-toolbar-btn-back {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.6);
-    border-radius: 4px;
-    padding: 4px 12px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 6px;
+    padding: 5px 14px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-back:hover {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
+    transform: translateX(-2px);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+    border-color: rgba(180, 130, 200, 0.6);
 }
 
 .smart-toolbar-content {
     position: relative;
     z-index: 2;
     flex: 1;
-    padding: 8px 12px;
+    padding: 8px 14px;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.smart-toolbar-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.smart-toolbar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.smart-toolbar-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.6), rgba(236, 72, 153, 0.5));
+    border-radius: 3px;
 }
 
 .smart-toolbar-gen-controls,
 .smart-toolbar-wb-controls {
     display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .smart-toolbar-select {
-    background: rgba(76, 29, 149, 0.9);
+    background: rgba(76, 29, 149, 0.8);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.6);
-    border-radius: 5px;
-    padding: 5px 8px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 7px;
+    padding: 6px 10px;
     font-size: 11px;
     cursor: pointer;
-    min-width: 60px;
+    min-width: 65px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .smart-toolbar-select:focus {
     outline: none;
-    border-color: rgba(200, 150, 255, 0.9);
-    box-shadow: 0 0 0 2px rgba(180, 130, 200, 0.3);
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2),
+                0 0 10px rgba(168, 85, 247, 0.3);
 }
 
 .smart-toolbar-btn-primary {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.7);
-    border-radius: 5px;
-    padding: 5px 14px;
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    border-radius: 7px;
+    padding: 6px 16px;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     flex: 1;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.8));
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4),
+                0 0 10px rgba(168, 85, 247, 0.2);
+    border-color: rgba(180, 130, 200, 0.7);
 }
 
 .smart-toolbar-btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .smart-toolbar-btn-primary.smart-toolbar-btn-loading {
@@ -211,30 +349,34 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 14px;
-    height: 14px;
-    margin: -7px 0 0 -7px;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: #ffffff;
     border-radius: 50%;
     animation: smart-toolbar-spin 0.6s linear infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
-.toolbar-btn-secondary {
-    background: rgba(76, 29, 149, 0.7);
+.smart-toolbar-btn-secondary {
+    background: rgba(76, 29, 149, 0.6);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 5px;
-    padding: 5px 14px;
+    border: 1px solid rgba(180, 130, 200, 0.3);
+    border-radius: 7px;
+    padding: 6px 16px;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     flex: 1;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.2);
 }
 
 .smart-toolbar-btn-secondary:hover:not(:disabled) {
-    background: rgba(76, 29, 149, 0.9);
+    background: rgba(76, 29, 149, 0.8);
+    border-color: rgba(180, 130, 200, 0.5);
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-secondary:disabled {
@@ -243,194 +385,251 @@
 }
 
 .smart-toolbar-results {
-    max-height: 80px;
+    max-height: 75px;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
 }
 
 .smart-toolbar-results::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 .smart-toolbar-results::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 2px;
 }
 
 .smart-toolbar-results::-webkit-scrollbar-thumb {
-    background: rgba(180, 130, 200, 0.5);
-    border-radius: 3px;
+    background: rgba(180, 130, 200, 0.4);
+    border-radius: 2px;
 }
 
 .smart-toolbar-result-item {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(180, 130, 200, 0.2);
-    border-radius: 5px;
-    padding: 7px;
-    margin-bottom: 6px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+    border: 1px solid rgba(180, 130, 200, 0.15);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 7px;
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: 10px;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.smart-toolbar-result-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #a855f7, #ec4899);
+    border-radius: 0 2px 2px 0;
+}
+
+.smart-toolbar-result-item:hover {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+    border-color: rgba(180, 130, 200, 0.3);
+    transform: translateX(3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .smart-toolbar-result-num {
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 700;
     color: #a855f7;
-    min-width: 18px;
-    padding-top: 2px;
+    min-width: 20px;
+    padding-top: 1px;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 
 .smart-toolbar-result-text {
     flex: 1;
     font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.92);
+    line-height: 1.45;
     word-break: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .smart-toolbar-result-actions {
     display: flex;
-    gap: 4px;
+    gap: 5px;
     flex-shrink: 0;
 }
 
 .smart-toolbar-btn-small {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 4px;
-    padding: 3px 8px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 5px;
+    padding: 3px 10px;
     font-size: 10px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-small:hover {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
+    transform: scale(1.05);
+    box-shadow: 0 3px 10px rgba(109, 40, 217, 0.4);
+    border-color: rgba(180, 130, 200, 0.6);
 }
 
 .smart-toolbar-wb-entry {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(180, 130, 200, 0.2);
-    border-radius: 5px;
-    padding: 8px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+    border: 1px solid rgba(180, 130, 200, 0.15);
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.25s ease;
+}
+
+.smart-toolbar-wb-entry:hover {
+    border-color: rgba(180, 130, 200, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .smart-toolbar-wb-name {
     font-size: 11.5px;
     font-weight: 700;
     color: #a855f7;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
 .smart-toolbar-wb-keywords {
     font-size: 10px;
-    color: rgba(200, 150, 255, 0.85);
-    margin-bottom: 5px;
+    color: rgba(200, 150, 255, 0.8);
+    margin-bottom: 6px;
     line-height: 1.4;
 }
 
 .smart-toolbar-wb-content {
     font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.88);
-    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.45;
     word-break: break-word;
 }
 
 .smart-toolbar-analysis-item,
 .smart-toolbar-text-item {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(180, 130, 200, 0.2);
-    border-radius: 5px;
-    padding: 8px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+    border: 1px solid rgba(180, 130, 200, 0.15);
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.25s ease;
+}
+
+.smart-toolbar-analysis-item:hover,
+.smart-toolbar-text-item:hover {
+    border-color: rgba(180, 130, 200, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .smart-toolbar-analysis-name {
     font-size: 11.5px;
     font-weight: 700;
     color: #a855f7;
-    margin-bottom: 6px;
+    margin-bottom: 7px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
 .smart-toolbar-analysis-text,
 .smart-toolbar-text-content {
     font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(255, 255, 255, 0.9);
     line-height: 1.45;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
     word-break: break-word;
 }
 
 .smart-toolbar-text-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 .smart-toolbar-btn-full {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 4px;
-    padding: 4px 10px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 6px;
+    padding: 5px 12px;
     font-size: 10px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
-    transition: all 0.15s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-full:hover {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
+    border-color: rgba(180, 130, 200, 0.6);
 }
 
 .smart-toolbar-btn-half {
-    background: linear-gradient(135deg, #4c1d95, #7e22ce);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 4px;
-    padding: 4px 10px;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 6px;
+    padding: 5px 12px;
     font-size: 10px;
     font-weight: 600;
     cursor: pointer;
     flex: 1;
-    transition: all 0.15s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
 .smart-toolbar-btn-half:hover {
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
+    border-color: rgba(180, 130, 200, 0.6);
 }
 
 .smart-toolbar-error {
     font-size: 11px;
     color: rgba(248, 113, 113, 0.95);
-    padding: 8px;
-    background: rgba(248, 113, 113, 0.1);
-    border-radius: 5px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.05));
+    border-radius: 8px;
     border: 1px solid rgba(248, 113, 113, 0.3);
     word-break: break-word;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.smart-toolbar-error::before {
+    content: '⚠';
+    font-size: 14px;
 }
 
 .smart-toolbar-loading-inline {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px;
-    color: rgba(168, 85, 247, 0.9);
+    gap: 10px;
+    padding: 10px;
+    color: rgba(168, 85, 247, 0.95);
     font-size: 11px;
 }
 
 .smart-toolbar-spinner-small {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border: 2px solid rgba(168, 85, 247, 0.3);
     border-top-color: #a855f7;
     border-radius: 50%;
     animation: smart-toolbar-spin 0.8s linear infinite;
     flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
 @keyframes smart-toolbar-spin {

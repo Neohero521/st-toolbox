@@ -234,6 +234,7 @@ const ui = {
     createSVG() {
         return `
             <div id="smart-toolbar-container">
+                <div class="smart-toolbar-glow"></div>
                 <div class="smart-toolbar-bg"></div>
                 <div class="smart-toolbar-border"></div>
                 
