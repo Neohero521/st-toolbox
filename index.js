@@ -246,107 +246,35 @@ const ui = {
     createSVG() {
         const compactClass = extension_settings[extensionName]?.compactMode ? 'compact' : '';
         return `
-            <div id="toolbox-svg-container" class="${compactClass}" style="width: 100%; height: 133px; position: relative; margin-bottom: 0;">
-                <svg id="toolbox-svg" width="100%" height="100%" viewBox="0 0 800 133" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#1a0f2e" stop-opacity="0.98"/>
-                            <stop offset="50%" stop-color="#2d1b44" stop-opacity="0.98"/>
-                            <stop offset="100%" stop-color="#3d1f5c" stop-opacity="0.98"/>
-                        </linearGradient>
-                        
-                        <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#a855f7" stop-opacity="0.8"/>
-                            <stop offset="50%" stop-color="#ec4899" stop-opacity="0.8"/>
-                            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.8"/>
-                        </linearGradient>
-                        
-                        <linearGradient id="btnGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#4c1d95"/>
-                            <stop offset="100%" stop-color="#7e22ce"/>
-                        </linearGradient>
-                        
-                        <filter id="glow">
-                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                            <feMerge>
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                            </feMerge>
-                        </filter>
-                        
-                        <filter id="shadow">
-                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
-                        </filter>
-                        
-                        <filter id="pulse">
-                            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" result="turbulence">
-                                <animate attributeName="baseFrequency" dur="4s" values="0.01;0.02;0.01" repeatCount="indefinite"/>
-                            </feTurbulence>
-                            <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="2" xChannelSelector="R" yChannelSelector="G"/>
-                        </filter>
-                    </defs>
-                    
-                    <rect id="bg-rect" x="0" y="0" width="800" height="133" fill="url(#bgGradient)" rx="10" filter="url(#pulse)"/>
-                    <rect x="1" y="1" width="798" height="131" fill="none" stroke="url(#borderGradient)" stroke-width="2" rx="9" opacity="0.8" filter="url(#glow)">
-                        <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
-                    </rect>
-                    
-                    <g id="main-view">
-                        <rect x="0" y="0" width="800" height="26" fill="rgba(0,0,0,0.35)"/>
-                        <line x1="0" y1="26" x2="800" y2="26" stroke="rgba(180,130,200,0.4)" stroke-width="1"/>
-                        
-                        <text x="14" y="18" fill="rgba(148,163,184,0.9)" font-family="system-ui, sans-serif" font-size="11.5" font-weight="600" id="char-status">未加载</text>
-                        
-                        <g id="btn-gen3" class="svg-btn" transform="translate(12, 34)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="76" height="28" rx="5" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1" filter="url(#shadow)"/>
-                            <text x="38" y="18.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.3px">生成</text>
-                        </g>
-                        
-                        <g id="btn-worldbook" class="svg-btn" transform="translate(96, 34)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="76" height="28" rx="5" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1" filter="url(#shadow)"/>
-                            <text x="38" y="18.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.3px">世界书</text>
-                        </g>
-                        
-                        <g id="btn-summary" class="svg-btn" transform="translate(180, 34)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="76" height="28" rx="5" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1" filter="url(#shadow)"/>
-                            <text x="38" y="18.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.3px">总结</text>
-                        </g>
-                        
-                        <g id="btn-analysis" class="svg-btn" transform="translate(264, 34)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="76" height="28" rx="5" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1" filter="url(#shadow)"/>
-                            <text x="38" y="18.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.3px">分析</text>
-                        </g>
-                        
-                        <g id="btn-suggestion" class="svg-btn" transform="translate(348, 34)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="76" height="28" rx="5" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1" filter="url(#shadow)"/>
-                            <text x="38" y="18.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.3px">建议</text>
-                        </g>
-                        
-                        <g id="btn-settings" class="svg-btn" transform="translate(760, 3)" style="cursor: pointer;">
-                            <circle cx="10" cy="10" r="10" fill="rgba(0,0,0,0.25)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
-                            <text x="10" y="14.5" text-anchor="middle" fill="#a855f7" font-family="system-ui, sans-serif" font-size="14" font-weight="700">⚙</text>
-                        </g>
-                    </g>
-                    
-                    <g id="detail-view" style="display: none;">
-                        <rect x="0" y="0" width="800" height="26" fill="rgba(0,0,0,0.35)"/>
-                        <line x1="0" y1="26" x2="800" y2="26" stroke="rgba(180,130,200,0.4)" stroke-width="1"/>
-                        
-                        <g id="btn-back" class="svg-btn" transform="translate(8, 3)" style="cursor: pointer;">
-                            <rect x="0" y="0" width="44" height="20" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.6)" stroke-width="1"/>
-                            <text x="22" y="14.5" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="700">←</text>
-                        </g>
-                        
-                        <text x="58" y="18.5" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" id="detail-title">功能</text>
-                        
-                        <g id="loading-indicator" style="display: none;">
-                            <circle cx="770" cy="13" r="6" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="16 10" stroke-linecap="round" transform="rotate(0 770 13)">
-                                <animateTransform attributeName="transform" type="rotate" from="0 770 13" to="360 770 13" dur="0.8s" repeatCount="indefinite"/>
-                            </circle>
-                        </g>
-                    </g>
-                </svg>
-                <div id="toolbox-html-overlay"></div>
+            <div id="toolbox-svg-container" class="${compactClass}">
+                <div class="toolbox-bg"></div>
+                <div class="toolbox-border"></div>
+                
+                <div id="main-view" class="toolbox-view">
+                    <div class="toolbox-header">
+                        <span id="char-status" class="toolbox-status">未加载</span>
+                    </div>
+                    <div class="toolbox-buttons">
+                        <button id="btn-gen3" class="toolbox-btn" type="button">生成</button>
+                        <button id="btn-worldbook" class="toolbox-btn" type="button">世界书</button>
+                        <button id="btn-summary" class="toolbox-btn" type="button">总结</button>
+                        <button id="btn-analysis" class="toolbox-btn" type="button">分析</button>
+                        <button id="btn-suggestion" class="toolbox-btn" type="button">建议</button>
+                        <button id="btn-settings" class="toolbox-btn-icon" type="button">&#9881;</button>
+                    </div>
+                </div>
+                
+                <div id="detail-view" class="toolbox-view" style="display: none;">
+                    <div class="toolbox-header">
+                        <button id="btn-back" class="toolbox-btn-back" type="button">&#8592;</button>
+                        <span id="detail-title" class="toolbox-title">功能</span>
+                    </div>
+                    <div id="loading-indicator" class="toolbox-loading" style="display: none;">
+                        <div class="toolbox-spinner"></div>
+                    </div>
+                </div>
+                
+                <div id="toolbox-content" class="toolbox-content"></div>
             </div>
         `;
     },
@@ -355,11 +283,11 @@ const ui = {
         const statusText = document.getElementById('char-status');
         if (statusText) {
             if (appState.currentCharacter) {
-                statusText.textContent = `✓ ${appState.currentCharacter.name}`;
-                statusText.setAttribute('fill', 'rgba(74, 222, 128, 0.98)');
+                statusText.textContent = `\u2713 ${appState.currentCharacter.name}`;
+                statusText.className = 'toolbox-status toolbox-status-loaded';
             } else {
                 statusText.textContent = '未加载';
-                statusText.setAttribute('fill', 'rgba(148, 163, 184, 0.7)');
+                statusText.className = 'toolbox-status';
             }
         }
     },
@@ -374,6 +302,7 @@ const ui = {
     
     setGenerating(generating) {
         appState.isGenerating = generating;
+        this.setLoading(generating);
     },
     
     renderMainView() {
@@ -384,11 +313,11 @@ const ui = {
         
         const mainView = document.getElementById('main-view');
         const detailView = document.getElementById('detail-view');
-        const overlay = document.getElementById('toolbox-html-overlay');
+        const content = document.getElementById('toolbox-content');
         
-        if (mainView) mainView.style.display = 'block';
+        if (mainView) mainView.style.display = 'flex';
         if (detailView) detailView.style.display = 'none';
-        if (overlay) overlay.innerHTML = '';
+        if (content) content.innerHTML = '';
     },
     
     renderDetailView(tab) {
@@ -399,10 +328,10 @@ const ui = {
         
         const mainView = document.getElementById('main-view');
         const detailView = document.getElementById('detail-view');
-        const overlay = document.getElementById('toolbox-html-overlay');
+        const content = document.getElementById('toolbox-content');
         
         if (mainView) mainView.style.display = 'none';
-        if (detailView) detailView.style.display = 'block';
+        if (detailView) detailView.style.display = 'flex';
         
         const titles = {
             'gen3': '生成回复',
@@ -415,27 +344,27 @@ const ui = {
         const titleEl = document.getElementById('detail-title');
         if (titleEl) titleEl.textContent = titles[tab] || '功能';
         
-        let overlayHTML = '';
+        let contentHTML = '';
         
         switch(tab) {
             case 'gen3':
-                overlayHTML = this.renderGen3Content();
+                contentHTML = this.renderGen3Content();
                 break;
             case 'worldbook':
-                overlayHTML = this.renderWorldbookContent();
+                contentHTML = this.renderWorldbookContent();
                 break;
             case 'summary':
-                overlayHTML = this.renderSummaryContent();
+                contentHTML = this.renderSummaryContent();
                 break;
             case 'analysis':
-                overlayHTML = this.renderAnalysisContent();
+                contentHTML = this.renderAnalysisContent();
                 break;
             case 'suggestion':
-                overlayHTML = this.renderSuggestionContent();
+                contentHTML = this.renderSuggestionContent();
                 break;
         }
         
-        if (overlay) overlay.innerHTML = overlayHTML;
+        if (content) content.innerHTML = contentHTML;
         
         setTimeout(() => events.bindOverlayEvents(tab), 50);
     },
@@ -462,56 +391,46 @@ const ui = {
     renderGen3Content() {
         const genCount = extension_settings[extensionName]?.genCount || 3;
         return `
-            <div style="position: absolute; top: 30px; left: 0; right: 0; bottom: 0; padding: 10px; overflow: hidden; pointer-events: auto;">
-                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                    <select id="gen-count-select" style="background: rgba(76,29,149,0.9); color: #fff; border: 1px solid rgba(180,130,200,0.6); border-radius: 5px; padding: 4px 8px; font-size: 11px; cursor: pointer;">
-                        <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
-                        <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
-                        <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
-                    </select>
-                    <button id="gen-start-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.7); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; flex: 1;">生成</button>
-                </div>
-                <div id="gen-results" style="max-height: 70px; overflow-y: auto;"></div>
+            <div class="toolbox-gen-controls">
+                <select id="gen-count-select" class="toolbox-select">
+                    <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
+                    <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
+                    <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
+                </select>
+                <button id="gen-start-btn" class="toolbox-btn-primary" type="button">生成</button>
             </div>
+            <div id="gen-results" class="toolbox-results"></div>
         `;
     },
     
     renderWorldbookContent() {
         return `
-            <div style="position: absolute; top: 30px; left: 0; right: 0; bottom: 0; padding: 10px; overflow: hidden; pointer-events: auto;">
-                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                    <button id="wb-start-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.7); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; flex: 1;">生成</button>
-                    <button id="wb-save-btn" style="background: rgba(76,29,149,0.7); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; flex: 1; opacity: 0.5;" disabled>保存</button>
-                </div>
-                <div id="wb-preview" style="max-height: 70px; overflow-y: auto;"></div>
+            <div class="toolbox-wb-controls">
+                <button id="wb-start-btn" class="toolbox-btn-primary" type="button">生成</button>
+                <button id="wb-save-btn" class="toolbox-btn-secondary" type="button" disabled>保存</button>
             </div>
+            <div id="wb-preview" class="toolbox-results"></div>
         `;
     },
     
     renderSummaryContent() {
         return `
-            <div style="position: absolute; top: 30px; left: 0; right: 0; bottom: 0; padding: 10px; overflow: hidden; pointer-events: auto;">
-                <button id="sum-start-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.7); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%;">生成总结</button>
-                <div id="sum-content" style="max-height: 70px; overflow-y: auto;"></div>
-            </div>
+            <button id="sum-start-btn" class="toolbox-btn-primary" type="button">生成总结</button>
+            <div id="sum-content" class="toolbox-results"></div>
         `;
     },
     
     renderAnalysisContent() {
         return `
-            <div style="position: absolute; top: 30px; left: 0; right: 0; bottom: 0; padding: 10px; overflow: hidden; pointer-events: auto;">
-                <button id="ana-start-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.7); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%;">分析角色</button>
-                <div id="ana-content" style="max-height: 70px; overflow-y: auto;"></div>
-            </div>
+            <button id="ana-start-btn" class="toolbox-btn-primary" type="button">分析角色</button>
+            <div id="ana-content" class="toolbox-results"></div>
         `;
     },
     
     renderSuggestionContent() {
         return `
-            <div style="position: absolute; top: 30px; left: 0; right: 0; bottom: 0; padding: 10px; overflow: hidden; pointer-events: auto;">
-                <button id="sug-start-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.7); border-radius: 5px; padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%;">生成建议</button>
-                <div id="sug-content" style="max-height: 70px; overflow-y: auto;"></div>
-            </div>
+            <button id="sug-start-btn" class="toolbox-btn-primary" type="button">生成建议</button>
+            <div id="sug-content" class="toolbox-results"></div>
         `;
     },
     
@@ -525,12 +444,12 @@ const ui = {
             const displayText = safeText.length > 90 ? safeText.substring(0, 90) + '...' : safeText;
             
             html += `
-                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(180,130,200,0.25); border-radius: 5px; padding: 7px; margin-bottom: 6px; display: flex; gap: 8px; align-items: flex-start;">
-                    <div style="font-size: 10px; font-weight: 800; color: #a855f7; min-width: 20px; padding-top: 2px;">${i + 1}</div>
-                    <div style="flex: 1; font-size: 10.5px; color: rgba(255,255,255,0.9); line-height: 1.4; word-break: break-all;">${displayText}</div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="use-reply-btn" data-index="${i}" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer;">发</button>
-                        <button class="copy-reply-btn" data-index="${i}" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer;">复</button>
+                <div class="toolbox-result-item">
+                    <span class="toolbox-result-num">${i + 1}</span>
+                    <span class="toolbox-result-text">${displayText}</span>
+                    <div class="toolbox-result-actions">
+                        <button class="toolbox-btn-small use-reply-btn" data-index="${i}" type="button">发</button>
+                        <button class="toolbox-btn-small copy-reply-btn" data-index="${i}" type="button">复</button>
                     </div>
                 </div>
             `;
@@ -543,10 +462,10 @@ const ui = {
         if (!previewEl) return;
         
         previewEl.innerHTML = `
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(180,130,200,0.25); border-radius: 5px; padding: 8px;">
-                <div style="font-size: 11.5px; font-weight: 700; color: #a855f7; margin-bottom: 5px;">${utils.escapeHtml(entry.name)}</div>
-                <div style="font-size: 10px; color: rgba(200,150,255,0.85); margin-bottom: 5px; line-height: 1.4;">${utils.escapeHtml(entry.keywords.join('、'))}</div>
-                <div style="font-size: 10.5px; color: rgba(255,255,255,0.88); line-height: 1.4; word-break: break-all;">${utils.escapeHtml(entry.content)}</div>
+            <div class="toolbox-wb-entry">
+                <div class="toolbox-wb-name">${utils.escapeHtml(entry.name)}</div>
+                <div class="toolbox-wb-keywords">${utils.escapeHtml(entry.keywords.join('、'))}</div>
+                <div class="toolbox-wb-content">${utils.escapeHtml(entry.content)}</div>
             </div>
         `;
     },
@@ -565,21 +484,19 @@ const ui = {
         
         if (type === 'analysis' && character) {
             html = `
-                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(180,130,200,0.25); border-radius: 5px; padding: 8px;">
-                    <div style="font-size: 11.5px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">${utils.escapeHtml(character.name)}</div>
-                    <div style="font-size: 10.5px; color: rgba(255,255,255,0.88); line-height: 1.45; margin-bottom: 7px; word-break: break-all;">${utils.escapeHtml(text)}</div>
-                    <div style="display: flex;">
-                        <button id="ana-copy-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer; width: 100%;">复制</button>
-                    </div>
+                <div class="toolbox-analysis-item">
+                    <div class="toolbox-analysis-name">${utils.escapeHtml(character.name)}</div>
+                    <div class="toolbox-analysis-text">${utils.escapeHtml(text)}</div>
+                    <button id="ana-copy-btn" class="toolbox-btn-full" type="button">复制</button>
                 </div>
             `;
         } else {
             html = `
-                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(180,130,200,0.25); border-radius: 5px; padding: 8px;">
-                    <div style="font-size: 10.5px; color: rgba(255,255,255,0.88); line-height: 1.45; margin-bottom: 7px; word-break: break-all;">${utils.escapeHtml(text)}</div>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="${type}-use-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer; flex: 1;">发送</button>
-                        <button id="${type}-copy-btn" style="background: linear-gradient(135deg, #4c1d95, #7e22ce); color: #fff; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer; flex: 1;">复制</button>
+                <div class="toolbox-text-item">
+                    <div class="toolbox-text-content">${utils.escapeHtml(text)}</div>
+                    <div class="toolbox-text-actions">
+                        <button id="${type}-use-btn" class="toolbox-btn-half" type="button">发送</button>
+                        <button id="${type}-copy-btn" class="toolbox-btn-half" type="button">复制</button>
                     </div>
                 </div>
             `;
@@ -591,8 +508,20 @@ const ui = {
         const el = document.getElementById(targetId);
         if (el) {
             el.innerHTML = `
-                <div style="font-size: 11px; color: rgba(248,113,113,0.95); padding: 8px; background: rgba(248,113,113,0.1); border-radius: 5px; border: 1px solid rgba(248,113,113,0.3); word-break: break-all;">
+                <div class="toolbox-error">
                     ${utils.escapeHtml(message)}
+                </div>
+            `;
+        }
+    },
+    
+    showLoading(targetId) {
+        const el = document.getElementById(targetId);
+        if (el) {
+            el.innerHTML = `
+                <div class="toolbox-loading-inline">
+                    <div class="toolbox-spinner-small"></div>
+                    <span>生成中...</span>
                 </div>
             `;
         }
@@ -602,7 +531,7 @@ const ui = {
         const btn = document.getElementById(btnId);
         if (btn) {
             btn.disabled = false;
-            btn.style.opacity = '1';
+            btn.classList.remove('toolbox-btn-loading');
         }
     },
     
@@ -610,7 +539,7 @@ const ui = {
         const btn = document.getElementById(btnId);
         if (btn) {
             btn.disabled = true;
-            btn.style.opacity = '0.5';
+            btn.classList.add('toolbox-btn-loading');
         }
     }
 };
@@ -633,6 +562,7 @@ const features = {
         ui.disableButton('gen-start-btn');
         ui.setGenerating(true);
         resultsEl.innerHTML = '';
+        ui.showLoading('gen-results');
         
         try {
             const context = getContext();
@@ -703,6 +633,7 @@ ${chatHistory}
         ui.disableButton('wb-start-btn');
         ui.disableButton('wb-save-btn');
         ui.setGenerating(true);
+        ui.showLoading('wb-preview');
         
         try {
             const context = getContext();
@@ -745,7 +676,6 @@ ${chatHistory}
             
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.style.opacity = '1';
             }
             
         } catch (e) {
@@ -818,6 +748,7 @@ ${chatHistory}
         ui.disableButton('sum-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
+        ui.showLoading('sum-content');
         
         try {
             const context = getContext();
@@ -854,6 +785,7 @@ ${chatHistory}
         ui.disableButton('ana-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
+        ui.showLoading('ana-content');
         
         try {
             const character = appState.currentCharacter || characterManager.getCurrentCharacterData();
@@ -890,6 +822,7 @@ ${chatHistory}
         ui.disableButton('sug-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
+        ui.showLoading('sug-content');
         
         try {
             const context = getContext();
