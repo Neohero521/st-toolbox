@@ -1,0 +1,661 @@
+/* ==================== 主容器 ==================== */
+#smart-toolbar-container {
+    width: 100%;
+    height: 133px;
+    min-height: 133px;
+    max-height: 133px;
+    position: relative;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 80px rgba(168, 85, 247, 0.08);
+}
+
+/* ==================== 背景和边框 ==================== */
+.smart-toolbar-glow {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 20px;
+    background: radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.5) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.4) 0%, transparent 50%);
+    filter: blur(20px);
+    opacity: 0.7;
+    z-index: -1;
+    animation: smart-glow-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes smart-glow-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.98); }
+    50% { opacity: 0.9; transform: scale(1); }
+}
+
+.smart-toolbar-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a0f2e 0%, #2d1b44 40%, #3d1f5c 100%);
+    border-radius: 16px;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.smart-toolbar-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(168, 85, 247, 0.15) 30deg,
+        transparent 60deg,
+        transparent 90deg,
+        rgba(236, 72, 153, 0.12) 120deg,
+        transparent 150deg,
+        transparent 180deg,
+        rgba(168, 85, 247, 0.15) 210deg,
+        transparent 240deg,
+        transparent 270deg,
+        rgba(236, 72, 153, 0.12) 300deg,
+        transparent 330deg,
+        transparent 360deg
+    );
+    animation: smart-rotate 25s linear infinite;
+}
+
+@keyframes smart-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.smart-toolbar-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: linear-gradient(#1a0f2e, #1a0f2e) padding-box,
+                linear-gradient(135deg, #a855f7, #ec4899, #8b5cf6, #a855f7) border-box;
+    background-size: 250% 250%;
+    pointer-events: none;
+    z-index: 1;
+    animation: smart-border-shift 4.5s ease-in-out infinite;
+}
+
+@keyframes smart-border-shift {
+    0%, 100% { background-position: 0% 50%; opacity: 0.7; }
+    50% { background-position: 100% 50%; opacity: 1; }
+}
+
+/* ==================== 视图切换 ==================== */
+.smart-toolbar-view {
+    position: relative;
+    z-index: 2;
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.smart-toolbar-view.active {
+    display: flex;
+}
+
+/* ==================== 主视图 ==================== */
+.smart-toolbar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.25);
+    height: 36px;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.toolbar-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.96);
+    letter-spacing: 0.4px;
+}
+
+.smart-toolbar-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(148, 163, 184, 0.7);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.5);
+    transition: all 0.3s ease;
+}
+
+.status-loaded {
+    background: rgba(74, 222, 128, 0.95);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
+}
+
+.smart-toolbar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    flex: 1;
+}
+
+/* ==================== 主按钮 ==================== */
+.main-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 70px;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    transition: left 0.45s ease;
+}
+
+.main-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.45),
+                0 0 18px rgba(168, 85, 247, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    border-color: rgba(180, 130, 200, 0.65);
+}
+
+.main-btn:hover::before {
+    left: 100%;
+}
+
+.main-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
+}
+
+.btn-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.btn-text {
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.settings-btn {
+    background: rgba(0, 0, 0, 0.35);
+    color: #a855f7;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.settings-btn:hover {
+    background: rgba(109, 40, 217, 0.35);
+    border-color: rgba(180, 130, 200, 0.55);
+    transform: rotate(35deg) scale(1.1);
+    box-shadow: 0 6px 16px rgba(109, 40, 217, 0.35);
+}
+
+/* ==================== 功能视图 ==================== */
+.function-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.25);
+    height: 36px;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.back-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
+}
+
+.back-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateX(-3px);
+    box-shadow: 0 5px 16px rgba(109, 40, 217, 0.45);
+}
+
+.function-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.94);
+    letter-spacing: 0.3px;
+}
+
+.toolbar-loading {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: smart-spin 0.7s linear infinite;
+    margin-left: auto;
+}
+
+@keyframes smart-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== 内容区域 ==================== */
+.smart-toolbar-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    padding: 10px 14px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.smart-toolbar-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.smart-toolbar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.smart-toolbar-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.6), rgba(236, 72, 153, 0.5);
+    border-radius: 3px;
+}
+
+/* ==================== 控制面板 ==================== */
+.control-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.select-input {
+    background: rgba(76, 29, 149, 0.85);
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    min-width: 55px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25),
+                0 0 14px rgba(168, 85, 247, 0.3);
+}
+
+.action-btn {
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
+}
+
+.action-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(109, 40, 217, 0.45),
+                0 0 14px rgba(168, 85, 247, 0.25);
+    border-color: rgba(180, 130, 200, 0.65);
+}
+
+.action-btn.secondary {
+    background: rgba(76, 29, 149, 0.65);
+    border: 1px solid rgba(180, 130, 200, 0.35);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.25);
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+    background: rgba(76, 29, 149, 0.85);
+    border-color: rgba(180, 130, 200, 0.55);
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
+}
+
+.btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: smart-spin 0.65s linear infinite;
+}
+
+/* ==================== 结果容器 ==================== */
+.results-container {
+    max-height: 72px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.results-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.results-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 2px;
+}
+
+.results-container::-webkit-scrollbar-thumb {
+    background: rgba(180, 130, 200, 0.45);
+    border-radius: 2px;
+}
+
+/* ==================== 结果卡片 ==================== */
+.result-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.25));
+    border: 1px solid rgba(180, 130, 200, 0.18);
+    border-radius: 10px;
+    padding: 8px;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.result-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #a855f7, #ec4899);
+    border-radius: 0 2px 2px 0;
+}
+
+.result-card:hover {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.35));
+    border-color: rgba(180, 130, 200, 0.35);
+    transform: translateX(4px);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
+}
+
+.card-number {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #a855f7;
+    min-width: 24px;
+    padding-top: 2px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+.card-content {
+    flex: 1;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.93);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.card-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.mini-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.35);
+}
+
+.mini-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.45);
+    border-color: rgba(180, 130, 200, 0.65;
+}
+
+/* ==================== 世界书卡片 ==================== */
+.worldbook-card,
+.summary-card,
+.analysis-card,
+.suggestion-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.25));
+    border: 1px solid rgba(180, 130, 200, 0.18);
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.25s ease;
+}
+
+.worldbook-card:hover,
+.summary-card:hover,
+.analysis-card:hover,
+.suggestion-card:hover {
+    border-color: rgba(180, 130, 200, 0.35;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
+}
+
+.wb-header,
+.summary-header,
+.analysis-header,
+.suggestion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 7px;
+}
+
+.wb-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a855f7;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.wb-badge,
+.analysis-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    background: rgba(168, 85, 247, 0.25);
+    color: rgba(168, 85, 247, 0.95);
+    border-radius: 4px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.wb-keywords {
+    font-size: 10.5px;
+    color: rgba(200, 150, 255, 0.82;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.wb-content,
+.summary-text,
+.analysis-content,
+.suggestion-text {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.92;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* ==================== 特定卡片样式 ==================== */
+.summary-icon,
+.suggestion-icon {
+    font-size: 13px;
+}
+
+.summary-label,
+.suggestion-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.93;
+}
+
+.summary-time {
+    font-size: 10px;
+    color: rgba(148, 163, 184, 0.65;
+}
+
+.summary-actions,
+.suggestion-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.analysis-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a855f7;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.analysis-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ==================== 错误显示 ==================== */
+.error-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.18), rgba(248, 113, 113, 0.08));
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, 0.35;
+}
+
+.error-icon {
+    font-size: 16px;
+}
+
+.error-text {
+    font-size: 11.5px;
+    color: rgba(248, 113, 113, 0.95;
+    word-break: break-word;
+}
+
+/* ==================== 加载动画 ==================== */
+.smart-toolbar-loading-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    color: rgba(168, 85, 247, 0.95;
+    font-size: 11.5px;
+}
+
+.smart-toolbar-spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(168, 85, 247, 0.3;
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: smart-spin 0.8s linear infinite;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
+}

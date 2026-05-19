@@ -2,52 +2,64 @@ import { extension_settings, getContext } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import { eventSource, event_types } from '../../../../script.js';
 
-const extensionName = 'st-smart-toolbar';
-const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+// ==================== 常量配置 ====================
+const EXTENSION_NAME = 'st-smart-toolbar';
+const EXTENSION_FOLDER = `scripts/extensions/third-party/${EXTENSION_NAME}`;
 
-const defaultSettings = {
+const DEFAULT_SETTINGS = {
     enabled: true,
     genCount: 3,
-    autoReturn: true
+    autoReturn: true,
+    theme: 'neon-purple',
+    quickReplyCount: 3,
+    maxHistoryLength: 50
 };
 
+const THEMES = {
+    'neon-purple': {
+        primary: '#a855f7',
+        secondary: '#ec4899',
+        bg: 'linear-gradient(135deg, #1a0f2e 0%, #2d1b44 50%, #3d1f5c 100%)'
+    },
+    'cyber-blue': {
+        primary: '#00f3ff',
+        secondary: '#7b2cbf',
+        bg: 'linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1f2428 100%)'
+    }
+};
+
+// ==================== 状态管理 ====================
 let appState = {
-    expandedTab: null,
+    currentTab: null,
     currentCharacter: null,
-    gen3Replies: [],
+    quickReplies: [],
     worldbookEntries: [],
-    summaryText: '',
-    analysisText: '',
-    suggestionText: '',
+    summaries: [],
+    analysis: {},
+    suggestions: [],
     isLoading: false,
     isGenerating: false,
-    currentTab: null
+    generationProgress: 0,
+    uiMode: 'main'
 };
 
 const clickHandlers = {
-    gen3ReplyHandler: null,
+    quickReplyHandler: null,
     summaryHandler: null,
     analysisHandler: null,
     suggestionHandler: null
 };
 
+// ==================== 工具函数 ====================
 const utils = {
-    logInfo(message, data = null) {
-        const prefix = `[${extensionName}]`;
-        if (data !== null) {
-            console.log(prefix, message, data);
-        } else {
-            console.log(prefix, message);
-        }
+    logInfo(msg, data = null) {
+        const prefix = `[${EXTENSION_NAME}]`;
+        data ? console.log(prefix, msg, data) : console.log(prefix, msg);
     },
     
-    logError(message, error = null) {
-        const prefix = `[${extensionName}]`;
-        if (error !== null) {
-            console.error(prefix, message, error);
-        } else {
-            console.error(prefix, message);
-        }
+    logError(msg, err = null) {
+        const prefix = `[${EXTENSION_NAME}]`;
+        err ? console.error(prefix, msg, err) : console.error(prefix, msg);
     },
     
     escapeHtml(text) {
@@ -55,629 +67,556 @@ const utils = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+    
+    truncate(text, maxLen = 100) {
+        return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+    },
+    
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    
+    debounce(fn, wait) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), wait);
+        };
+    },
+    
+    getTimestamp() {
+        return new Date().toLocaleTimeString('zh-CN', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+        });
     }
 };
 
+// ==================== API层 ====================
 const api = {
-    async callParentApi(prompt) {
-        if (window.parent && window.parent.TavernHelper && 
-            typeof window.parent.TavernHelper.generate === 'function') {
-            const params = {
-                user_input: prompt,
-                should_stream: false,
-                disable_extras: true,
-                stop_everything: true
-            };
+    async callSillyTavernApi(prompt) {
+        if (window.parent?.TavernHelper?.generate) {
             try {
-                const response = await window.parent.TavernHelper.generate(params);
-                return response ? response.trim() : null;
+                const params = {
+                    user_input: prompt,
+                    should_stream: false,
+                    disable_extras: true,
+                    stop_everything: true
+                };
+                const resp = await window.parent.TavernHelper.generate(params);
+                return resp?.trim();
             } catch (e) {
-                utils.logError('Parent API call failed', e);
-                throw new Error('API call failed');
+                utils.logError('API调用失败', e);
             }
-        } else {
-            throw new Error('Parent API not available');
+        }
+        throw new Error('API不可用');
+    },
+    
+    async generateWithFallback(prompt, fallbackFn) {
+        try {
+            const result = await this.callSillyTavernApi(prompt);
+            if (result?.trim()) return result;
+            throw new Error('返回结果为空');
+        } catch (e) {
+            utils.logError('使用降级方案', e);
+            return typeof fallbackFn === 'function' ? fallbackFn() : fallbackFn;
         }
     },
     
-    async safeGenerate(prompt, fallbackGenerator) {
-        try {
-            const response = await this.callParentApi(prompt);
-            if (response && response.trim()) {
-                return response;
-            }
-            throw new Error('Empty response');
-        } catch (e) {
-            utils.logError('API failed, using fallback', e);
-            return typeof fallbackGenerator === 'function' ? fallbackGenerator() : (fallbackGenerator || '生成失败');
-        }
+    parseMultiReply(text, count) {
+        if (!text) return [];
+        return text.split(/\d+\.|[•\-\n]/g)
+            .map(s => s.trim())
+            .filter(s => s.length > 3)
+            .slice(0, count);
     }
 };
 
-const characterManager = {
-    getCurrentCharacterData() {
+// ==================== 角色和聊天管理 ====================
+const chatManager = {
+    getCharacter() {
         try {
-            const context = getContext();
-            if (!context) {
-                utils.logInfo('Context not available');
-                return null;
+            const ctx = getContext();
+            let char = null;
+            
+            if (ctx.characterId && ctx.characters) {
+                char = ctx.characters[ctx.characterId];
+            } else if (ctx.character) {
+                char = ctx.character;
+            } else if (ctx.selectedCharacter) {
+                char = ctx.selectedCharacter;
             }
             
-            let character = null;
-            let charData = null;
+            if (!char?.name) return null;
             
-            if (context.characterId !== undefined && context.characterId !== null && context.characters) {
-                character = context.characters[context.characterId];
-                if (character) {
-                    charData = character.data || character;
-                    utils.logInfo('Got character via characters[characterId]', character.name);
-                }
-            }
-            
-            if (!character && context.character) {
-                character = context.character;
-                charData = character.data || character;
-                utils.logInfo('Got character via context.character', character.name);
-            }
-            
-            if (!character && context.selectedCharacter) {
-                character = context.selectedCharacter;
-                charData = character.data || character;
-                utils.logInfo('Got character via selectedCharacter', character.name);
-            }
-            
-            if (!character || !character.name) {
-                utils.logInfo('No character found');
-                return null;
-            }
-            
+            const charData = char.data || char;
             return {
-                name: character.name,
-                description: charData?.description || '',
-                personality: charData?.personality || '',
-                scenario: charData?.scenario || '',
-                first_mes: charData?.first_mes || '',
-                mes_example: charData?.mes_example || '',
-                world_info: charData?.world_info || '',
-                avatar: character.avatar || charData?.avatar || '',
-                charId: context.characterId,
-                raw: character,
+                id: ctx.characterId,
+                name: char.name,
+                desc: charData.description || '',
+                personality: charData.personality || '',
+                scenario: charData.scenario || '',
+                firstMes: charData.first_mes || '',
+                mesExample: charData.mes_example || '',
+                worldInfo: charData.world_info || ''
             };
         } catch (e) {
-            utils.logError('Error getting character data', e);
+            utils.logError('获取角色失败', e);
             return null;
         }
     },
     
-    tryLoadCharacter() {
-        utils.logInfo('Attempting to load character...');
-        const character = this.getCurrentCharacterData();
-        if (character) {
-            appState.currentCharacter = character;
-            utils.logInfo('Character loaded successfully:', character.name);
-            ui.updateStatus();
-            return true;
-        } else {
-            utils.logInfo('Failed to load character');
-            ui.updateStatus();
-            return false;
-        }
-    }
-};
-
-const chatManager = {
-    getRecentMessages(count = 5) {
+    getRecentMessages(limit = 20) {
         try {
-            const context = getContext();
-            if (!context || !context.chat) return [];
-            return context.chat.slice(-count);
+            const ctx = getContext();
+            return (ctx?.chat || []).slice(-limit).map(m => ({
+                name: m.name,
+                content: m.mes,
+                isUser: m.is_user
+            }));
         } catch (e) {
-            utils.logError('Error getting messages', e);
             return [];
         }
     },
     
-    sendMessage(message) {
-        if (!message) {
-            utils.logError('Cannot send empty message');
-            return;
-        }
+    sendMessage(text) {
+        if (!text) return;
         
-        const input = $('#send_textarea, #prompt_textarea').first();
-        if (input.length) {
-            input.val(message);
-            input.focus();
+        const inputArea = document.querySelector('#send_textarea, #prompt_textarea');
+        if (inputArea) {
+            inputArea.value = text;
+            inputArea.focus();
             
-            const sendButton = $('#send_but');
-            if (sendButton.length && !sendButton.prop('disabled')) {
-                sendButton.click();
+            const sendBtn = document.querySelector('#send_but');
+            if (sendBtn && !sendBtn.disabled) {
+                sendBtn.click();
             } else {
-                const event = new KeyboardEvent('keydown', {
+                const enterEvent = new KeyboardEvent('keydown', {
                     key: 'Enter',
                     keyCode: 13,
                     which: 13,
-                    bubbles: true,
-                    cancelable: true
+                    bubbles: true
                 });
-                input[0].dispatchEvent(event);
+                inputArea.dispatchEvent(enterEvent);
             }
             
-            if (extension_settings[extensionName]?.autoReturn) {
-                setTimeout(() => ui.renderMainView(), 300);
+            if (extension_settings[EXTENSION_NAME]?.autoReturn) {
+                setTimeout(() => ui.showMainView(), 300);
             }
         }
     },
     
     copyToClipboard(text) {
         if (!text) return;
-        
-        navigator.clipboard.writeText(text).then(() => {
-            if (typeof toastr !== 'undefined') {
-                toastr.success('已复制');
-            }
-        }).catch(err => {
-            utils.logError('Copy failed', err);
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            if (typeof toastr !== 'undefined') {
-                toastr.success('已复制');
-            }
-        });
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                if (window.toastr) window.toastr.success('已复制');
+            })
+            .catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (window.toastr) window.toastr.success('已复制');
+            });
     }
 };
 
+// ==================== UI组件 ====================
 const ui = {
-    createSVG() {
+    createToolbar() {
         return `
             <div id="smart-toolbar-container">
                 <div class="smart-toolbar-glow"></div>
                 <div class="smart-toolbar-bg"></div>
                 <div class="smart-toolbar-border"></div>
                 
-                <div id="smart-toolbar-main" class="smart-toolbar-view">
+                <!-- 主视图 -->
+                <div id="smart-toolbar-main" class="smart-toolbar-view active">
                     <div class="smart-toolbar-header">
-                        <span id="smart-toolbar-status" class="smart-toolbar-status">未加载</span>
+                        <span class="toolbar-label">🎯 智慧触控屏</span>
+                        <span id="smart-toolbar-status" class="smart-toolbar-status">
+                            <span class="status-dot"></span>
+                            <span class="status-text">就绪</span>
+                        </span>
                     </div>
                     <div class="smart-toolbar-buttons">
-                        <button id="smart-btn-gen3" class="smart-toolbar-btn" type="button">生成</button>
-                        <button id="smart-btn-worldbook" class="smart-toolbar-btn" type="button">世界书</button>
-                        <button id="smart-btn-summary" class="smart-toolbar-btn" type="button">总结</button>
-                        <button id="smart-btn-analysis" class="smart-toolbar-btn" type="button">分析</button>
-                        <button id="smart-btn-suggestion" class="smart-toolbar-btn" type="button">建议</button>
-                        <button id="smart-btn-settings" class="smart-toolbar-btn-icon" type="button">&#9881;</button>
+                        <button class="main-btn" data-action="quick-reply" title="快速回复">
+                            <span class="btn-icon">💬</span>
+                            <span class="btn-text">快速回复</span>
+                        </button>
+                        <button class="main-btn" data-action="worldbook" title="世界书管理">
+                            <span class="btn-icon">📚</span>
+                            <span class="btn-text">世界书</span>
+                        </button>
+                        <button class="main-btn" data-action="summary" title="对话总结">
+                            <span class="btn-icon">📊</span>
+                            <span class="btn-text">总结</span>
+                        </button>
+                        <button class="main-btn" data-action="analysis" title="角色分析">
+                            <span class="btn-icon">🔍</span>
+                            <span class="btn-text">分析</span>
+                        </button>
+                        <button class="main-btn" data-action="suggestion" title="剧情建议">
+                            <span class="btn-icon">💡</span>
+                            <span class="btn-text">建议</span>
+                        </button>
+                        <button id="toolbar-settings-btn" class="settings-btn" title="设置">⚙️</button>
                     </div>
                 </div>
                 
-                <div id="smart-toolbar-detail" class="smart-toolbar-view" style="display: none;">
-                    <div class="smart-toolbar-header">
-                        <button id="smart-btn-back" class="smart-toolbar-btn-back" type="button">&#8592;</button>
-                        <span id="smart-toolbar-title" class="smart-toolbar-title">功能</span>
+                <!-- 功能视图容器 -->
+                <div id="smart-toolbar-function" class="smart-toolbar-view">
+                    <div class="function-header">
+                        <button id="toolbar-back-btn" class="back-btn">←</button>
+                        <span id="toolbar-function-title" class="function-title">功能</span>
+                        <div class="toolbar-loading" style="display:none;"></div>
                     </div>
+                    <div id="smart-toolbar-content" class="smart-toolbar-content"></div>
                 </div>
-                
-                <div id="smart-toolbar-content" class="smart-toolbar-content"></div>
             </div>
         `;
     },
     
-    updateStatus() {
-        const statusText = document.getElementById('smart-toolbar-status');
-        if (statusText) {
-            if (appState.currentCharacter) {
-                statusText.textContent = `\u2713 ${appState.currentCharacter.name}`;
-                statusText.className = 'smart-toolbar-status smart-toolbar-status-loaded';
-            } else {
-                statusText.textContent = '未加载';
-                statusText.className = 'smart-toolbar-status';
-            }
+    showMainView() {
+        appState.uiMode = 'main';
+        document.getElementById('smart-toolbar-main').classList.add('active');
+        document.getElementById('smart-toolbar-function').classList.remove('active');
+        this.cleanupEventListeners();
+    },
+    
+    showFunctionView(title) {
+        appState.uiMode = 'function';
+        document.getElementById('smart-toolbar-main').classList.remove('active');
+        document.getElementById('smart-toolbar-function').classList.add('active');
+        document.getElementById('toolbar-function-title').textContent = title;
+    },
+    
+    updateStatus(loaded, charName = '') {
+        const statusEl = document.getElementById('smart-toolbar-status');
+        if (!statusEl) return;
+        
+        const dot = statusEl.querySelector('.status-dot');
+        const text = statusEl.querySelector('.status-text');
+        
+        if (loaded && charName) {
+            dot.className = 'status-dot status-loaded';
+            text.textContent = charName;
+        } else {
+            dot.className = 'status-dot';
+            text.textContent = '就绪';
         }
     },
     
     setLoading(loading) {
+        const loader = document.querySelector('.toolbar-loading');
+        if (loader) {
+            loader.style.display = loading ? 'block' : 'none';
+        }
         appState.isLoading = loading;
     },
     
-    setGenerating(generating) {
-        appState.isGenerating = generating;
-    },
-    
-    renderMainView() {
-        appState.expandedTab = null;
-        appState.currentTab = null;
-        
-        this.cleanupEventListeners();
-        
-        const mainView = document.getElementById('smart-toolbar-main');
-        const detailView = document.getElementById('smart-toolbar-detail');
-        const content = document.getElementById('smart-toolbar-content');
-        
-        if (mainView) mainView.style.display = 'flex';
-        if (detailView) detailView.style.display = 'none';
-        if (content) content.innerHTML = '';
-    },
-    
-    renderDetailView(tab) {
-        this.cleanupEventListeners();
-        
-        appState.expandedTab = tab;
-        appState.currentTab = tab;
-        
-        const mainView = document.getElementById('smart-toolbar-main');
-        const detailView = document.getElementById('smart-toolbar-detail');
-        const content = document.getElementById('smart-toolbar-content');
-        
-        if (mainView) mainView.style.display = 'none';
-        if (detailView) detailView.style.display = 'flex';
-        
-        const titles = {
-            'gen3': '生成回复',
-            'worldbook': '世界书',
-            'summary': '对话总结',
-            'analysis': '角色分析',
-            'suggestion': '情节建议'
-        };
-        
-        const titleEl = document.getElementById('smart-toolbar-title');
-        if (titleEl) titleEl.textContent = titles[tab] || '功能';
-        
-        let contentHTML = '';
-        
-        switch(tab) {
-            case 'gen3':
-                contentHTML = this.renderGen3Content();
-                break;
-            case 'worldbook':
-                contentHTML = this.renderWorldbookContent();
-                break;
-            case 'summary':
-                contentHTML = this.renderSummaryContent();
-                break;
-            case 'analysis':
-                contentHTML = this.renderAnalysisContent();
-                break;
-            case 'suggestion':
-                contentHTML = this.renderSuggestionContent();
-                break;
-        }
-        
-        if (content) content.innerHTML = contentHTML;
-        
-        setTimeout(() => events.bindOverlayEvents(tab), 50);
-    },
-    
     cleanupEventListeners() {
-        if (clickHandlers.gen3ReplyHandler) {
-            document.removeEventListener('click', clickHandlers.gen3ReplyHandler);
-            clickHandlers.gen3ReplyHandler = null;
-        }
-        if (clickHandlers.summaryHandler) {
-            document.removeEventListener('click', clickHandlers.summaryHandler);
-            clickHandlers.summaryHandler = null;
-        }
-        if (clickHandlers.analysisHandler) {
-            document.removeEventListener('click', clickHandlers.analysisHandler);
-            clickHandlers.analysisHandler = null;
-        }
-        if (clickHandlers.suggestionHandler) {
-            document.removeEventListener('click', clickHandlers.suggestionHandler);
-            clickHandlers.suggestionHandler = null;
-        }
+        Object.keys(clickHandlers).forEach(key => {
+            if (clickHandlers[key]) {
+                document.removeEventListener('click', clickHandlers[key]);
+                clickHandlers[key] = null;
+            }
+        });
     },
     
-    renderGen3Content() {
-        const genCount = extension_settings[extensionName]?.genCount || 3;
+    renderQuickReplyContent() {
+        const count = extension_settings[EXTENSION_NAME]?.genCount || 3;
         return `
-            <div class="smart-toolbar-gen-controls">
-                <select id="smart-gen-count-select" class="smart-toolbar-select">
-                    <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
-                    <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
-                    <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
-                </select>
-                <button id="smart-gen-start-btn" class="smart-toolbar-btn-primary" type="button">生成</button>
+            <div class="quick-reply-container">
+                <div class="control-bar">
+                    <select id="quick-reply-count" class="select-input">
+                        <option value="2" ${count === 2 ? 'selected' : ''}>2条</option>
+                        <option value="3" ${count === 3 ? 'selected' : ''}>3条</option>
+                        <option value="5" ${count === 5 ? 'selected' : ''}>5条</option>
+                    </select>
+                    <button id="generate-quick-replies" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">✨ 生成回复</span>
+                    </button>
+                </div>
+                <div id="quick-reply-results" class="results-container"></div>
             </div>
-            <div id="smart-gen-results" class="smart-toolbar-results"></div>
         `;
+    },
+    
+    renderQuickReplyResults(replies) {
+        const container = document.getElementById('quick-reply-results');
+        if (!container) return;
+        
+        let html = '';
+        replies.forEach((reply, idx) => {
+            html += `
+                <div class="result-card">
+                    <div class="card-number">#${idx + 1}</div>
+                    <div class="card-content">${utils.escapeHtml(utils.truncate(reply, 120))}</div>
+                    <div class="card-actions">
+                        <button class="mini-btn send-btn" data-index="${idx}">发送</button>
+                        <button class="mini-btn copy-btn" data-index="${idx}">复制</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     },
     
     renderWorldbookContent() {
         return `
-            <div class="smart-toolbar-wb-controls">
-                <button id="smart-wb-start-btn" class="smart-toolbar-btn-primary" type="button">生成</button>
-                <button id="smart-wb-save-btn" class="smart-toolbar-btn-secondary" type="button" disabled>保存</button>
+            <div class="worldbook-container">
+                <div class="control-bar">
+                    <button id="generate-worldbook" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">📝 生成条目</span>
+                    </button>
+                    <button id="save-worldbook" class="action-btn secondary" disabled>💾 保存</button>
+                </div>
+                <div id="worldbook-results" class="results-container"></div>
             </div>
-            <div id="smart-wb-preview" class="smart-toolbar-results"></div>
+        `;
+    },
+    
+    renderWorldbookEntry(entry) {
+        const container = document.getElementById('worldbook-results');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="worldbook-card">
+                <div class="wb-header">
+                    <span class="wb-title">${utils.escapeHtml(entry.name)}</span>
+                    <span class="wb-badge">自动生成</span>
+                </div>
+                <div class="wb-keywords">🏷️ ${utils.escapeHtml(entry.keywords.join(' · '))}</div>
+                <div class="wb-content">${utils.escapeHtml(entry.content)}</div>
+            </div>
         `;
     },
     
     renderSummaryContent() {
         return `
-            <button id="smart-sum-start-btn" class="smart-toolbar-btn-primary" type="button">生成总结</button>
-            <div id="smart-sum-content" class="smart-toolbar-results"></div>
+            <div class="summary-container">
+                <div class="control-bar">
+                    <button id="generate-summary" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">📊 生成总结</span>
+                    </button>
+                </div>
+                <div id="summary-result" class="results-container"></div>
+            </div>
+        `;
+    },
+    
+    renderSummaryResult(text) {
+        const container = document.getElementById('summary-result');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="summary-card">
+                <div class="summary-header">
+                    <span class="summary-icon">📊</span>
+                    <span class="summary-label">对话总结</span>
+                    <span class="summary-time">${utils.getTimestamp()}</span>
+                </div>
+                <div class="summary-text">${utils.escapeHtml(text)}</div>
+                <div class="summary-actions">
+                    <button id="use-summary" class="mini-btn">使用</button>
+                    <button id="copy-summary" class="mini-btn">复制</button>
+                </div>
+            </div>
         `;
     },
     
     renderAnalysisContent() {
         return `
-            <button id="smart-ana-start-btn" class="smart-toolbar-btn-primary" type="button">分析角色</button>
-            <div id="smart-ana-content" class="smart-toolbar-results"></div>
+            <div class="analysis-container">
+                <div class="control-bar">
+                    <button id="generate-analysis" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">🔍 分析角色</span>
+                    </button>
+                </div>
+                <div id="analysis-result" class="results-container"></div>
+            </div>
+        `;
+    },
+    
+    renderAnalysisResult(char, analysisText) {
+        const container = document.getElementById('analysis-result');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="analysis-card">
+                <div class="analysis-header">
+                    <div class="analysis-name">${utils.escapeHtml(char.name)}</div>
+                    <div class="analysis-badge">AI分析</div>
+                </div>
+                <div class="analysis-content">${utils.escapeHtml(analysisText)}</div>
+                <div class="analysis-actions">
+                    <button id="copy-analysis" class="mini-btn">复制分析</button>
+                </div>
+            </div>
         `;
     },
     
     renderSuggestionContent() {
         return `
-            <button id="smart-sug-start-btn" class="smart-toolbar-btn-primary" type="button">生成建议</button>
-            <div id="smart-sug-content" class="smart-toolbar-results"></div>
-        `;
-    },
-    
-    renderGen3Results() {
-        const resultsEl = document.getElementById('smart-gen-results');
-        if (!resultsEl || appState.gen3Replies.length === 0) return;
-        
-        let html = '';
-        appState.gen3Replies.forEach((reply, i) => {
-            const safeText = utils.escapeHtml(reply);
-            const displayText = safeText.length > 90 ? safeText.substring(0, 90) + '...' : safeText;
-            
-            html += `
-                <div class="smart-toolbar-result-item">
-                    <span class="smart-toolbar-result-num">${i + 1}</span>
-                    <span class="smart-toolbar-result-text">${displayText}</span>
-                    <div class="smart-toolbar-result-actions">
-                        <button class="smart-toolbar-btn-small smart-use-reply-btn" data-index="${i}" type="button">发</button>
-                        <button class="smart-toolbar-btn-small smart-copy-reply-btn" data-index="${i}" type="button">复</button>
-                    </div>
+            <div class="suggestion-container">
+                <div class="control-bar">
+                    <button id="generate-suggestion" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">💡 剧情建议</span>
+                    </button>
                 </div>
-            `;
-        });
-        resultsEl.innerHTML = html;
-    },
-    
-    renderWorldbookEntry(entry) {
-        const previewEl = document.getElementById('smart-wb-preview');
-        if (!previewEl) return;
-        
-        previewEl.innerHTML = `
-            <div class="smart-toolbar-wb-entry">
-                <div class="smart-toolbar-wb-name">${utils.escapeHtml(entry.name)}</div>
-                <div class="smart-toolbar-wb-keywords">${utils.escapeHtml(entry.keywords.join('、'))}</div>
-                <div class="smart-toolbar-wb-content">${utils.escapeHtml(entry.content)}</div>
+                <div id="suggestion-result" class="results-container"></div>
             </div>
         `;
     },
     
-    renderTextContent(type, text) {
-        const elMap = {
-            'summary': 'smart-sum-content',
-            'analysis': 'smart-ana-content',
-            'suggestion': 'smart-sug-content'
-        };
-        const contentEl = document.getElementById(elMap[type]);
-        if (!contentEl) return;
+    renderSuggestionResult(text) {
+        const container = document.getElementById('suggestion-result');
+        if (!container) return;
         
-        let html = '';
-        const character = appState.currentCharacter;
-        
-        if (type === 'analysis' && character) {
-            html = `
-                <div class="smart-toolbar-analysis-item">
-                    <div class="smart-toolbar-analysis-name">${utils.escapeHtml(character.name)}</div>
-                    <div class="smart-toolbar-analysis-text">${utils.escapeHtml(text)}</div>
-                    <button id="smart-ana-copy-btn" class="smart-toolbar-btn-full" type="button">复制</button>
+        container.innerHTML = `
+            <div class="suggestion-card">
+                <div class="suggestion-header">
+                    <span class="suggestion-icon">💡</span>
+                    <span class="suggestion-label">剧情建议</span>
                 </div>
-            `;
-        } else {
-            html = `
-                <div class="smart-toolbar-text-item">
-                    <div class="smart-toolbar-text-content">${utils.escapeHtml(text)}</div>
-                    <div class="smart-toolbar-text-actions">
-                        <button id="smart-${type}-use-btn" class="smart-toolbar-btn-half" type="button">发送</button>
-                        <button id="smart-${type}-copy-btn" class="smart-toolbar-btn-half" type="button">复制</button>
-                    </div>
+                <div class="suggestion-text">${utils.escapeHtml(text)}</div>
+                <div class="suggestion-actions">
+                    <button id="use-suggestion" class="mini-btn">使用</button>
+                    <button id="copy-suggestion" class="mini-btn">复制</button>
                 </div>
-            `;
-        }
-        contentEl.innerHTML = html;
+            </div>
+        `;
     },
     
-    showError(message, targetId) {
-        const el = document.getElementById(targetId);
-        if (el) {
-            el.innerHTML = `
-                <div class="smart-toolbar-error">
-                    ${utils.escapeHtml(message)}
-                </div>
-            `;
-        }
-    },
-    
-    showLoading(targetId) {
-        const el = document.getElementById(targetId);
-        if (el) {
-            el.innerHTML = `
-                <div class="smart-toolbar-loading-inline">
-                    <div class="smart-toolbar-spinner-small"></div>
-                    <span>生成中...</span>
-                </div>
-            `;
-        }
-    },
-    
-    resetButton(btnId) {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('smart-toolbar-btn-loading');
-        }
-    },
-    
-    disableButton(btnId) {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('smart-toolbar-btn-loading');
-        }
+    renderError(msg) {
+        return `
+            <div class="error-box">
+                <span class="error-icon">⚠️</span>
+                <span class="error-text">${utils.escapeHtml(msg)}</span>
+            </div>
+        `;
     }
 };
 
+// ==================== 功能实现 ====================
 const features = {
-    async generate3Replies() {
-        if (appState.isGenerating) {
-            utils.logInfo('Already generating, ignoring click');
-            return;
-        }
+    async generateQuickReplies() {
+        if (appState.isGenerating) return;
         
-        const countSelect = document.getElementById('smart-gen-count-select');
-        const startBtn = document.getElementById('smart-gen-start-btn');
-        const resultsEl = document.getElementById('smart-gen-results');
+        const btn = document.getElementById('generate-quick-replies');
+        const spinner = btn?.querySelector('.btn-spinner');
+        const label = btn?.querySelector('.btn-label');
+        const container = document.getElementById('quick-reply-results');
         
-        if (!startBtn || !resultsEl) return;
-        
-        const genCount = parseInt(countSelect?.value) || 3;
-        
-        ui.disableButton('smart-gen-start-btn');
-        ui.setGenerating(true);
-        resultsEl.innerHTML = '';
-        ui.showLoading('smart-gen-results');
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (label) label.textContent = '生成中...';
         
         try {
-            const context = getContext();
-            if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'smart-gen-results');
-                return;
+            const char = chatManager.getCharacter();
+            const messages = chatManager.getRecentMessages(6);
+            const count = parseInt(document.getElementById('quick-reply-count')?.value) || 3;
+            
+            const history = messages.map(m => `${m.name}: ${m.content}`).join('\n');
+            const prompt = `作为${char?.name || 'AI'}，根据以下对话生成${count}条不同风格的回复选项，每行一条：\n${history}`;
+            
+            const fallback = () => {
+                const replies = [];
+                for (let i = 1; i <= count; i++) {
+                    replies.push(`回复选项${i}：这里是模拟生成的回复内容...`);
+                }
+                return replies.join('\n');
+            };
+            
+            const result = await api.generateWithFallback(prompt, fallback);
+            appState.quickReplies = api.parseMultiReply(result, count);
+            
+            if (appState.quickReplies.length === 0) {
+                for (let i = 1; i <= count; i++) {
+                    appState.quickReplies.push(`回复选项${i}：${result.substring((i - 1) * 50, i * 50) || '...'}`);
+                }
             }
             
-            const character = appState.currentCharacter || characterManager.getCurrentCharacterData();
-            const recentMessages = chatManager.getRecentMessages(6);
-            const chatHistory = recentMessages.map(m => m.mes).join('\n');
-            
-            appState.gen3Replies = [];
-            
-            const prompt = `作为角色${character?.name || '角色'}，根据以下对话生成${genCount}条不同风格的回复选项。
-请严格按格式返回，每行一条回复，不要加编号：
-${chatHistory}
-
-要求：每条回复简洁，60字以内，${genCount}条风格要有明显差异。`;
-            
-            const response = await api.safeGenerate(prompt, () => {
-                const fallback = [];
-                for (let i = 1; i <= genCount; i++) {
-                    fallback.push(`回复选项${i}：这是模拟生成的回复内容`);
-                }
-                return fallback.join('\n');
-            });
-            
-            if (response) {
-                const lines = response.split('\n').filter(line => line.trim().length > 0);
-                for (const line of lines) {
-                    const cleanedLine = line.replace(/^\d+[\.\)\s:：]+|^[-*]\s*/, '').trim();
-                    if (cleanedLine.length > 0 && appState.gen3Replies.length < genCount) {
-                        appState.gen3Replies.push(cleanedLine);
-                    }
-                }
-                
-                if (appState.gen3Replies.length === 0) {
-                    for (let i = 1; i <= genCount; i++) {
-                        appState.gen3Replies.push(response.substring((i - 1) * 50, i * 50) || `回复选项${i}`);
-                    }
-                }
-            } else {
-                ui.showError('生成失败，请重试', 'smart-gen-results');
-                return;
-            }
-            
-            ui.renderGen3Results();
+            ui.renderQuickReplyResults(appState.quickReplies);
             
         } catch (e) {
-            utils.logError('Generate failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-gen-results');
+            utils.logError('生成回复失败', e);
+            if (container) container.innerHTML = ui.renderError('生成回复失败，请重试');
         } finally {
-            ui.resetButton('smart-gen-start-btn');
-            ui.setGenerating(false);
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (spinner) spinner.style.display = 'none';
+            if (label) label.textContent = '✨ 生成回复';
         }
     },
     
     async generateWorldbookEntry() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('smart-wb-start-btn');
-        const saveBtn = document.getElementById('smart-wb-save-btn');
-        const previewEl = document.getElementById('smart-wb-preview');
+        const btn = document.getElementById('generate-worldbook');
+        const saveBtn = document.getElementById('save-worldbook');
+        const container = document.getElementById('worldbook-results');
         
-        if (!startBtn || !previewEl) return;
-        
-        ui.disableButton('smart-wb-start-btn');
-        ui.disableButton('smart-wb-save-btn');
-        ui.setGenerating(true);
-        ui.showLoading('smart-wb-preview');
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '分析中...';
         
         try {
-            const context = getContext();
-            const character = appState.currentCharacter;
+            const char = chatManager.getCharacter();
+            const messages = chatManager.getRecentMessages(20);
+            const names = new Set([char?.name || '主角']);
             
-            if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'smart-wb-preview');
-                return;
-            }
-            
-            const recentMessages = chatManager.getRecentMessages(20);
-            const characters = new Set([character?.name || '主角']);
-            
-            recentMessages.forEach(msg => {
-                if (msg.mes) {
-                    const matches = msg.mes.match(/([A-Z][a-zA-Z]+|[一二三四五六七八九十百千万]+[号位人个等])/g);
-                    if (matches) {
-                        matches.forEach(m => {
-                            if (m.length > 1 && m.length < 20) characters.add(m);
-                        });
-                    }
-                }
+            messages.forEach(m => {
+                const matches = m.content.match(/[A-Z][a-zA-Z]+|[一二三四五六七八九十百千万]+[号位人个]/g);
+                if (matches) matches.forEach(name => name.length > 1 && names.add(name));
             });
             
-            const charList = Array.from(characters).slice(0, 8);
-            const entryName = `${character?.name || '角色'}的出场人物`;
-            const chatHistory = recentMessages.map(m => m.mes).join('\n');
+            const nameList = Array.from(names).slice(0, 8);
+            const chatText = messages.map(m => m.content).join('\n').substring(0, 800);
             
-            const prompt = `根据以下对话生成世界书条目，包含角色简介和场景描述（简洁）：\n\n${chatHistory.substring(0, 600)}`;
+            const prompt = `根据对话生成一个世界书条目，包含角色简介：\n${chatText}`;
+            const fallback = () => `出场人物：${nameList.join('、')}\n最近对话中出现的主要角色`;
             
-            const generatedContent = await api.safeGenerate(prompt, `出场人物：${charList.join('、')}\n场景：最近对话场景`);
+            const content = await api.generateWithFallback(prompt, fallback);
             
             appState.worldbookEntries = [{
-                name: entryName,
-                keywords: charList,
-                content: generatedContent
+                name: `${char?.name || '角色'}世界书`,
+                keywords: nameList,
+                content
             }];
             
             ui.renderWorldbookEntry(appState.worldbookEntries[0]);
-            
-            if (saveBtn) {
-                saveBtn.disabled = false;
-            }
+            if (saveBtn) saveBtn.disabled = false;
             
         } catch (e) {
-            utils.logError('Worldbook generate failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-wb-preview');
+            utils.logError('生成世界书失败', e);
+            if (container) container.innerHTML = ui.renderError('生成条目失败');
         } finally {
-            ui.resetButton('smart-wb-start-btn');
-            ui.setGenerating(false);
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '📝 生成条目';
         }
     },
     
-    async saveToWorldbook() {
+    async saveWorldbookEntry() {
         if (appState.worldbookEntries.length === 0) return;
         
-        const saveBtn = document.getElementById('smart-wb-save-btn');
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.textContent = '保存中...';
-        }
-        
         try {
-            if (typeof window.createWorldEntry !== 'undefined') {
+            if (window.createWorldEntry) {
                 appState.worldbookEntries.forEach(entry => {
                     window.createWorldEntry({
                         name: entry.name,
@@ -685,362 +624,352 @@ ${chatHistory}
                         keywords: entry.keywords
                     });
                 });
-                if (typeof toastr !== 'undefined') {
-                    toastr.success('已保存到世界书');
-                }
+                if (window.toastr) window.toastr.success('已保存到世界书！');
             } else {
                 chatManager.copyToClipboard(JSON.stringify(appState.worldbookEntries, null, 2));
-                if (typeof toastr !== 'undefined') {
-                    toastr.info('已复制到剪贴板');
-                }
             }
-            
-            if (saveBtn) {
-                saveBtn.textContent = '已保存';
-                setTimeout(() => {
-                    if (saveBtn) {
-                        saveBtn.disabled = true;
-                        saveBtn.textContent = '保存';
-                    }
-                }, 2000);
-            }
-            
         } catch (e) {
-            utils.logError('Save failed', e);
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.textContent = '保存';
-            }
-            if (typeof toastr !== 'undefined') {
-                toastr.error('保存失败');
-            }
+            utils.logError('保存失败', e);
+            if (window.toastr) window.toastr.error('保存失败');
         }
     },
     
     async generateSummary() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('smart-sum-start-btn');
-        const contentEl = document.getElementById('smart-sum-content');
+        const btn = document.getElementById('generate-summary');
+        const container = document.getElementById('summary-result');
         
-        if (!startBtn || !contentEl) return;
-        
-        ui.disableButton('smart-sum-start-btn');
-        ui.setGenerating(true);
-        contentEl.innerHTML = '';
-        ui.showLoading('smart-sum-content');
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '总结中...';
         
         try {
-            const context = getContext();
-            if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'smart-sum-content');
-                return;
-            }
+            const messages = chatManager.getRecentMessages(15);
+            const chatText = messages.map(m => m.content).join('\n');
             
-            const recentMessages = chatManager.getRecentMessages(12);
-            const chatHistory = recentMessages.map(m => m.mes).join('\n');
+            const prompt = `总结以下对话的关键内容，简洁明了：\n${chatText}`;
+            const fallback = () => '这是当前对话的简要总结...';
             
-            const prompt = `总结以下对话的关键内容（简洁，120字以内）：\n\n${chatHistory}`;
-            appState.summaryText = await api.safeGenerate(prompt, '对话总结（模拟数据）');
-            
-            ui.renderTextContent('summary', appState.summaryText);
+            const summary = await api.generateWithFallback(prompt, fallback);
+            appState.summaryText = summary;
+            ui.renderSummaryResult(summary);
             
         } catch (e) {
-            utils.logError('Summary failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-sum-content');
+            utils.logError('生成总结失败', e);
+            if (container) container.innerHTML = ui.renderError('生成总结失败');
         } finally {
-            ui.resetButton('smart-sum-start-btn');
-            ui.setGenerating(false);
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '📊 生成总结';
         }
     },
     
     async generateAnalysis() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('smart-ana-start-btn');
-        const contentEl = document.getElementById('smart-ana-content');
+        const btn = document.getElementById('generate-analysis');
+        const container = document.getElementById('analysis-result');
         
-        if (!startBtn || !contentEl) return;
-        
-        ui.disableButton('smart-ana-start-btn');
-        ui.setGenerating(true);
-        contentEl.innerHTML = '';
-        ui.showLoading('smart-ana-content');
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '分析中...';
         
         try {
-            const character = appState.currentCharacter || characterManager.getCurrentCharacterData();
-            if (!character) {
-                ui.showError('无角色信息', 'smart-ana-content');
+            const char = chatManager.getCharacter();
+            if (!char) {
+                if (container) container.innerHTML = ui.renderError('未加载角色');
                 return;
             }
             
-            const recentMessages = chatManager.getRecentMessages(6);
-            const chatHistory = recentMessages.map(m => m.mes).join('\n');
+            const messages = chatManager.getRecentMessages(8);
+            const chatText = messages.map(m => m.content).join('\n');
             
-            const prompt = `分析角色${character.name}的性格特点：\n\n角色设定：${character.personality || character.description}\n\n近期对话：${chatHistory}\n\n请简洁分析（100字以内）。`;
-            appState.analysisText = await api.safeGenerate(prompt, `${character.name}的性格分析（模拟数据）`);
+            const prompt = `分析${char.name}的性格特点：\n设定：${char.personality || char.desc}\n对话：${chatText}\n简洁分析`;
+            const fallback = () => `${char.name}的性格分析结果...`;
             
-            ui.renderTextContent('analysis', appState.analysisText);
+            const analysis = await api.generateWithFallback(prompt, fallback);
+            appState.analysis = { char, text: analysis };
+            ui.renderAnalysisResult(char, analysis);
             
         } catch (e) {
-            utils.logError('Analysis failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-ana-content');
+            utils.logError('分析失败', e);
+            if (container) container.innerHTML = ui.renderError('分析失败');
         } finally {
-            ui.resetButton('smart-ana-start-btn');
-            ui.setGenerating(false);
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '🔍 分析角色';
         }
     },
     
     async generateSuggestion() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('smart-sug-start-btn');
-        const contentEl = document.getElementById('smart-sug-content');
+        const btn = document.getElementById('generate-suggestion');
+        const container = document.getElementById('suggestion-result');
         
-        if (!startBtn || !contentEl) return;
-        
-        ui.disableButton('smart-sug-start-btn');
-        ui.setGenerating(true);
-        contentEl.innerHTML = '';
-        ui.showLoading('smart-sug-content');
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '思考中...';
         
         try {
-            const context = getContext();
-            if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'smart-sug-content');
-                return;
-            }
+            const messages = chatManager.getRecentMessages(8);
+            const chatText = messages.map(m => m.content).join('\n');
             
-            const recentMessages = chatManager.getRecentMessages(6);
-            const chatHistory = recentMessages.map(m => m.mes).join('\n');
+            const prompt = `基于对话给出剧情发展建议：\n${chatText}`;
+            const fallback = () => '推动剧情发展的建议...';
             
-            const prompt = `基于以下对话，给出一个情节发展建议（简洁，90字以内）：\n\n${chatHistory}`;
-            appState.suggestionText = await api.safeGenerate(prompt, '情节发展建议（模拟数据）');
-            
-            ui.renderTextContent('suggestion', appState.suggestionText);
+            const suggestion = await api.generateWithFallback(prompt, fallback);
+            appState.suggestionText = suggestion;
+            ui.renderSuggestionResult(suggestion);
             
         } catch (e) {
-            utils.logError('Suggestion failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-sug-content');
+            utils.logError('建议生成失败', e);
+            if (container) container.innerHTML = ui.renderError('生成建议失败');
         } finally {
-            ui.resetButton('smart-sug-start-btn');
-            ui.setGenerating(false);
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '💡 剧情建议';
         }
     }
 };
 
+// ==================== 事件绑定 ====================
 const events = {
-    bindSVGEvents() {
-        const btnGen3 = document.getElementById('smart-btn-gen3');
-        const btnWorldbook = document.getElementById('smart-btn-worldbook');
-        const btnSummary = document.getElementById('smart-btn-summary');
-        const btnAnalysis = document.getElementById('smart-btn-analysis');
-        const btnSuggestion = document.getElementById('smart-btn-suggestion');
-        const btnBack = document.getElementById('smart-btn-back');
-        const btnSettings = document.getElementById('smart-btn-settings');
+    bindMainButtons() {
+        document.querySelectorAll('.main-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const action = e.currentTarget.dataset.action;
+                this.handleMainAction(action);
+            });
+        });
         
-        if (btnGen3) btnGen3.addEventListener('click', () => ui.renderDetailView('gen3'));
-        if (btnWorldbook) btnWorldbook.addEventListener('click', () => ui.renderDetailView('worldbook'));
-        if (btnSummary) btnSummary.addEventListener('click', () => ui.renderDetailView('summary'));
-        if (btnAnalysis) btnAnalysis.addEventListener('click', () => ui.renderDetailView('analysis'));
-        if (btnSuggestion) btnSuggestion.addEventListener('click', () => ui.renderDetailView('suggestion'));
-        if (btnBack) btnBack.addEventListener('click', () => ui.renderMainView());
-        if (btnSettings) btnSettings.addEventListener('click', () => this.toggleSettings());
+        document.getElementById('toolbar-settings-btn')?.addEventListener('click', () => {
+            if (typeof toastr !== 'undefined') {
+                toastr.info('设置功能开发中...');
+            }
+        });
+        
+        document.getElementById('toolbar-back-btn')?.addEventListener('click', () => {
+            ui.showMainView();
+        });
     },
     
-    bindOverlayEvents(tab) {
-        switch(tab) {
-            case 'gen3':
-                const genStartBtn = document.getElementById('smart-gen-start-btn');
-                const genCountSelect = document.getElementById('smart-gen-count-select');
-                
-                if (genStartBtn) {
-                    genStartBtn.addEventListener('click', () => features.generate3Replies());
-                }
-                if (genCountSelect) {
-                    genCountSelect.addEventListener('change', (e) => {
-                        extension_settings[extensionName].genCount = parseInt(e.target.value) || 3;
-                        saveSettingsDebounced();
-                    });
-                }
-                
-                clickHandlers.gen3ReplyHandler = (e) => {
-                    const target = e.target;
-                    if (target.classList && target.classList.contains('smart-use-reply-btn')) {
-                        const idx = parseInt(target.getAttribute('data-index'));
-                        if (!isNaN(idx) && appState.gen3Replies[idx]) {
-                            chatManager.sendMessage(appState.gen3Replies[idx]);
-                        }
-                    }
-                    if (target.classList && target.classList.contains('smart-copy-reply-btn')) {
-                        const idx = parseInt(target.getAttribute('data-index'));
-                        if (!isNaN(idx) && appState.gen3Replies[idx]) {
-                            chatManager.copyToClipboard(appState.gen3Replies[idx]);
-                        }
-                    }
-                };
-                document.addEventListener('click', clickHandlers.gen3ReplyHandler);
+    handleMainAction(action) {
+        ui.cleanupEventListeners();
+        const contentEl = document.getElementById('smart-toolbar-content');
+        
+        switch (action) {
+            case 'quick-reply':
+                ui.showFunctionView('💬 快速回复');
+                contentEl.innerHTML = ui.renderQuickReplyContent();
+                this.bindQuickReplyEvents();
                 break;
-                
             case 'worldbook':
-                const wbStartBtn = document.getElementById('smart-wb-start-btn');
-                const wbSaveBtn = document.getElementById('smart-wb-save-btn');
-                
-                if (wbStartBtn) wbStartBtn.addEventListener('click', () => features.generateWorldbookEntry());
-                if (wbSaveBtn) wbSaveBtn.addEventListener('click', () => features.saveToWorldbook());
+                ui.showFunctionView('📚 世界书管理');
+                contentEl.innerHTML = ui.renderWorldbookContent();
+                this.bindWorldbookEvents();
                 break;
-                
             case 'summary':
-                const sumStartBtn = document.getElementById('smart-sum-start-btn');
-                
-                if (sumStartBtn) sumStartBtn.addEventListener('click', () => features.generateSummary());
-                
-                clickHandlers.summaryHandler = (e) => {
-                    const target = e.target;
-                    if (target.id === 'smart-summary-use-btn' && appState.summaryText) {
-                        chatManager.sendMessage(appState.summaryText);
-                    }
-                    if (target.id === 'smart-summary-copy-btn' && appState.summaryText) {
-                        chatManager.copyToClipboard(appState.summaryText);
-                    }
-                };
-                document.addEventListener('click', clickHandlers.summaryHandler);
+                ui.showFunctionView('📊 对话总结');
+                contentEl.innerHTML = ui.renderSummaryContent();
+                this.bindSummaryEvents();
                 break;
-                
             case 'analysis':
-                const anaStartBtn = document.getElementById('smart-ana-start-btn');
-                
-                if (anaStartBtn) anaStartBtn.addEventListener('click', () => features.generateAnalysis());
-                
-                clickHandlers.analysisHandler = (e) => {
-                    if (e.target.id === 'smart-ana-copy-btn' && appState.analysisText) {
-                        chatManager.copyToClipboard(appState.analysisText);
-                    }
-                };
-                document.addEventListener('click', clickHandlers.analysisHandler);
+                ui.showFunctionView('🔍 角色分析');
+                contentEl.innerHTML = ui.renderAnalysisContent();
+                this.bindAnalysisEvents();
                 break;
-                
             case 'suggestion':
-                const sugStartBtn = document.getElementById('smart-sug-start-btn');
-                
-                if (sugStartBtn) sugStartBtn.addEventListener('click', () => features.generateSuggestion());
-                
-                clickHandlers.suggestionHandler = (e) => {
-                    const target = e.target;
-                    if (target.id === 'smart-suggestion-use-btn' && appState.suggestionText) {
-                        chatManager.sendMessage(appState.suggestionText);
-                    }
-                    if (target.id === 'smart-suggestion-copy-btn' && appState.suggestionText) {
-                        chatManager.copyToClipboard(appState.suggestionText);
-                    }
-                };
-                document.addEventListener('click', clickHandlers.suggestionHandler);
+                ui.showFunctionView('💡 剧情建议');
+                contentEl.innerHTML = ui.renderSuggestionContent();
+                this.bindSuggestionEvents();
                 break;
         }
     },
     
-    toggleSettings() {
-        extension_settings[extensionName] = extension_settings[extensionName] || {};
-        extension_settings[extensionName].autoReturn = !extension_settings[extensionName].autoReturn;
-        saveSettingsDebounced();
-        if (typeof toastr !== 'undefined') {
-            toastr.info(`自动返回: ${extension_settings[extensionName].autoReturn ? '开' : '关'}`);
-        }
+    bindQuickReplyEvents() {
+        document.getElementById('generate-quick-replies')?.addEventListener('click', () => {
+            features.generateQuickReplies();
+        });
+        
+        document.getElementById('quick-reply-count')?.addEventListener('change', (e) => {
+            extension_settings[EXTENSION_NAME].genCount = parseInt(e.target.value);
+            saveSettingsDebounced();
+        });
+        
+        clickHandlers.quickReplyHandler = (e) => {
+            if (e.target.classList.contains('send-btn')) {
+                const idx = parseInt(e.target.dataset.index);
+                if (!isNaN(idx) && appState.quickReplies[idx]) {
+                    chatManager.sendMessage(appState.quickReplies[idx]);
+                }
+            }
+            if (e.target.classList.contains('copy-btn')) {
+                const idx = parseInt(e.target.dataset.index);
+                if (!isNaN(idx) && appState.quickReplies[idx]) {
+                    chatManager.copyToClipboard(appState.quickReplies[idx]);
+                }
+            }
+        };
+        document.addEventListener('click', clickHandlers.quickReplyHandler);
+    },
+    
+    bindWorldbookEvents() {
+        document.getElementById('generate-worldbook')?.addEventListener('click', () => {
+            features.generateWorldbookEntry();
+        });
+        
+        document.getElementById('save-worldbook')?.addEventListener('click', () => {
+            features.saveWorldbookEntry();
+        });
+    },
+    
+    bindSummaryEvents() {
+        document.getElementById('generate-summary')?.addEventListener('click', () => {
+            features.generateSummary();
+        });
+        
+        clickHandlers.summaryHandler = (e) => {
+            if (e.target.id === 'use-summary' && appState.summaryText) {
+                chatManager.sendMessage(appState.summaryText);
+            }
+            if (e.target.id === 'copy-summary' && appState.summaryText) {
+                chatManager.copyToClipboard(appState.summaryText);
+            }
+        };
+        document.addEventListener('click', clickHandlers.summaryHandler);
+    },
+    
+    bindAnalysisEvents() {
+        document.getElementById('generate-analysis')?.addEventListener('click', () => {
+            features.generateAnalysis();
+        });
+        
+        clickHandlers.analysisHandler = (e) => {
+            if (e.target.id === 'copy-analysis' && appState.analysis?.text) {
+                chatManager.copyToClipboard(appState.analysis.text);
+            }
+        };
+        document.addEventListener('click', clickHandlers.analysisHandler);
+    },
+    
+    bindSuggestionEvents() {
+        document.getElementById('generate-suggestion')?.addEventListener('click', () => {
+            features.generateSuggestion();
+        });
+        
+        clickHandlers.suggestionHandler = (e) => {
+            if (e.target.id === 'use-suggestion' && appState.suggestionText) {
+                chatManager.sendMessage(appState.suggestionText);
+            }
+            if (e.target.id === 'copy-suggestion' && appState.suggestionText) {
+                chatManager.copyToClipboard(appState.suggestionText);
+            }
+        };
+        document.addEventListener('click', clickHandlers.suggestionHandler);
     },
     
     bindChatEvents() {
-        const eventNames = ['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'CHARACTER_CHANGED', 'CHARACTER_LOADED', 'CHARACTER_SELECTED', 'GROUP_CHANGED'];
+        const handlers = () => {
+            const char = chatManager.getCharacter();
+            if (char) {
+                appState.currentCharacter = char;
+                ui.updateStatus(true, char.name);
+            }
+        };
         
-        eventNames.forEach(eventName => {
-            if (event_types[eventName]) {
-                eventSource.on(event_types[eventName], () => {
-                    utils.logInfo(`${eventName} event`);
-                    setTimeout(() => characterManager.tryLoadCharacter(), 100);
-                });
+        ['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'CHARACTER_CHANGED', 
+         'CHARACTER_LOADED', 'CHARACTER_SELECTED', 'GROUP_CHANGED'].forEach(evt => {
+            if (event_types[evt]) {
+                eventSource.on(event_types[evt], utils.debounce(handlers, 200));
             }
         });
     }
 };
 
+// ==================== 设置管理 ====================
 const settings = {
     async load() {
-        extension_settings[extensionName] = extension_settings[extensionName] || {};
-        Object.keys(defaultSettings).forEach(key => {
-            if (extension_settings[extensionName][key] === undefined) {
-                extension_settings[extensionName][key] = defaultSettings[key];
+        extension_settings[EXTENSION_NAME] = extension_settings[EXTENSION_NAME] || {};
+        Object.keys(DEFAULT_SETTINGS).forEach(key => {
+            if (extension_settings[EXTENSION_NAME][key] === undefined) {
+                extension_settings[EXTENSION_NAME][key] = DEFAULT_SETTINGS[key];
             }
         });
     },
     
     updateVisibility() {
-        const toolbar = document.getElementById('smart-toolbar-container');
-        if (toolbar) {
-            toolbar.style.display = extension_settings[extensionName]?.enabled ? 'block' : 'none';
+        const container = document.getElementById('smart-toolbar-container');
+        if (container) {
+            container.style.display = extension_settings[EXTENSION_NAME]?.enabled ? 'block' : 'none';
         }
     },
     
     async initSettingsUI() {
         try {
-            const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-            $('#extensions_settings').append(settingsHtml);
+            const settingsHTML = await fetch(`${EXTENSION_FOLDER}/settings.html`).then(r => r.text());
+            document.getElementById('extensions_settings')?.insertAdjacentHTML('beforeend', settingsHTML);
             
-            $('#smart_toolbar_enabled').prop('checked', extension_settings[extensionName]?.enabled);
-            $('#smart_toolbar_auto_return').prop('checked', extension_settings[extensionName]?.autoReturn);
-            $('#smart_toolbar_gen_count').val(extension_settings[extensionName]?.genCount);
-            
-            $('#smart_toolbar_enabled').on('input', function() {
-                const value = Boolean($(this).prop('checked'));
-                extension_settings[extensionName].enabled = value;
-                saveSettingsDebounced();
-                settings.updateVisibility();
-            });
-            
-            $('#smart_toolbar_auto_return').on('input', function() {
-                const value = Boolean($(this).prop('checked'));
-                extension_settings[extensionName].autoReturn = value;
-                saveSettingsDebounced();
-            });
-            
-            $('#smart_toolbar_gen_count').on('change', function() {
-                const value = parseInt($(this).val()) || 3;
-                extension_settings[extensionName].genCount = value;
-                saveSettingsDebounced();
-            });
-            
+            // 绑定设置事件
+            const enabledCheckbox = document.getElementById('st-toolbar-enabled');
+            if (enabledCheckbox) {
+                enabledCheckbox.checked = extension_settings[EXTENSION_NAME].enabled;
+                enabledCheckbox.addEventListener('input', function() {
+                    extension_settings[EXTENSION_NAME].enabled = this.checked;
+                    saveSettingsDebounced();
+                    settings.updateVisibility();
+                });
+            }
         } catch (e) {
-            utils.logError('Settings panel load error', e);
+            utils.logError('加载设置UI失败', e);
         }
     }
 };
 
-jQuery(async function() {
-    utils.logInfo('Initializing Smart Toolbar extension...');
+// ==================== 初始化 ====================
+jQuery(async () => {
+    utils.logInfo('智慧触控屏初始化中...');
     
     await settings.load();
     await settings.initSettingsUI();
     
-    const sendForm = $('#send_form');
-    if (sendForm.length) {
-        sendForm.before(ui.createSVG());
+    // 注入工具栏
+    const sendForm = document.querySelector('#send_form');
+    if (sendForm) {
+        sendForm.insertAdjacentHTML('beforebegin', ui.createToolbar());
         
         setTimeout(() => {
-            events.bindSVGEvents();
-            utils.logInfo('Toolbar added to DOM and events bound');
+            events.bindMainButtons();
+            events.bindChatEvents();
+            
+            // 初始加载角色
+            const char = chatManager.getCharacter();
+            if (char) {
+                appState.currentCharacter = char;
+                ui.updateStatus(true, char.name);
+            }
+            
+            utils.logInfo('初始化完成！🚀');
         }, 100);
     } else {
-        utils.logError('#send_form not found');
-        return;
+        utils.logError('找不到发送表单');
     }
     
-    events.bindChatEvents();
-    
-    utils.logInfo('Checking initial character...');
-    characterManager.tryLoadCharacter();
-    
-    setTimeout(() => characterManager.tryLoadCharacter(), 500);
-    setTimeout(() => characterManager.tryLoadCharacter(), 1500);
-    setTimeout(() => characterManager.tryLoadCharacter(), 3000);
-    
-    settings.updateVisibility();
-    utils.logInfo('Smart Toolbar extension initialized successfully!');
+    // 延迟加载尝试
+    [500, 1500, 3000].forEach(delay => {
+        setTimeout(() => {
+            const char = chatManager.getCharacter();
+            if (char) {
+                appState.currentCharacter = char;
+                ui.updateStatus(true, char.name);
+            }
+        }, delay);
+    });
 });

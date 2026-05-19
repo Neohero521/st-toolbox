@@ -1,0 +1,34 @@
+<div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b>🎯 智慧触控屏</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+    </div>
+    <div class="inline-drawer-content">
+        <div class="flex-container">
+            <label for="st-toolbar-enabled">启用智慧触控屏</label>
+            <input id="st-toolbar-enabled" type="checkbox" />
+        </div>
+        <div class="flex-container">
+            <label for="st-toolbar-auto-return">发送后自动返回主界面</label>
+            <input id="st-toolbar-auto-return" type="checkbox" />
+        </div>
+        <div class="flex-container">
+            <label for="st-toolbar-gen-count">默认生成回复数量:</label>
+            <select id="st-toolbar-gen-count">
+                <option value="1">1 条</option>
+                <option value="2">2 条</option>
+                <option value="3" selected>3 条</option>
+                <option value="5">5 条</option>
+            </select>
+        </div>
+        <hr class="sysHR">
+        <p class="text-sm text-gray-400">功能特性:</p>
+        <ul class="text-sm text-gray-400 ml-4 list-disc">
+            <li>💬 快速生成多条回复</li>
+            <li>📚 自动生成世界书条目</li>
+            <li>📊 智能总结对话内容</li>
+            <li>🔍 AI 角色分析</li>
+            <li>💡 剧情发展建议</li>
+        </ul>
+    </div>
+</div>
