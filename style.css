@@ -5,6 +5,7 @@
     margin-bottom: 10px;
     width: 100%;
     overflow: visible;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* ==================== 主容器优化 - 增加高度确保显示完全 ==================== */
@@ -26,6 +27,8 @@
         0 0 120px rgba(138, 43, 226, 0.15),
         inset 0 0 80px rgba(138, 43, 226, 0.08);
     box-sizing: border-box;
+    -webkit-touch-callout: none;
+    user-select: none;
 }
 
 /* ==================== 动态背景层 ==================== */
@@ -399,7 +402,8 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
-.settings-btn:hover {
+.settings-btn:hover,
+.settings-btn:active {
     background: rgba(109, 40, 217, 0.42);
     border-color: rgba(180, 130, 200, 0.65);
     transform: rotate(50deg) scale(1.15);
@@ -443,6 +447,7 @@
     width: auto;
     position: relative;
     overflow: hidden;
+    touch-action: manipulation;
 }
 
 .action-card::before {
@@ -456,9 +461,10 @@
     transition: left 0.7s ease;
 }
 
-.action-card:hover {
+.action-card:hover,
+.action-card:active {
     background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(236, 72, 153, 0.85));
-    transform: translateY(-5px) scale(1.03);
+    transform: translateY(-5px) scale(1.02);
     box-shadow: 
         0 14px 40px rgba(168, 85, 247, 0.6),
         0 0 50px rgba(236, 72, 153, 0.45),
@@ -466,7 +472,8 @@
     border-color: rgba(180, 130, 200, 0.75);
 }
 
-.action-card:hover::before {
+.action-card:hover::before,
+.action-card:active::before {
     left: 120%;
 }
 
@@ -509,14 +516,14 @@
 }
 
 .action-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: #ffffff;
     text-shadow: 0 0 15px rgba(168, 85, 247, 0.65);
 }
 
 .action-desc {
-    font-size: 11.5px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.82);
     margin-top: 3px;
 }
@@ -527,7 +534,8 @@
     transition: all 0.4s ease;
 }
 
-.action-card:hover .action-arrow {
+.action-card:hover .action-arrow,
+.action-card:active .action-arrow {
     color: rgba(255, 255, 255, 0.98);
     transform: translateX(8px);
 }
@@ -540,7 +548,7 @@
     flex-wrap: nowrap;
     overflow-x: scroll;
     overflow-y: hidden;
-    padding: 12px 24px;
+    padding: 12px 16px;
     flex-shrink: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -548,6 +556,7 @@
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
     cursor: grab;
+    -webkit-overflow-scrolling: touch;
 }
 
 .action-grid::-webkit-scrollbar {
@@ -580,8 +589,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
     position: relative;
     overflow: visible;
-    transform: scale(0.9);
-    opacity: 0.7;
+    touch-action: manipulation;
 }
 
 .action-mini::after {
@@ -598,7 +606,8 @@
     opacity: 0;
 }
 
-.action-mini:hover {
+.action-mini:hover,
+.action-mini:active {
     background: linear-gradient(145deg, rgba(109, 40, 217, 1), rgba(168, 85, 247, 0.8));
     box-shadow: 
         0 10px 28px rgba(109, 40, 217, 0.55),
@@ -606,7 +615,8 @@
     border-color: rgba(180, 130, 200, 0.7);
 }
 
-.action-mini:hover::after {
+.action-mini:hover::after,
+.action-mini:active::after {
     width: 150%;
     height: 150%;
     opacity: 1;
@@ -625,7 +635,6 @@
 
 .action-mini.active .mini-icon {
     filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6));
-    transform: scale(1.1);
 }
 
 .action-mini.active .mini-label {
@@ -673,9 +682,13 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 5px 14px rgba(76, 29, 149, 0.4);
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
-.back-btn:hover {
+.back-btn:hover,
+.back-btn:active {
     background: linear-gradient(135deg, rgba(109, 40, 217, 1), rgba(168, 85, 247, 0.8));
     transform: translateX(-5px);
     box-shadow: 0 8px 22px rgba(109, 40, 217, 0.5);
@@ -710,6 +723,7 @@
     min-height: 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(168, 85, 247, 0.65) rgba(0, 0, 0, 0.3);
+    -webkit-overflow-scrolling: touch;
 }
 
 .function-content::-webkit-scrollbar {
@@ -760,9 +774,10 @@
 /* ==================== 控制面板优化 ==================== */
 .control-row {
     display: flex;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 12px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .styled-select {
@@ -770,15 +785,18 @@
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.55);
     border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.35s ease;
     box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35),
                 inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
-.styled-select:focus {
+.styled-select:focus,
+.styled-select:active {
     outline: none;
     border-color: rgba(168, 85, 247, 0.8);
     box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.25),
@@ -790,8 +808,8 @@
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.6);
     border-radius: 10px;
-    padding: 8px 20px;
-    font-size: 12.5px;
+    padding: 10px 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -800,11 +818,14 @@
     justify-content: center;
     gap: 8px;
     box-shadow: 0 5px 16px rgba(168, 85, 247, 0.45);
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
-.primary-btn:hover:not(:disabled) {
+.primary-btn:hover,
+.primary-btn:active {
     background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(236, 72, 153, 0.85));
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     box-shadow: 0 10px 28px rgba(168, 85, 247, 0.55),
                 0 0 22px rgba(236, 72, 153, 0.35);
     border-color: rgba(180, 130, 200, 0.78);
@@ -825,15 +846,18 @@
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.45);
     border-radius: 10px;
-    padding: 8px 18px;
-    font-size: 12.5px;
+    padding: 10px 18px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.35s ease;
     box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
-.secondary-btn:hover:not(:disabled) {
+.secondary-btn:hover,
+.secondary-btn:active {
     background: rgba(76, 29, 149, 0.95);
     border-color: rgba(180, 130, 200, 0.65);
     box-shadow: 0 6px 18px rgba(76, 29, 149, 0.45);
@@ -845,8 +869,8 @@
 }
 
 .btn-spinner {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border: 2.5px solid rgba(255, 255, 255, 0.45);
     border-top-color: #ffffff;
     border-radius: 50%;
@@ -859,6 +883,7 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
+    -webkit-overflow-scrolling: touch;
 }
 
 .results-list::-webkit-scrollbar {
@@ -879,11 +904,11 @@
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(180, 130, 200, 0.22);
     border-radius: 11px;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 8px;
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 12px;
     transition: all 0.35s ease;
     position: relative;
     overflow: hidden;
@@ -899,15 +924,16 @@
     background: linear-gradient(180deg, #a855f7, #ec4899);
 }
 
-.result-item:hover {
+.result-item:hover,
+.result-item:active {
     background: rgba(0, 0, 0, 0.6);
     border-color: rgba(180, 130, 200, 0.4);
-    transform: translateX(6px);
+    transform: translateX(4px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
 .result-number {
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 800;
     color: #a855f7;
     min-width: 26px;
@@ -916,7 +942,7 @@
 
 .result-content {
     flex: 1;
-    font-size: 11.5px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.94);
     line-height: 1.5;
     word-break: break-word;
@@ -924,7 +950,7 @@
 
 .result-actions {
     display: flex;
-    gap: 7px;
+    gap: 8px;
     flex-shrink: 0;
 }
 
@@ -932,18 +958,21 @@
     background: rgba(109, 40, 217, 0.8);
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 7px;
-    padding: 5px 11px;
-    font-size: 10.5px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.28s ease;
+    min-height: 36px;
+    touch-action: manipulation;
 }
 
-.result-btn:hover {
+.result-btn:hover,
+.result-btn:active {
     background: rgba(168, 85, 247, 0.95);
     border-color: rgba(180, 130, 200, 0.7);
-    transform: scale(1.12);
+    transform: scale(1.05);
 }
 
 .result-btn.send {
@@ -951,7 +980,8 @@
     border-color: rgba(74, 222, 128, 0.45);
 }
 
-.result-btn.send:hover {
+.result-btn.send:hover,
+.result-btn.send:active {
     background: rgba(74, 222, 128, 0.92);
     border-color: rgba(74, 222, 128, 0.7);
 }
@@ -962,6 +992,7 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
+    -webkit-overflow-scrolling: touch;
 }
 
 .result-card,
@@ -974,7 +1005,9 @@
 }
 
 .result-card:hover,
-.worldbook-card:hover {
+.worldbook-card:hover,
+.result-card:active,
+.worldbook-card:active {
     border-color: rgba(180, 130, 200, 0.45);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.42);
 }
@@ -987,19 +1020,19 @@
 }
 
 .card-icon {
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .card-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.95);
 }
 
 .card-badge {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 4px 8px;
+    padding: 4px 10px;
     background: rgba(168, 85, 247, 0.3);
     color: rgba(168, 85, 247, 0.95);
     border-radius: 6px;
@@ -1008,19 +1041,19 @@
 }
 
 .card-time {
-    font-size: 10.5px;
+    font-size: 11px;
     color: rgba(148, 163, 184, 0.68);
     margin-left: auto;
 }
 
 .card-keywords {
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(200, 150, 255, 0.88);
     margin-bottom: 9px;
 }
 
 .card-content {
-    font-size: 11.5px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.94);
     line-height: 1.55;
     word-break: break-word;
@@ -1030,6 +1063,7 @@
     display: flex;
     gap: 12px;
     margin-top: 11px;
+    flex-wrap: wrap;
 }
 
 .card-actions button {
@@ -1037,25 +1071,28 @@
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.5);
     border-radius: 8px;
-    padding: 6px 14px;
-    font-size: 11px;
+    padding: 10px 16px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-height: 40px;
+    touch-action: manipulation;
 }
 
-.card-actions button:hover {
+.card-actions button:hover,
+.card-actions button:active {
     background: rgba(109, 40, 217, 0.95);
     border-color: rgba(180, 130, 200, 0.7);
-    transform: scale(1.1);
+    transform: scale(1.03);
 }
 
 /* ==================== 空状态和错误优化 ==================== */
 .empty-state {
     text-align: center;
     color: rgba(148, 163, 184, 0.65);
-    font-size: 12px;
-    padding: 14px;
+    font-size: 13px;
+    padding: 16px;
 }
 
 .error-message {
@@ -1067,5 +1104,135 @@
     border-radius: 11px;
     border: 1px solid rgba(248, 113, 113, 0.4);
     color: rgba(248, 113, 113, 0.95);
-    font-size: 12px;
+    font-size: 13px;
+}
+
+/* ==================== 移动端响应式优化 ==================== */
+@media (max-width: 768px) {
+    #smart-toolbar-container {
+        height: 170px;
+        min-height: 170px;
+        max-height: 170px;
+        border-radius: 16px;
+    }
+    
+    .toolbar-header {
+        padding: 6px 14px;
+        height: 40px;
+    }
+    
+    .brand-title {
+        font-size: 14px;
+    }
+    
+    .brand-subtitle {
+        font-size: 8px;
+    }
+    
+    .toolbar-content {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .action-card {
+        padding: 10px 18px;
+        min-width: 180px;
+    }
+    
+    .action-title {
+        font-size: 14px;
+    }
+    
+    .action-desc {
+        font-size: 10px;
+    }
+    
+    .action-grid {
+        padding: 10px 12px;
+        gap: 14px;
+    }
+    
+    .action-mini {
+        width: 72px;
+        min-width: 72px;
+        height: 72px;
+    }
+    
+    .mini-icon {
+        font-size: 20px;
+    }
+    
+    .mini-label {
+        font-size: 9px;
+    }
+    
+    .function-content {
+        padding: 8px 12px;
+    }
+    
+    .panel-body {
+        padding: 12px;
+    }
+    
+    .control-row {
+        gap: 10px;
+    }
+    
+    .primary-btn,
+    .secondary-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    #smart-toolbar-container {
+        height: 175px;
+        min-height: 175px;
+        max-height: 175px;
+    }
+    
+    .status-text {
+        display: none;
+    }
+    
+    .status-indicator-container {
+        padding: 6px 10px;
+    }
+    
+    .action-grid {
+        gap: 12px;
+        padding: 8px 10px;
+    }
+    
+    .action-mini {
+        width: 68px;
+        min-width: 68px;
+        height: 68px;
+    }
+    
+    .result-item {
+        padding: 10px;
+    }
+    
+    .card-actions {
+        flex-direction: column;
+    }
+    
+    .card-actions button {
+        width: 100%;
+    }
+}
+
+/* ==================== 高对比度和可访问性优化 ==================== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    /* Already optimized for dark mode */
 }
