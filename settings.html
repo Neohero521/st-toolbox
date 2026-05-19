@@ -1,30 +1,26 @@
-<div class="toolbox-extension-settings">
+<div class="smart-toolbar-settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>工具箱</b>
+            <b>智慧触控屏</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="toolbox-extension-block flex-container">
-                <input id="enable_toolbox" type="checkbox" />
-                <label for="enable_toolbox">启用工具箱</label>
+            <div class="flex-container">
+                <input id="smart_toolbar_enabled" type="checkbox" />
+                <label for="smart_toolbar_enabled">启用智慧触控屏</label>
             </div>
             <hr class="sysHR" />
-            <div class="toolbox-extension-block flex-container">
-                <input id="tool_anchor_inject" type="checkbox" />
-                <label for="tool_anchor_inject">设定锚点注入器</label>
+            <div class="flex-container">
+                <input id="smart_toolbar_auto_return" type="checkbox" />
+                <label for="smart_toolbar_auto_return">发送后自动返回主界面</label>
             </div>
-            <div class="toolbox-extension-block flex-container">
-                <input id="tool_ooc_detect" type="checkbox" />
-                <label for="tool_ooc_detect">OOC 实时检测</label>
-            </div>
-            <div class="toolbox-extension-block flex-container">
-                <input id="tool_char_state" type="checkbox" />
-                <label for="tool_char_state">角色状态追踪</label>
-            </div>
-            <div class="toolbox-extension-block flex-container">
-                <input id="tool_message_edit" type="checkbox" />
-                <label for="tool_message_edit">消息编辑</label>
+            <div class="flex-container">
+                <label for="smart_toolbar_gen_count">默认生成回复数量:</label>
+                <select id="smart_toolbar_gen_count" style="margin-left: 8px;">
+                    <option value="1">1条</option>
+                    <option value="2">2条</option>
+                    <option value="3" selected>3条</option>
+                </select>
             </div>
         </div>
     </div>

@@ -2,12 +2,12 @@ import { extension_settings, getContext } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import { eventSource, event_types } from '../../../../script.js';
 
-const extensionName = 'st-toolbox';
+const extensionName = 'st-smart-toolbar';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+
 const defaultSettings = {
     enabled: true,
     genCount: 3,
-    compactMode: false,
     autoReturn: true
 };
 
@@ -55,18 +55,6 @@ const utils = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    },
-    
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
     }
 };
 
@@ -244,65 +232,56 @@ const chatManager = {
 
 const ui = {
     createSVG() {
-        const compactClass = extension_settings[extensionName]?.compactMode ? 'compact' : '';
         return `
-            <div id="toolbox-svg-container" class="${compactClass}">
-                <div class="toolbox-bg"></div>
-                <div class="toolbox-border"></div>
+            <div id="smart-toolbar-container">
+                <div class="smart-toolbar-bg"></div>
+                <div class="smart-toolbar-border"></div>
                 
-                <div id="main-view" class="toolbox-view">
-                    <div class="toolbox-header">
-                        <span id="char-status" class="toolbox-status">未加载</span>
+                <div id="smart-toolbar-main" class="smart-toolbar-view">
+                    <div class="smart-toolbar-header">
+                        <span id="smart-toolbar-status" class="smart-toolbar-status">未加载</span>
                     </div>
-                    <div class="toolbox-buttons">
-                        <button id="btn-gen3" class="toolbox-btn" type="button">生成</button>
-                        <button id="btn-worldbook" class="toolbox-btn" type="button">世界书</button>
-                        <button id="btn-summary" class="toolbox-btn" type="button">总结</button>
-                        <button id="btn-analysis" class="toolbox-btn" type="button">分析</button>
-                        <button id="btn-suggestion" class="toolbox-btn" type="button">建议</button>
-                        <button id="btn-settings" class="toolbox-btn-icon" type="button">&#9881;</button>
+                    <div class="smart-toolbar-buttons">
+                        <button id="smart-btn-gen3" class="smart-toolbar-btn" type="button">生成</button>
+                        <button id="smart-btn-worldbook" class="smart-toolbar-btn" type="button">世界书</button>
+                        <button id="smart-btn-summary" class="smart-toolbar-btn" type="button">总结</button>
+                        <button id="smart-btn-analysis" class="smart-toolbar-btn" type="button">分析</button>
+                        <button id="smart-btn-suggestion" class="smart-toolbar-btn" type="button">建议</button>
+                        <button id="smart-btn-settings" class="smart-toolbar-btn-icon" type="button">&#9881;</button>
                     </div>
                 </div>
                 
-                <div id="detail-view" class="toolbox-view" style="display: none;">
-                    <div class="toolbox-header">
-                        <button id="btn-back" class="toolbox-btn-back" type="button">&#8592;</button>
-                        <span id="detail-title" class="toolbox-title">功能</span>
-                    </div>
-                    <div id="loading-indicator" class="toolbox-loading" style="display: none;">
-                        <div class="toolbox-spinner"></div>
+                <div id="smart-toolbar-detail" class="smart-toolbar-view" style="display: none;">
+                    <div class="smart-toolbar-header">
+                        <button id="smart-btn-back" class="smart-toolbar-btn-back" type="button">&#8592;</button>
+                        <span id="smart-toolbar-title" class="smart-toolbar-title">功能</span>
                     </div>
                 </div>
                 
-                <div id="toolbox-content" class="toolbox-content"></div>
+                <div id="smart-toolbar-content" class="smart-toolbar-content"></div>
             </div>
         `;
     },
     
     updateStatus() {
-        const statusText = document.getElementById('char-status');
+        const statusText = document.getElementById('smart-toolbar-status');
         if (statusText) {
             if (appState.currentCharacter) {
                 statusText.textContent = `\u2713 ${appState.currentCharacter.name}`;
-                statusText.className = 'toolbox-status toolbox-status-loaded';
+                statusText.className = 'smart-toolbar-status smart-toolbar-status-loaded';
             } else {
                 statusText.textContent = '未加载';
-                statusText.className = 'toolbox-status';
+                statusText.className = 'smart-toolbar-status';
             }
         }
     },
     
     setLoading(loading) {
         appState.isLoading = loading;
-        const indicator = document.getElementById('loading-indicator');
-        if (indicator) {
-            indicator.style.display = loading ? 'block' : 'none';
-        }
     },
     
     setGenerating(generating) {
         appState.isGenerating = generating;
-        this.setLoading(generating);
     },
     
     renderMainView() {
@@ -311,9 +290,9 @@ const ui = {
         
         this.cleanupEventListeners();
         
-        const mainView = document.getElementById('main-view');
-        const detailView = document.getElementById('detail-view');
-        const content = document.getElementById('toolbox-content');
+        const mainView = document.getElementById('smart-toolbar-main');
+        const detailView = document.getElementById('smart-toolbar-detail');
+        const content = document.getElementById('smart-toolbar-content');
         
         if (mainView) mainView.style.display = 'flex';
         if (detailView) detailView.style.display = 'none';
@@ -326,9 +305,9 @@ const ui = {
         appState.expandedTab = tab;
         appState.currentTab = tab;
         
-        const mainView = document.getElementById('main-view');
-        const detailView = document.getElementById('detail-view');
-        const content = document.getElementById('toolbox-content');
+        const mainView = document.getElementById('smart-toolbar-main');
+        const detailView = document.getElementById('smart-toolbar-detail');
+        const content = document.getElementById('smart-toolbar-content');
         
         if (mainView) mainView.style.display = 'none';
         if (detailView) detailView.style.display = 'flex';
@@ -341,7 +320,7 @@ const ui = {
             'suggestion': '情节建议'
         };
         
-        const titleEl = document.getElementById('detail-title');
+        const titleEl = document.getElementById('smart-toolbar-title');
         if (titleEl) titleEl.textContent = titles[tab] || '功能';
         
         let contentHTML = '';
@@ -391,51 +370,51 @@ const ui = {
     renderGen3Content() {
         const genCount = extension_settings[extensionName]?.genCount || 3;
         return `
-            <div class="toolbox-gen-controls">
-                <select id="gen-count-select" class="toolbox-select">
+            <div class="smart-toolbar-gen-controls">
+                <select id="smart-gen-count-select" class="smart-toolbar-select">
                     <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
                     <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
                     <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
                 </select>
-                <button id="gen-start-btn" class="toolbox-btn-primary" type="button">生成</button>
+                <button id="smart-gen-start-btn" class="smart-toolbar-btn-primary" type="button">生成</button>
             </div>
-            <div id="gen-results" class="toolbox-results"></div>
+            <div id="smart-gen-results" class="smart-toolbar-results"></div>
         `;
     },
     
     renderWorldbookContent() {
         return `
-            <div class="toolbox-wb-controls">
-                <button id="wb-start-btn" class="toolbox-btn-primary" type="button">生成</button>
-                <button id="wb-save-btn" class="toolbox-btn-secondary" type="button" disabled>保存</button>
+            <div class="smart-toolbar-wb-controls">
+                <button id="smart-wb-start-btn" class="smart-toolbar-btn-primary" type="button">生成</button>
+                <button id="smart-wb-save-btn" class="smart-toolbar-btn-secondary" type="button" disabled>保存</button>
             </div>
-            <div id="wb-preview" class="toolbox-results"></div>
+            <div id="smart-wb-preview" class="smart-toolbar-results"></div>
         `;
     },
     
     renderSummaryContent() {
         return `
-            <button id="sum-start-btn" class="toolbox-btn-primary" type="button">生成总结</button>
-            <div id="sum-content" class="toolbox-results"></div>
+            <button id="smart-sum-start-btn" class="smart-toolbar-btn-primary" type="button">生成总结</button>
+            <div id="smart-sum-content" class="smart-toolbar-results"></div>
         `;
     },
     
     renderAnalysisContent() {
         return `
-            <button id="ana-start-btn" class="toolbox-btn-primary" type="button">分析角色</button>
-            <div id="ana-content" class="toolbox-results"></div>
+            <button id="smart-ana-start-btn" class="smart-toolbar-btn-primary" type="button">分析角色</button>
+            <div id="smart-ana-content" class="smart-toolbar-results"></div>
         `;
     },
     
     renderSuggestionContent() {
         return `
-            <button id="sug-start-btn" class="toolbox-btn-primary" type="button">生成建议</button>
-            <div id="sug-content" class="toolbox-results"></div>
+            <button id="smart-sug-start-btn" class="smart-toolbar-btn-primary" type="button">生成建议</button>
+            <div id="smart-sug-content" class="smart-toolbar-results"></div>
         `;
     },
     
     renderGen3Results() {
-        const resultsEl = document.getElementById('gen-results');
+        const resultsEl = document.getElementById('smart-gen-results');
         if (!resultsEl || appState.gen3Replies.length === 0) return;
         
         let html = '';
@@ -444,12 +423,12 @@ const ui = {
             const displayText = safeText.length > 90 ? safeText.substring(0, 90) + '...' : safeText;
             
             html += `
-                <div class="toolbox-result-item">
-                    <span class="toolbox-result-num">${i + 1}</span>
-                    <span class="toolbox-result-text">${displayText}</span>
-                    <div class="toolbox-result-actions">
-                        <button class="toolbox-btn-small use-reply-btn" data-index="${i}" type="button">发</button>
-                        <button class="toolbox-btn-small copy-reply-btn" data-index="${i}" type="button">复</button>
+                <div class="smart-toolbar-result-item">
+                    <span class="smart-toolbar-result-num">${i + 1}</span>
+                    <span class="smart-toolbar-result-text">${displayText}</span>
+                    <div class="smart-toolbar-result-actions">
+                        <button class="smart-toolbar-btn-small smart-use-reply-btn" data-index="${i}" type="button">发</button>
+                        <button class="smart-toolbar-btn-small smart-copy-reply-btn" data-index="${i}" type="button">复</button>
                     </div>
                 </div>
             `;
@@ -458,23 +437,23 @@ const ui = {
     },
     
     renderWorldbookEntry(entry) {
-        const previewEl = document.getElementById('wb-preview');
+        const previewEl = document.getElementById('smart-wb-preview');
         if (!previewEl) return;
         
         previewEl.innerHTML = `
-            <div class="toolbox-wb-entry">
-                <div class="toolbox-wb-name">${utils.escapeHtml(entry.name)}</div>
-                <div class="toolbox-wb-keywords">${utils.escapeHtml(entry.keywords.join('、'))}</div>
-                <div class="toolbox-wb-content">${utils.escapeHtml(entry.content)}</div>
+            <div class="smart-toolbar-wb-entry">
+                <div class="smart-toolbar-wb-name">${utils.escapeHtml(entry.name)}</div>
+                <div class="smart-toolbar-wb-keywords">${utils.escapeHtml(entry.keywords.join('、'))}</div>
+                <div class="smart-toolbar-wb-content">${utils.escapeHtml(entry.content)}</div>
             </div>
         `;
     },
     
     renderTextContent(type, text) {
         const elMap = {
-            'summary': 'sum-content',
-            'analysis': 'ana-content',
-            'suggestion': 'sug-content'
+            'summary': 'smart-sum-content',
+            'analysis': 'smart-ana-content',
+            'suggestion': 'smart-sug-content'
         };
         const contentEl = document.getElementById(elMap[type]);
         if (!contentEl) return;
@@ -484,19 +463,19 @@ const ui = {
         
         if (type === 'analysis' && character) {
             html = `
-                <div class="toolbox-analysis-item">
-                    <div class="toolbox-analysis-name">${utils.escapeHtml(character.name)}</div>
-                    <div class="toolbox-analysis-text">${utils.escapeHtml(text)}</div>
-                    <button id="ana-copy-btn" class="toolbox-btn-full" type="button">复制</button>
+                <div class="smart-toolbar-analysis-item">
+                    <div class="smart-toolbar-analysis-name">${utils.escapeHtml(character.name)}</div>
+                    <div class="smart-toolbar-analysis-text">${utils.escapeHtml(text)}</div>
+                    <button id="smart-ana-copy-btn" class="smart-toolbar-btn-full" type="button">复制</button>
                 </div>
             `;
         } else {
             html = `
-                <div class="toolbox-text-item">
-                    <div class="toolbox-text-content">${utils.escapeHtml(text)}</div>
-                    <div class="toolbox-text-actions">
-                        <button id="${type}-use-btn" class="toolbox-btn-half" type="button">发送</button>
-                        <button id="${type}-copy-btn" class="toolbox-btn-half" type="button">复制</button>
+                <div class="smart-toolbar-text-item">
+                    <div class="smart-toolbar-text-content">${utils.escapeHtml(text)}</div>
+                    <div class="smart-toolbar-text-actions">
+                        <button id="smart-${type}-use-btn" class="smart-toolbar-btn-half" type="button">发送</button>
+                        <button id="smart-${type}-copy-btn" class="smart-toolbar-btn-half" type="button">复制</button>
                     </div>
                 </div>
             `;
@@ -508,7 +487,7 @@ const ui = {
         const el = document.getElementById(targetId);
         if (el) {
             el.innerHTML = `
-                <div class="toolbox-error">
+                <div class="smart-toolbar-error">
                     ${utils.escapeHtml(message)}
                 </div>
             `;
@@ -519,8 +498,8 @@ const ui = {
         const el = document.getElementById(targetId);
         if (el) {
             el.innerHTML = `
-                <div class="toolbox-loading-inline">
-                    <div class="toolbox-spinner-small"></div>
+                <div class="smart-toolbar-loading-inline">
+                    <div class="smart-toolbar-spinner-small"></div>
                     <span>生成中...</span>
                 </div>
             `;
@@ -531,7 +510,7 @@ const ui = {
         const btn = document.getElementById(btnId);
         if (btn) {
             btn.disabled = false;
-            btn.classList.remove('toolbox-btn-loading');
+            btn.classList.remove('smart-toolbar-btn-loading');
         }
     },
     
@@ -539,7 +518,7 @@ const ui = {
         const btn = document.getElementById(btnId);
         if (btn) {
             btn.disabled = true;
-            btn.classList.add('toolbox-btn-loading');
+            btn.classList.add('smart-toolbar-btn-loading');
         }
     }
 };
@@ -551,23 +530,23 @@ const features = {
             return;
         }
         
-        const countSelect = document.getElementById('gen-count-select');
-        const startBtn = document.getElementById('gen-start-btn');
-        const resultsEl = document.getElementById('gen-results');
+        const countSelect = document.getElementById('smart-gen-count-select');
+        const startBtn = document.getElementById('smart-gen-start-btn');
+        const resultsEl = document.getElementById('smart-gen-results');
         
         if (!startBtn || !resultsEl) return;
         
         const genCount = parseInt(countSelect?.value) || 3;
         
-        ui.disableButton('gen-start-btn');
+        ui.disableButton('smart-gen-start-btn');
         ui.setGenerating(true);
         resultsEl.innerHTML = '';
-        ui.showLoading('gen-results');
+        ui.showLoading('smart-gen-results');
         
         try {
             const context = getContext();
             if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'gen-results');
+                ui.showError('无聊天记录', 'smart-gen-results');
                 return;
             }
             
@@ -606,7 +585,7 @@ ${chatHistory}
                     }
                 }
             } else {
-                ui.showError('生成失败，请重试', 'gen-results');
+                ui.showError('生成失败，请重试', 'smart-gen-results');
                 return;
             }
             
@@ -614,9 +593,9 @@ ${chatHistory}
             
         } catch (e) {
             utils.logError('Generate failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'gen-results');
+            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-gen-results');
         } finally {
-            ui.resetButton('gen-start-btn');
+            ui.resetButton('smart-gen-start-btn');
             ui.setGenerating(false);
         }
     },
@@ -624,23 +603,23 @@ ${chatHistory}
     async generateWorldbookEntry() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('wb-start-btn');
-        const saveBtn = document.getElementById('wb-save-btn');
-        const previewEl = document.getElementById('wb-preview');
+        const startBtn = document.getElementById('smart-wb-start-btn');
+        const saveBtn = document.getElementById('smart-wb-save-btn');
+        const previewEl = document.getElementById('smart-wb-preview');
         
         if (!startBtn || !previewEl) return;
         
-        ui.disableButton('wb-start-btn');
-        ui.disableButton('wb-save-btn');
+        ui.disableButton('smart-wb-start-btn');
+        ui.disableButton('smart-wb-save-btn');
         ui.setGenerating(true);
-        ui.showLoading('wb-preview');
+        ui.showLoading('smart-wb-preview');
         
         try {
             const context = getContext();
             const character = appState.currentCharacter;
             
             if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'wb-preview');
+                ui.showError('无聊天记录', 'smart-wb-preview');
                 return;
             }
             
@@ -680,9 +659,9 @@ ${chatHistory}
             
         } catch (e) {
             utils.logError('Worldbook generate failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'wb-preview');
+            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-wb-preview');
         } finally {
-            ui.resetButton('wb-start-btn');
+            ui.resetButton('smart-wb-start-btn');
             ui.setGenerating(false);
         }
     },
@@ -690,7 +669,7 @@ ${chatHistory}
     async saveToWorldbook() {
         if (appState.worldbookEntries.length === 0) return;
         
-        const saveBtn = document.getElementById('wb-save-btn');
+        const saveBtn = document.getElementById('smart-wb-save-btn');
         if (saveBtn) {
             saveBtn.disabled = true;
             saveBtn.textContent = '保存中...';
@@ -740,20 +719,20 @@ ${chatHistory}
     async generateSummary() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('sum-start-btn');
-        const contentEl = document.getElementById('sum-content');
+        const startBtn = document.getElementById('smart-sum-start-btn');
+        const contentEl = document.getElementById('smart-sum-content');
         
         if (!startBtn || !contentEl) return;
         
-        ui.disableButton('sum-start-btn');
+        ui.disableButton('smart-sum-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
-        ui.showLoading('sum-content');
+        ui.showLoading('smart-sum-content');
         
         try {
             const context = getContext();
             if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'sum-content');
+                ui.showError('无聊天记录', 'smart-sum-content');
                 return;
             }
             
@@ -767,9 +746,9 @@ ${chatHistory}
             
         } catch (e) {
             utils.logError('Summary failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'sum-content');
+            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-sum-content');
         } finally {
-            ui.resetButton('sum-start-btn');
+            ui.resetButton('smart-sum-start-btn');
             ui.setGenerating(false);
         }
     },
@@ -777,20 +756,20 @@ ${chatHistory}
     async generateAnalysis() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('ana-start-btn');
-        const contentEl = document.getElementById('ana-content');
+        const startBtn = document.getElementById('smart-ana-start-btn');
+        const contentEl = document.getElementById('smart-ana-content');
         
         if (!startBtn || !contentEl) return;
         
-        ui.disableButton('ana-start-btn');
+        ui.disableButton('smart-ana-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
-        ui.showLoading('ana-content');
+        ui.showLoading('smart-ana-content');
         
         try {
             const character = appState.currentCharacter || characterManager.getCurrentCharacterData();
             if (!character) {
-                ui.showError('无角色信息', 'ana-content');
+                ui.showError('无角色信息', 'smart-ana-content');
                 return;
             }
             
@@ -804,9 +783,9 @@ ${chatHistory}
             
         } catch (e) {
             utils.logError('Analysis failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'ana-content');
+            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-ana-content');
         } finally {
-            ui.resetButton('ana-start-btn');
+            ui.resetButton('smart-ana-start-btn');
             ui.setGenerating(false);
         }
     },
@@ -814,20 +793,20 @@ ${chatHistory}
     async generateSuggestion() {
         if (appState.isGenerating) return;
         
-        const startBtn = document.getElementById('sug-start-btn');
-        const contentEl = document.getElementById('sug-content');
+        const startBtn = document.getElementById('smart-sug-start-btn');
+        const contentEl = document.getElementById('smart-sug-content');
         
         if (!startBtn || !contentEl) return;
         
-        ui.disableButton('sug-start-btn');
+        ui.disableButton('smart-sug-start-btn');
         ui.setGenerating(true);
         contentEl.innerHTML = '';
-        ui.showLoading('sug-content');
+        ui.showLoading('smart-sug-content');
         
         try {
             const context = getContext();
             if (!context || !context.chat || context.chat.length === 0) {
-                ui.showError('无聊天记录', 'sug-content');
+                ui.showError('无聊天记录', 'smart-sug-content');
                 return;
             }
             
@@ -841,9 +820,9 @@ ${chatHistory}
             
         } catch (e) {
             utils.logError('Suggestion failed', e);
-            ui.showError('生成失败: ' + (e.message || '未知错误'), 'sug-content');
+            ui.showError('生成失败: ' + (e.message || '未知错误'), 'smart-sug-content');
         } finally {
-            ui.resetButton('sug-start-btn');
+            ui.resetButton('smart-sug-start-btn');
             ui.setGenerating(false);
         }
     }
@@ -851,13 +830,13 @@ ${chatHistory}
 
 const events = {
     bindSVGEvents() {
-        const btnGen3 = document.getElementById('btn-gen3');
-        const btnWorldbook = document.getElementById('btn-worldbook');
-        const btnSummary = document.getElementById('btn-summary');
-        const btnAnalysis = document.getElementById('btn-analysis');
-        const btnSuggestion = document.getElementById('btn-suggestion');
-        const btnBack = document.getElementById('btn-back');
-        const btnSettings = document.getElementById('btn-settings');
+        const btnGen3 = document.getElementById('smart-btn-gen3');
+        const btnWorldbook = document.getElementById('smart-btn-worldbook');
+        const btnSummary = document.getElementById('smart-btn-summary');
+        const btnAnalysis = document.getElementById('smart-btn-analysis');
+        const btnSuggestion = document.getElementById('smart-btn-suggestion');
+        const btnBack = document.getElementById('smart-btn-back');
+        const btnSettings = document.getElementById('smart-btn-settings');
         
         if (btnGen3) btnGen3.addEventListener('click', () => ui.renderDetailView('gen3'));
         if (btnWorldbook) btnWorldbook.addEventListener('click', () => ui.renderDetailView('worldbook'));
@@ -871,8 +850,8 @@ const events = {
     bindOverlayEvents(tab) {
         switch(tab) {
             case 'gen3':
-                const genStartBtn = document.getElementById('gen-start-btn');
-                const genCountSelect = document.getElementById('gen-count-select');
+                const genStartBtn = document.getElementById('smart-gen-start-btn');
+                const genCountSelect = document.getElementById('smart-gen-count-select');
                 
                 if (genStartBtn) {
                     genStartBtn.addEventListener('click', () => features.generate3Replies());
@@ -886,13 +865,13 @@ const events = {
                 
                 clickHandlers.gen3ReplyHandler = (e) => {
                     const target = e.target;
-                    if (target.classList && target.classList.contains('use-reply-btn')) {
+                    if (target.classList && target.classList.contains('smart-use-reply-btn')) {
                         const idx = parseInt(target.getAttribute('data-index'));
                         if (!isNaN(idx) && appState.gen3Replies[idx]) {
                             chatManager.sendMessage(appState.gen3Replies[idx]);
                         }
                     }
-                    if (target.classList && target.classList.contains('copy-reply-btn')) {
+                    if (target.classList && target.classList.contains('smart-copy-reply-btn')) {
                         const idx = parseInt(target.getAttribute('data-index'));
                         if (!isNaN(idx) && appState.gen3Replies[idx]) {
                             chatManager.copyToClipboard(appState.gen3Replies[idx]);
@@ -903,24 +882,24 @@ const events = {
                 break;
                 
             case 'worldbook':
-                const wbStartBtn = document.getElementById('wb-start-btn');
-                const wbSaveBtn = document.getElementById('wb-save-btn');
+                const wbStartBtn = document.getElementById('smart-wb-start-btn');
+                const wbSaveBtn = document.getElementById('smart-wb-save-btn');
                 
                 if (wbStartBtn) wbStartBtn.addEventListener('click', () => features.generateWorldbookEntry());
                 if (wbSaveBtn) wbSaveBtn.addEventListener('click', () => features.saveToWorldbook());
                 break;
                 
             case 'summary':
-                const sumStartBtn = document.getElementById('sum-start-btn');
+                const sumStartBtn = document.getElementById('smart-sum-start-btn');
                 
                 if (sumStartBtn) sumStartBtn.addEventListener('click', () => features.generateSummary());
                 
                 clickHandlers.summaryHandler = (e) => {
                     const target = e.target;
-                    if (target.id === 'summary-use-btn' && appState.summaryText) {
+                    if (target.id === 'smart-summary-use-btn' && appState.summaryText) {
                         chatManager.sendMessage(appState.summaryText);
                     }
-                    if (target.id === 'summary-copy-btn' && appState.summaryText) {
+                    if (target.id === 'smart-summary-copy-btn' && appState.summaryText) {
                         chatManager.copyToClipboard(appState.summaryText);
                     }
                 };
@@ -928,12 +907,12 @@ const events = {
                 break;
                 
             case 'analysis':
-                const anaStartBtn = document.getElementById('ana-start-btn');
+                const anaStartBtn = document.getElementById('smart-ana-start-btn');
                 
                 if (anaStartBtn) anaStartBtn.addEventListener('click', () => features.generateAnalysis());
                 
                 clickHandlers.analysisHandler = (e) => {
-                    if (e.target.id === 'ana-copy-btn' && appState.analysisText) {
+                    if (e.target.id === 'smart-ana-copy-btn' && appState.analysisText) {
                         chatManager.copyToClipboard(appState.analysisText);
                     }
                 };
@@ -941,16 +920,16 @@ const events = {
                 break;
                 
             case 'suggestion':
-                const sugStartBtn = document.getElementById('sug-start-btn');
+                const sugStartBtn = document.getElementById('smart-sug-start-btn');
                 
                 if (sugStartBtn) sugStartBtn.addEventListener('click', () => features.generateSuggestion());
                 
                 clickHandlers.suggestionHandler = (e) => {
                     const target = e.target;
-                    if (target.id === 'suggestion-use-btn' && appState.suggestionText) {
+                    if (target.id === 'smart-suggestion-use-btn' && appState.suggestionText) {
                         chatManager.sendMessage(appState.suggestionText);
                     }
-                    if (target.id === 'suggestion-copy-btn' && appState.suggestionText) {
+                    if (target.id === 'smart-suggestion-copy-btn' && appState.suggestionText) {
                         chatManager.copyToClipboard(appState.suggestionText);
                     }
                 };
@@ -985,13 +964,15 @@ const events = {
 const settings = {
     async load() {
         extension_settings[extensionName] = extension_settings[extensionName] || {};
-        if (Object.keys(extension_settings[extensionName]).length === 0) {
-            Object.assign(extension_settings[extensionName], defaultSettings);
-        }
+        Object.keys(defaultSettings).forEach(key => {
+            if (extension_settings[extensionName][key] === undefined) {
+                extension_settings[extensionName][key] = defaultSettings[key];
+            }
+        });
     },
     
     updateVisibility() {
-        const toolbar = document.getElementById('toolbox-svg-container');
+        const toolbar = document.getElementById('smart-toolbar-container');
         if (toolbar) {
             toolbar.style.display = extension_settings[extensionName]?.enabled ? 'block' : 'none';
         }
@@ -1002,12 +983,29 @@ const settings = {
             const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
             $('#extensions_settings').append(settingsHtml);
             
-            $('#enable_toolbox').on('input', function() {
+            $('#smart_toolbar_enabled').prop('checked', extension_settings[extensionName]?.enabled);
+            $('#smart_toolbar_auto_return').prop('checked', extension_settings[extensionName]?.autoReturn);
+            $('#smart_toolbar_gen_count').val(extension_settings[extensionName]?.genCount);
+            
+            $('#smart_toolbar_enabled').on('input', function() {
                 const value = Boolean($(this).prop('checked'));
                 extension_settings[extensionName].enabled = value;
                 saveSettingsDebounced();
                 settings.updateVisibility();
             });
+            
+            $('#smart_toolbar_auto_return').on('input', function() {
+                const value = Boolean($(this).prop('checked'));
+                extension_settings[extensionName].autoReturn = value;
+                saveSettingsDebounced();
+            });
+            
+            $('#smart_toolbar_gen_count').on('change', function() {
+                const value = parseInt($(this).val()) || 3;
+                extension_settings[extensionName].genCount = value;
+                saveSettingsDebounced();
+            });
+            
         } catch (e) {
             utils.logError('Settings panel load error', e);
         }
@@ -1015,7 +1013,7 @@ const settings = {
 };
 
 jQuery(async function() {
-    utils.logInfo('Initializing extension...');
+    utils.logInfo('Initializing Smart Toolbar extension...');
     
     await settings.load();
     await settings.initSettingsUI();
@@ -1043,5 +1041,5 @@ jQuery(async function() {
     setTimeout(() => characterManager.tryLoadCharacter(), 3000);
     
     settings.updateVisibility();
-    utils.logInfo('Extension initialized successfully!');
+    utils.logInfo('Smart Toolbar extension initialized successfully!');
 });
