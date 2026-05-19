@@ -12,7 +12,10 @@ const DEFAULT_SETTINGS = {
     autoReturn: true,
     theme: 'neon-purple',
     quickReplyCount: 3,
-    maxHistoryLength: 50
+    maxHistoryLength: 50,
+    showAdvanced: true,
+    hotkeyEnabled: true,
+    autoSaveWorldbook: false
 };
 
 const THEMES = {
@@ -245,9 +248,17 @@ const ui = {
                         </span>
                     </div>
                     <div class="smart-toolbar-buttons">
-                        <button class="main-btn" data-action="quick-reply" title="快速回复">
+                        <button class="main-btn primary-action" data-action="quick-reply" title="快速回复">
                             <span class="btn-icon">💬</span>
                             <span class="btn-text">快速回复</span>
+                        </button>
+                        <button class="main-btn" data-action="polish" title="对话润色">
+                            <span class="btn-icon">✨</span>
+                            <span class="btn-text">润色</span>
+                        </button>
+                        <button class="main-btn" data-action="continue" title="续写故事">
+                            <span class="btn-icon">📖</span>
+                            <span class="btn-text">续写</span>
                         </button>
                         <button class="main-btn" data-action="worldbook" title="世界书管理">
                             <span class="btn-icon">📚</span>
@@ -264,6 +275,10 @@ const ui = {
                         <button class="main-btn" data-action="suggestion" title="剧情建议">
                             <span class="btn-icon">💡</span>
                             <span class="btn-text">建议</span>
+                        </button>
+                        <button class="main-btn" data-action="memory" title="记忆管理">
+                            <span class="btn-icon">🧠</span>
+                            <span class="btn-text">记忆</span>
                         </button>
                         <button id="toolbar-settings-btn" class="settings-btn" title="设置">⚙️</button>
                     </div>
@@ -494,6 +509,136 @@ const ui = {
                 <div class="suggestion-actions">
                     <button id="use-suggestion" class="mini-btn">使用</button>
                     <button id="copy-suggestion" class="mini-btn">复制</button>
+                </div>
+            </div>
+        `;
+    },
+    
+    renderPolishContent() {
+        return `
+            <div class="polish-container">
+                <div class="control-bar">
+                    <select id="polish-style" class="select-input">
+                        <option value="formal">正式</option>
+                        <option value="casual">轻松</option>
+                        <option value="literary">文艺</option>
+                        <option value="humorous">幽默</option>
+                    </select>
+                    <button id="generate-polish" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">✨ 润色</span>
+                    </button>
+                </div>
+                <div id="polish-result" class="results-container"></div>
+            </div>
+        `;
+    },
+    
+    renderPolishResult(text) {
+        const container = document.getElementById('polish-result');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="polish-card">
+                <div class="polish-header">
+                    <span class="polish-icon">✨</span>
+                    <span class="polish-label">润色结果</span>
+                </div>
+                <div class="polish-text">${utils.escapeHtml(text)}</div>
+                <div class="polish-actions">
+                    <button id="use-polish" class="mini-btn">使用</button>
+                    <button id="copy-polish" class="mini-btn">复制</button>
+                </div>
+            </div>
+        `;
+    },
+    
+    renderContinueContent() {
+        return `
+            <div class="continue-container">
+                <div class="control-bar">
+                    <select id="continue-length" class="select-input">
+                        <option value="short">简短</option>
+                        <option value="medium" selected>中等</option>
+                        <option value="long">详细</option>
+                    </select>
+                    <button id="generate-continue" class="action-btn primary">
+                        <span class="btn-spinner" style="display:none;"></span>
+                        <span class="btn-label">📖 续写</span>
+                    </button>
+                </div>
+                <div id="continue-result" class="results-container"></div>
+            </div>
+        `;
+    },
+    
+    renderContinueResult(text) {
+        const container = document.getElementById('continue-result');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="continue-card">
+                <div class="continue-header">
+                    <span class="continue-icon">📖</span>
+                    <span class="continue-label">续写内容</span>
+                </div>
+                <div class="continue-text">${utils.escapeHtml(text)}</div>
+                <div class="continue-actions">
+                    <button id="use-continue" class="mini-btn">使用</button>
+                    <button id="copy-continue" class="mini-btn">复制</button>
+                </div>
+            </div>
+        `;
+    },
+    
+    renderMemoryContent() {
+        return `
+            <div class="memory-container">
+                <div class="control-bar">
+                    <button id="save-memory" class="action-btn primary">💾 保存记忆</button>
+                    <button id="load-memory" class="action-btn secondary">📥 加载记忆</button>
+                </div>
+                <div id="memory-status" class="results-container">
+                    <div class="memory-info">
+                        <span class="memory-icon">🧠</span>
+                        <span class="memory-text">点击保存当前对话记忆</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+    
+    renderMemorySaved() {
+        const container = document.getElementById('memory-status');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="memory-card">
+                <div class="memory-header">
+                    <span class="memory-icon">✅</span>
+                    <span class="memory-label">记忆已保存</span>
+                </div>
+                <div class="memory-content">
+                    ${utils.getTimestamp()} - 记忆已保存到本地存储
+                </div>
+            </div>
+        `;
+    },
+    
+    renderMemoryLoaded(memory) {
+        const container = document.getElementById('memory-status');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="memory-card">
+                <div class="memory-header">
+                    <span class="memory-icon">🧠</span>
+                    <span class="memory-label">已加载记忆</span>
+                </div>
+                <div class="memory-content">
+                    角色: ${utils.escapeHtml(memory.character || '未知')}<br>
+                    对话数: ${memory.messageCount || 0}<br>
+                    保存时间: ${memory.timestamp || '未知'}
                 </div>
             </div>
         `;
@@ -737,6 +882,146 @@ const features = {
             if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
             if (btn) btn.querySelector('.btn-label').textContent = '💡 剧情建议';
         }
+    },
+    
+    async generatePolish() {
+        if (appState.isGenerating) return;
+        
+        const btn = document.getElementById('generate-polish');
+        const container = document.getElementById('polish-result');
+        
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '润色中...';
+        
+        try {
+            const messages = chatManager.getRecentMessages(3);
+            if (messages.length === 0) {
+                if (container) container.innerHTML = ui.renderError('无对话记录');
+                return;
+            }
+            
+            const lastMessage = messages[messages.length - 1].content;
+            const style = document.getElementById('polish-style')?.value || 'casual';
+            
+            const styleMap = {
+                formal: '正式、礼貌的语气',
+                casual: '轻松、自然的语气',
+                literary: '文艺、优美的风格',
+                humorous: '幽默、有趣的风格'
+            };
+            
+            const prompt = `将以下文本润色为${styleMap[style]}：\n\n${lastMessage}`;
+            const fallback = () => `润色后的内容：${lastMessage}`;
+            
+            const polished = await api.generateWithFallback(prompt, fallback);
+            appState.polishedText = polished;
+            ui.renderPolishResult(polished);
+            
+        } catch (e) {
+            utils.logError('润色失败', e);
+            if (container) container.innerHTML = ui.renderError('润色失败');
+        } finally {
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '✨ 润色';
+        }
+    },
+    
+    async generateContinue() {
+        if (appState.isGenerating) return;
+        
+        const btn = document.getElementById('generate-continue');
+        const container = document.getElementById('continue-result');
+        
+        appState.isGenerating = true;
+        if (btn) btn.disabled = true;
+        if (btn) btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        if (btn) btn.querySelector('.btn-label').textContent = '续写中...';
+        
+        try {
+            const char = chatManager.getCharacter();
+            const messages = chatManager.getRecentMessages(5);
+            
+            if (messages.length === 0) {
+                if (container) container.innerHTML = ui.renderError('无对话记录');
+                return;
+            }
+            
+            const chatText = messages.map(m => m.content).join('\n');
+            const length = document.getElementById('continue-length')?.value || 'medium';
+            
+            const lengthMap = {
+                short: '约50字',
+                medium: '约100字',
+                long: '约150字'
+            };
+            
+            const prompt = `作为${char?.name || 'AI'}，续写以下故事${lengthMap[length]}：\n\n${chatText}`;
+            const fallback = () => '这是续写的故事内容...';
+            
+            const continued = await api.generateWithFallback(prompt, fallback);
+            appState.continuedText = continued;
+            ui.renderContinueResult(continued);
+            
+        } catch (e) {
+            utils.logError('续写失败', e);
+            if (container) container.innerHTML = ui.renderError('续写失败');
+        } finally {
+            appState.isGenerating = false;
+            if (btn) btn.disabled = false;
+            if (btn) btn.querySelector('.btn-spinner').style.display = 'none';
+            if (btn) btn.querySelector('.btn-label').textContent = '📖 续写';
+        }
+    },
+    
+    saveMemory() {
+        try {
+            const char = chatManager.getCharacter();
+            const messages = chatManager.getRecentMessages(50);
+            
+            const memory = {
+                character: char?.name || '未知',
+                characterId: char?.id || null,
+                messages: messages,
+                messageCount: messages.length,
+                timestamp: utils.getTimestamp(),
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem(`st-toolbar-memory-${char?.id || 'default'}`, JSON.stringify(memory));
+            ui.renderMemorySaved();
+            
+            if (window.toastr) window.toastr.success('记忆已保存');
+        } catch (e) {
+            utils.logError('保存记忆失败', e);
+            if (window.toastr) window.toastr.error('保存失败');
+        }
+    },
+    
+    loadMemory() {
+        try {
+            const char = chatManager.getCharacter();
+            const storageKey = `st-toolbar-memory-${char?.id || 'default'}`;
+            const saved = localStorage.getItem(storageKey);
+            
+            if (saved) {
+                const memory = JSON.parse(saved);
+                ui.renderMemoryLoaded(memory);
+                
+                if (window.toastr) window.toastr.info('记忆已加载');
+            } else {
+                const container = document.getElementById('memory-status');
+                if (container) {
+                    container.innerHTML = ui.renderError('未找到保存的记忆');
+                }
+            }
+        } catch (e) {
+            utils.logError('加载记忆失败', e);
+            if (window.toastr) window.toastr.error('加载失败');
+        }
     }
 };
 
@@ -771,6 +1056,16 @@ const events = {
                 contentEl.innerHTML = ui.renderQuickReplyContent();
                 this.bindQuickReplyEvents();
                 break;
+            case 'polish':
+                ui.showFunctionView('✨ 对话润色');
+                contentEl.innerHTML = ui.renderPolishContent();
+                this.bindPolishEvents();
+                break;
+            case 'continue':
+                ui.showFunctionView('📖 续写故事');
+                contentEl.innerHTML = ui.renderContinueContent();
+                this.bindContinueEvents();
+                break;
             case 'worldbook':
                 ui.showFunctionView('📚 世界书管理');
                 contentEl.innerHTML = ui.renderWorldbookContent();
@@ -790,6 +1085,11 @@ const events = {
                 ui.showFunctionView('💡 剧情建议');
                 contentEl.innerHTML = ui.renderSuggestionContent();
                 this.bindSuggestionEvents();
+                break;
+            case 'memory':
+                ui.showFunctionView('🧠 记忆管理');
+                contentEl.innerHTML = ui.renderMemoryContent();
+                this.bindMemoryEvents();
                 break;
         }
     },
@@ -874,6 +1174,48 @@ const events = {
             }
         };
         document.addEventListener('click', clickHandlers.suggestionHandler);
+    },
+    
+    bindPolishEvents() {
+        document.getElementById('generate-polish')?.addEventListener('click', () => {
+            features.generatePolish();
+        });
+        
+        clickHandlers.polishHandler = (e) => {
+            if (e.target.id === 'use-polish' && appState.polishedText) {
+                chatManager.sendMessage(appState.polishedText);
+            }
+            if (e.target.id === 'copy-polish' && appState.polishedText) {
+                chatManager.copyToClipboard(appState.polishedText);
+            }
+        };
+        document.addEventListener('click', clickHandlers.polishHandler);
+    },
+    
+    bindContinueEvents() {
+        document.getElementById('generate-continue')?.addEventListener('click', () => {
+            features.generateContinue();
+        });
+        
+        clickHandlers.continueHandler = (e) => {
+            if (e.target.id === 'use-continue' && appState.continuedText) {
+                chatManager.sendMessage(appState.continuedText);
+            }
+            if (e.target.id === 'copy-continue' && appState.continuedText) {
+                chatManager.copyToClipboard(appState.continuedText);
+            }
+        };
+        document.addEventListener('click', clickHandlers.continueHandler);
+    },
+    
+    bindMemoryEvents() {
+        document.getElementById('save-memory')?.addEventListener('click', () => {
+            features.saveMemory();
+        });
+        
+        document.getElementById('load-memory')?.addEventListener('click', () => {
+            features.loadMemory();
+        });
     },
     
     bindChatEvents() {
