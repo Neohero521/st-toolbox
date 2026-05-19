@@ -1331,20 +1331,35 @@ jQuery(async () => {
     
     const sendForm = document.querySelector('#send_form');
     if (sendForm) {
-        // 在发送表单之前插入工具栏容器
+        // 找到聊天区域，在聊天消息和输入框之间插入工具栏
+        const chatArea = document.querySelector('#chat') || document.querySelector('.chat_container') || sendForm.parentNode;
+        
+        // 创建工具栏容器
         const toolbarWrapper = document.createElement('div');
         toolbarWrapper.id = 'smart-toolbar-wrapper';
         toolbarWrapper.style.cssText = `
             position: relative;
             z-index: 99999;
-            margin-bottom: 70px;
             width: 100%;
-            padding-bottom: 0;
+            padding: 10px 0;
             clear: both;
+            margin: 0;
         `;
         toolbarWrapper.innerHTML = ui.createToolbar();
         
-        sendForm.parentNode.insertBefore(toolbarWrapper, sendForm);
+        // 先尝试找到聊天区域的底部
+        let insertTarget = sendForm;
+        
+        // 查找更合适的插入位置
+        if (chatArea && chatArea !== sendForm.parentNode) {
+            chatArea.appendChild(toolbarWrapper);
+        } else {
+            sendForm.parentNode.insertBefore(toolbarWrapper, sendForm);
+        }
+        
+        // 给输入框增加顶部间距，确保不遮挡工具栏
+        sendForm.style.marginTop = '100px';
+        sendForm.style.paddingTop = '10px';
         
         setTimeout(() => {
             events.bindMainButtons();
@@ -1353,6 +1368,13 @@ jQuery(async () => {
             animationController.createDynamicRipple();
             animationController.addButtonHoverEffects();
             animationController.initAppleWatchScrollEffect();
+            
+            // 确保工具栏正确显示
+            const toolbar = document.querySelector('#smart-toolbar-container');
+            if (toolbar) {
+                toolbar.style.position = 'relative';
+                toolbar.style.zIndex = '99999';
+            }
             
             const char = chatManager.getCharacter();
             if (char) {
