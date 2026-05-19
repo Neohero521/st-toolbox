@@ -62,7 +62,6 @@ async function callParentApiForSummary(textToSummarize, promptToUse) {
 function getCurrentCharacterData() {
     try {
         const context = getContext();
-        
         let character = null;
         let charData = null;
         
@@ -113,200 +112,238 @@ function getMessageInput() {
     return $('#send_textarea, #prompt_textarea').first();
 }
 
-function toggleTab(tab) {
-    if (appState.expandedTab === tab && tab !== null) {
-        appState.expandedTab = null;
-    } else {
-        appState.expandedTab = tab;
-    }
-    
-    const container = $('#toolbox-content');
-    const buttons = $('.toolbox-buttons');
-    
-    if (appState.expandedTab) {
-        buttons.hide();
-        renderExpandedContent();
-    } else {
-        container.html('');
-        buttons.show();
-    }
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-function goBack() {
-    appState.expandedTab = null;
-    const container = $('#toolbox-content');
-    const buttons = $('.toolbox-buttons');
-    container.html('');
-    buttons.show();
+function createSVG() {
+    const SVG = `
+        <div id="toolbox-svg-container" style="width: 100%; height: 133px; position: relative; margin-bottom: 0;">
+            <svg id="toolbox-svg" width="100%" height="100%" viewBox="0 0 800 133" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#2D1B44" stop-opacity="0.95"/>
+                        <stop offset="50%" stop-color="#441B44" stop-opacity="0.95"/>
+                        <stop offset="100%" stop-color="#5A2864" stop-opacity="0.95"/>
+                    </linearGradient>
+                    <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#A855F7"/>
+                        <stop offset="100%" stop-color="#B482C8"/>
+                    </linearGradient>
+                    <linearGradient id="btnGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#581C87"/>
+                        <stop offset="100%" stop-color="#7E22CE"/>
+                    </linearGradient>
+                    <linearGradient id="btnHoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#7E22CE"/>
+                        <stop offset="100%" stop-color="#A855F7"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="shadow">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+                    </filter>
+                </defs>
+                
+                <rect x="0" y="0" width="800" height="133" fill="url(#bgGradient)" rx="8"/>
+                <rect x="1" y="1" width="798" height="131" fill="none" stroke="url(#borderGradient)" stroke-width="2" rx="7" opacity="0.6"/>
+                
+                <g id="main-view">
+                    <rect x="0" y="0" width="800" height="24" fill="rgba(0,0,0,0.3)"/>
+                    <line x1="0" y1="24" x2="800" y2="24" stroke="rgba(180,130,200,0.3)" stroke-width="1"/>
+                    
+                    <text x="12" y="17" fill="rgba(148,163,184,0.8)" font-family="system-ui, sans-serif" font-size="11" font-weight="500" id="char-status">未加载</text>
+                    
+                    <g id="btn-gen3" class="svg-btn" transform="translate(12, 32)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="70" height="28" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="35" y="18" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="12" font-weight="600">生成</text>
+                    </g>
+                    <g id="btn-worldbook" class="svg-btn" transform="translate(90, 32)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="70" height="28" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="35" y="18" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="12" font-weight="600">世界书</text>
+                    </g>
+                    <g id="btn-summary" class="svg-btn" transform="translate(168, 32)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="70" height="28" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="35" y="18" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="12" font-weight="600">总结</text>
+                    </g>
+                    <g id="btn-analysis" class="svg-btn" transform="translate(246, 32)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="70" height="28" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="35" y="18" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="12" font-weight="600">分析</text>
+                    </g>
+                    <g id="btn-suggestion" class="svg-btn" transform="translate(324, 32)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="70" height="28" rx="4" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="35" y="18" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="12" font-weight="600">建议</text>
+                    </g>
+                </g>
+                
+                <g id="detail-view" style="display: none;">
+                    <rect x="0" y="0" width="800" height="24" fill="rgba(0,0,0,0.3)"/>
+                    <line x1="0" y1="24" x2="800" y2="24" stroke="rgba(180,130,200,0.3)" stroke-width="1"/>
+                    
+                    <g id="btn-back" class="svg-btn" transform="translate(6, 2)" style="cursor: pointer;">
+                        <rect x="0" y="0" width="40" height="20" rx="3" fill="url(#btnGradient)" stroke="rgba(180,130,200,0.5)" stroke-width="1"/>
+                        <text x="20" y="14" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="11" font-weight="600">←</text>
+                    </g>
+                    <text x="52" y="17" fill="rgba(255,255,255,0.9)" font-family="system-ui, sans-serif" font-size="12" font-weight="600" id="detail-title">功能</text>
+                    
+                    <g id="detail-content-area">
+                        <text x="12" y="48" fill="rgba(148,163,184,0.8)" font-family="system-ui, sans-serif" font-size="10" id="detail-status">就绪</text>
+                    </g>
+                </g>
+            </svg>
+            <div id="toolbox-html-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+        </div>
+    `;
+    return SVG;
 }
 
-function renderExpandedContent() {
-    const container = $('#toolbox-content');
-    if (!appState.expandedTab) {
-        container.html('');
-        return;
-    }
-
-    let content = '';
-    switch(appState.expandedTab) {
+function renderDetailView(tab) {
+    const svg = document.getElementById('toolbox-svg');
+    const mainView = document.getElementById('main-view');
+    const detailView = document.getElementById('detail-view');
+    const overlay = document.getElementById('toolbox-html-overlay');
+    
+    mainView.style.display = 'none';
+    detailView.style.display = 'block';
+    
+    const titles = {
+        'gen3': '生成',
+        'worldbook': '世界书',
+        'summary': '总结',
+        'analysis': '分析',
+        'suggestion': '建议'
+    };
+    document.getElementById('detail-title').textContent = titles[tab] || '功能';
+    
+    let overlayHTML = '';
+    
+    switch(tab) {
         case 'gen3':
-            content = renderGen3Content();
+            overlayHTML = `
+                <div style="position: absolute; top: 28px; left: 0; right: 0; bottom: 0; padding: 8px; overflow-y: auto; pointer-events: auto;">
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                        <select id="gen-count-select" style="background: rgba(88,28,135,0.8); color: white; border: 1px solid rgba(180,130,200,0.5); border-radius: 4px; padding: 3px 6px; font-size: 10px;">
+                            <option value="1">1条</option>
+                            <option value="2">2条</option>
+                            <option value="3" selected>3条</option>
+                        </select>
+                        <button id="gen-start-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(126,34,206,0.9)); color: white; border: 1px solid rgba(180,130,200,0.6); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer;">生成</button>
+                    </div>
+                    <div id="gen-results" style="flex: 1; overflow-y: auto; min-height: 0;"></div>
+                </div>
+            `;
             break;
         case 'worldbook':
-            content = renderWorldbookContent();
+            overlayHTML = `
+                <div style="position: absolute; top: 28px; left: 0; right: 0; bottom: 0; padding: 8px; overflow-y: auto; pointer-events: auto;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                        <button id="wb-start-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(126,34,206,0.9)); color: white; border: 1px solid rgba(180,130,200,0.6); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; flex: 1;">生成</button>
+                        <button id="wb-save-btn" style="background: rgba(68,27,68,0.6); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; flex: 1; opacity: 0.5;" disabled>保存</button>
+                    </div>
+                    <div id="wb-preview" style="flex: 1; overflow-y: auto; min-height: 0;"></div>
+                </div>
+            `;
             break;
         case 'summary':
-            content = renderSummaryContent();
+            overlayHTML = `
+                <div style="position: absolute; top: 28px; left: 0; right: 0; bottom: 0; padding: 8px; overflow-y: auto; pointer-events: auto;">
+                    <button id="sum-start-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(126,34,206,0.9)); color: white; border: 1px solid rgba(180,130,200,0.6); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; margin-bottom: 6px;">总结</button>
+                    <div id="sum-content" style="flex: 1; overflow-y: auto; min-height: 0;"></div>
+                </div>
+            `;
             break;
         case 'analysis':
-            content = renderAnalysisContent();
+            overlayHTML = `
+                <div style="position: absolute; top: 28px; left: 0; right: 0; bottom: 0; padding: 8px; overflow-y: auto; pointer-events: auto;">
+                    <button id="ana-start-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(126,34,206,0.9)); color: white; border: 1px solid rgba(180,130,200,0.6); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; margin-bottom: 6px;">分析</button>
+                    <div id="ana-content" style="flex: 1; overflow-y: auto; min-height: 0;"></div>
+                </div>
+            `;
             break;
         case 'suggestion':
-            content = renderSuggestionContent();
+            overlayHTML = `
+                <div style="position: absolute; top: 28px; left: 0; right: 0; bottom: 0; padding: 8px; overflow-y: auto; pointer-events: auto;">
+                    <button id="sug-start-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(126,34,206,0.9)); color: white; border: 1px solid rgba(180,130,200,0.6); border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; margin-bottom: 6px;">建议</button>
+                    <div id="sug-content" style="flex: 1; overflow-y: auto; min-height: 0;"></div>
+                </div>
+            `;
             break;
     }
-
-    container.html(content);
-    bindContentEvents();
+    
+    overlay.innerHTML = overlayHTML;
+    bindOverlayEvents(tab);
 }
 
-function renderGen3Content() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
-    const genCount = extension_settings[extensionName]?.genCount || 3;
-
-    return `
-        <div class="toolbox-page">
-            <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">生成</span>
-                <div class="toolbox-page-actions">
-                    <select id="toolbox-gen3-count" class="toolbox-select">
-                        <option value="1" ${genCount == 1 ? 'selected' : ''}>1条</option>
-                        <option value="2" ${genCount == 2 ? 'selected' : ''}>2条</option>
-                        <option value="3" ${genCount == 3 ? 'selected' : ''}>3条</option>
-                    </select>
-                </div>
-            </div>
-            <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-gen3-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-gen3-results" class="toolbox-gen3-results"></div>
-                    <button id="toolbox-gen3-start-btn" class="toolbox-primary-btn">生成</button>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            </div>
-        </div>
-    `;
+function renderMainView() {
+    const mainView = document.getElementById('main-view');
+    const detailView = document.getElementById('detail-view');
+    const overlay = document.getElementById('toolbox-html-overlay');
+    
+    mainView.style.display = 'block';
+    detailView.style.display = 'none';
+    overlay.innerHTML = '';
 }
 
-function renderWorldbookContent() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
-
-    return `
-        <div class="toolbox-page">
-            <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">世界书</span>
-            </div>
-            <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-worldbook-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-worldbook-preview" class="toolbox-worldbook-preview"></div>
-                    <div class="toolbox-worldbook-actions">
-                        <button id="toolbox-worldbook-start-btn" class="toolbox-primary-btn">生成</button>
-                        <button id="toolbox-worldbook-save-btn" class="toolbox-secondary-btn" disabled>保存</button>
-                    </div>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            </div>
-        </div>
-    `;
+function sendMessageToChat(message) {
+    const input = getMessageInput();
+    if (input.length) {
+        input.val(message);
+        const sendButton = $('#send_but');
+        if (sendButton.length) {
+            sendButton.click();
+        } else {
+            const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                bubbles: true,
+                cancelable: true,
+                code: 'Enter'
+            });
+            input[0].dispatchEvent(event);
+        }
+        renderMainView();
+    }
 }
 
-function renderSummaryContent() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
-
-    return `
-        <div class="toolbox-page">
-            <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">总结</span>
-            </div>
-            <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-summary-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-summary-content" class="toolbox-summary-content"></div>
-                    <button id="toolbox-summary-start-btn" class="toolbox-primary-btn">总结</button>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            </div>
-        </div>
-    `;
-}
-
-function renderAnalysisContent() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
-
-    return `
-        <div class="toolbox-page">
-            <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">分析</span>
-            </div>
-            <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-analysis-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-analysis-content" class="toolbox-analysis-content"></div>
-                    <button id="toolbox-analysis-start-btn" class="toolbox-primary-btn">分析</button>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            </div>
-        </div>
-    `;
-}
-
-function renderSuggestionContent() {
-    const character = appState.currentCharacter || getCurrentCharacterData();
-
-    return `
-        <div class="toolbox-page">
-            <div class="toolbox-page-header">
-                <button class="toolbox-back-btn" onclick="window.goBack()">←</button>
-                <span class="toolbox-page-title">建议</span>
-            </div>
-            <div class="toolbox-page-body">
-                ${character && character.name ? `
-                    <div id="toolbox-suggestion-status" class="toolbox-status-text">就绪</div>
-                    <div id="toolbox-suggestion-content" class="toolbox-suggestion-content"></div>
-                    <button id="toolbox-suggestion-start-btn" class="toolbox-primary-btn">建议</button>
-                ` : '<div class="toolbox-no-char">请先加载角色</div>'}
-            </div>
-        </div>
-    `;
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        if (typeof toastr !== 'undefined') {
+            toastr.success('已复制');
+        }
+    }).catch(err => {
+        console.error('复制失败:', err);
+    });
 }
 
 async function generate3Replies() {
-    const statusEl = $('#toolbox-gen3-status');
-    const resultsEl = $('#toolbox-gen3-results');
-    const btn = $('#toolbox-gen3-start-btn');
-    const countSelect = $('#toolbox-gen3-count');
+    const countSelect = document.getElementById('gen-count-select');
+    const startBtn = document.getElementById('gen-start-btn');
+    const resultsEl = document.getElementById('gen-results');
+    const genCount = parseInt(countSelect.value) || 3;
     
-    const genCount = parseInt(countSelect.val()) || 3;
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
     
     try {
-        statusEl.text('生成中...').css('color', 'rgba(255, 165, 0, 0.9)');
-        btn.prop('disabled', true);
-        resultsEl.html('');
-
         const context = getContext();
         if (!context.chat) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
+            resultsEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">无聊天</div>';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
             return;
         }
-
+        
         const character = appState.currentCharacter || getCurrentCharacterData();
         const recentMessages = context.chat.slice(-5);
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
-
-        appState.gen3Replies = [];
+        const chatHistory = recentMessages.map(m => m.mes).join('\\n');
         
+        appState.gen3Replies = [];
         let repliesText = '';
         
         try {
@@ -329,17 +366,13 @@ ${chatHistory}
         }
         
         if (repliesText && appState.gen3Replies.length === 0) {
-            const lines = repliesText.split('\n').filter(line => line.trim().length > 0);
-            let index = 1;
-            
+            const lines = repliesText.split('\\n').filter(line => line.trim().length > 0);
             for (const line of lines) {
-                const cleanedLine = line.replace(/^\d+[\.\)\s]*|^\s*[-*]\s*/, '').trim();
+                const cleanedLine = line.replace(/^\\d+[\\.\\)\\s]*|^\\s*[-*]\\s*/, '').trim();
                 if (cleanedLine.length > 0 && appState.gen3Replies.length < genCount) {
                     appState.gen3Replies.push(cleanedLine);
-                    index++;
                 }
             }
-            
             if (appState.gen3Replies.length === 0) {
                 for (let i = 1; i <= genCount; i++) {
                     appState.gen3Replies.push(`[回复 ${i}] ${repliesText.substring((i - 1) * 40, i * 40) || '模拟内容'}`);
@@ -347,124 +380,118 @@ ${chatHistory}
             }
         }
         
+        let html = '';
         appState.gen3Replies.forEach((reply, i) => {
-            resultsEl.append(`
-                <div class="toolbox-result-item">
-                    <div class="toolbox-result-header">${i + 1}</div>
-                    <div class="toolbox-result-text">${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}</div>
-                    <div class="toolbox-result-actions">
-                        <button class="toolbox-use-btn" data-index="${i}" title="发送">发</button>
-                        <button class="toolbox-copy-btn" data-index="${i}" title="复制">复</button>
+            html += `
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(180,130,200,0.2); border-radius: 4px; padding: 5px; margin-bottom: 5px; display: flex; gap: 6px; align-items: flex-start;">
+                    <div style="font-size: 9px; font-weight: 700; color: rgba(168,85,247,0.9); min-width: 18px;">${i + 1}</div>
+                    <div style="flex: 1; font-size: 10px; color: rgba(255,255,255,0.85); line-height: 1.3;">${escapeHtml(reply.substring(0, 80))}${reply.length > 80 ? '...' : ''}</div>
+                    <div style="display: flex; gap: 3px;">
+                        <button class="use-reply-btn" data-index="${i}" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 2px 6px; font-size: 9px; cursor: pointer;">发</button>
+                        <button class="copy-reply-btn" data-index="${i}" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 2px 6px; font-size: 9px; cursor: pointer;">复</button>
                     </div>
                 </div>
-            `);
+            `;
         });
+        resultsEl.innerHTML = html;
         
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
+        document.querySelectorAll('.use-reply-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                sendMessageToChat(appState.gen3Replies[index]);
+            });
+        });
+        document.querySelectorAll('.copy-reply-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                copyToClipboard(appState.gen3Replies[index]);
+            });
+        });
         
     } catch (e) {
         logError('生成失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
+        resultsEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">失败</div>';
     }
+    
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
 async function generateWorldbookEntry() {
-    const statusEl = $('#toolbox-worldbook-status');
-    const previewEl = $('#toolbox-worldbook-preview');
-    const btn = $('#toolbox-worldbook-start-btn');
-    const saveBtn = $('#toolbox-worldbook-save-btn');
+    const startBtn = document.getElementById('wb-start-btn');
+    const saveBtn = document.getElementById('wb-save-btn');
+    const previewEl = document.getElementById('wb-preview');
+    
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
     
     try {
-        statusEl.text('分析中...').css('color', 'rgba(255, 165, 0, 0.9)');
-        btn.prop('disabled', true);
-        previewEl.html('<div class="toolbox-loading">生成中...</div>');
-
         const context = getContext();
         const character = appState.currentCharacter;
         
         if (!context.chat || context.chat.length === 0) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            previewEl.html('');
+            previewEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">无聊天</div>';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
             return;
         }
-
-        statusEl.text('提取...');
         
         const recentMessages = context.chat.slice(-20);
-        const characters = new Set();
-        
-        characters.add(character?.name || '主角');
+        const characters = new Set([character?.name || '主角']);
         
         recentMessages.forEach(msg => {
             if (msg.mes) {
                 const matches = msg.mes.match(/([A-Z][a-zA-Z]+|[一二三四五六七八九十百千万]+[号位人个等])/g);
                 if (matches) {
                     matches.forEach(m => {
-                        if (m.length > 1 && m.length < 20) {
-                            characters.add(m);
-                        }
+                        if (m.length > 1 && m.length < 20) characters.add(m);
                     });
                 }
             }
         });
-
-        statusEl.text('生成...');
         
         const charList = Array.from(characters).slice(0, 8);
         const entryName = `${character?.name || '角色'}的出场人物`;
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
+        const chatHistory = recentMessages.map(m => m.mes).join('\\n');
         
         let generatedContent = '';
         
         try {
-            const prompt = `根据以下对话生成世界书条目，包含角色简介和场景描述（简洁）：\n\n${chatHistory.substring(0, 500)}`;
+            const prompt = `根据以下对话生成世界书条目，包含角色简介和场景描述（简洁）：\\n\\n${chatHistory.substring(0, 500)}`;
             generatedContent = await callParentApiForSummary(chatHistory, prompt);
         } catch (apiError) {
             logError('API调用失败，使用默认内容', apiError);
-            generatedContent = `出场人物：${charList.join('、')}\n场景：最近${recentMessages.length}条对话`;
+            generatedContent = `出场人物：${charList.join('、')}\\n场景：最近${recentMessages.length}条对话`;
         }
         
-        const entry = {
+        appState.worldbookEntries = [{
             name: entryName,
             keywords: charList,
-            content: generatedContent || `出场人物：${charList.join('、')}`
-        };
+            content: generatedContent
+        }];
         
-        appState.worldbookEntries = [entry];
-        
-        previewEl.html(`
-            <div class="toolbox-worldbook-entry">
-                <div class="toolbox-entry-name">${entry.name}</div>
-                <div class="toolbox-entry-keywords">${entry.keywords.join('、')}</div>
-                <div class="toolbox-entry-content">${entry.content}</div>
+        previewEl.innerHTML = `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(180,130,200,0.2); border-radius: 4px; padding: 6px;">
+                <div style="font-size: 11px; font-weight: 600; color: rgba(168,85,247,0.95); margin-bottom: 4px;">${escapeHtml(entryName)}</div>
+                <div style="font-size: 9px; color: rgba(200,150,255,0.8); margin-bottom: 4px;">${escapeHtml(charList.join('、'))}</div>
+                <div style="font-size: 10px; color: rgba(255,255,255,0.8); line-height: 1.3;">${escapeHtml(generatedContent)}</div>
             </div>
-        `);
+        `;
         
-        saveBtn.prop('disabled', false);
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
         
     } catch (e) {
         logError('生成失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
-        previewEl.html('');
+        previewEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">失败</div>';
     }
+    
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
 async function saveToWorldbook() {
-    const btn = $('#toolbox-worldbook-save-btn');
-    const statusEl = $('#toolbox-worldbook-status');
-    
-    if (appState.worldbookEntries.length === 0) {
-        statusEl.text('无内容').css('color', 'rgba(248, 113, 113, 0.9)');
-        return;
-    }
-    
-    btn.prop('disabled', true).text('保存中...');
+    if (appState.worldbookEntries.length === 0) return;
     
     try {
         if (typeof window.createWorldEntry !== 'undefined') {
@@ -479,47 +506,33 @@ async function saveToWorldbook() {
             toastr.success(`已复制${appState.worldbookEntries.length}个条目`);
             navigator.clipboard.writeText(JSON.stringify(appState.worldbookEntries, null, 2));
         }
-        
-        statusEl.text('已保存').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.text('已保存');
-        
-        setTimeout(() => {
-            btn.prop('disabled', false).text('保存');
-        }, 2000);
-        
     } catch (e) {
         logError('保存失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false).text('保存');
     }
 }
 
 async function generateSummary() {
-    const statusEl = $('#toolbox-summary-status');
-    const contentEl = $('#toolbox-summary-content');
-    const btn = $('#toolbox-summary-start-btn');
+    const startBtn = document.getElementById('sum-start-btn');
+    const contentEl = document.getElementById('sum-content');
+    
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
     
     try {
-        statusEl.text('总结中...').css('color', 'rgba(255, 165, 0, 0.9)');
-        btn.prop('disabled', true);
-        contentEl.html('<div class="toolbox-loading">生成中...</div>');
-
         const context = getContext();
         if (!context.chat || context.chat.length === 0) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            contentEl.html('');
+            contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">无聊天</div>';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
             return;
         }
-
-        const character = appState.currentCharacter;
-        const recentMessages = context.chat.slice(-10);
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
         
+        const recentMessages = context.chat.slice(-10);
+        const chatHistory = recentMessages.map(m => m.mes).join('\\n');
         let summary = '';
         
         try {
-            const prompt = `总结以下对话的关键内容（简洁，100字以内）：\n\n${chatHistory}`;
+            const prompt = `总结以下对话的关键内容（简洁，100字以内）：\\n\\n${chatHistory}`;
             summary = await callParentApiForSummary(chatHistory, prompt);
         } catch (apiError) {
             logError('API调用失败', apiError);
@@ -527,55 +540,52 @@ async function generateSummary() {
         }
         
         appState.summaryText = summary;
-        
-        contentEl.html(`
-            <div class="toolbox-summary-item">
-                <div class="toolbox-summary-text">${summary}</div>
-                <div class="toolbox-summary-actions">
-                    <button id="toolbox-summary-use-btn" class="toolbox-use-btn">使用</button>
-                    <button id="toolbox-summary-copy-btn" class="toolbox-copy-btn">复制</button>
+        contentEl.innerHTML = `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(180,130,200,0.2); border-radius: 4px; padding: 6px;">
+                <div style="font-size: 10px; color: rgba(255,255,255,0.85); line-height: 1.4; margin-bottom: 6px;">${escapeHtml(summary)}</div>
+                <div style="display: flex; gap: 6px;">
+                    <button id="sum-use-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 3px 8px; font-size: 9px; cursor: pointer; flex: 1;">发</button>
+                    <button id="sum-copy-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 3px 8px; font-size: 9px; cursor: pointer; flex: 1;">复</button>
                 </div>
             </div>
-        `);
+        `;
         
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
+        document.getElementById('sum-use-btn').addEventListener('click', () => sendMessageToChat(appState.summaryText));
+        document.getElementById('sum-copy-btn').addEventListener('click', () => copyToClipboard(appState.summaryText));
         
     } catch (e) {
         logError('总结失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
-        contentEl.html('');
+        contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">失败</div>';
     }
+    
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
 async function generateAnalysis() {
-    const statusEl = $('#toolbox-analysis-status');
-    const contentEl = $('#toolbox-analysis-content');
-    const btn = $('#toolbox-analysis-start-btn');
+    const startBtn = document.getElementById('ana-start-btn');
+    const contentEl = document.getElementById('ana-content');
+    
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
     
     try {
-        statusEl.text('分析中...').css('color', 'rgba(255, 165, 0, 0.9)');
-        btn.prop('disabled', true);
-        contentEl.html('<div class="toolbox-loading">生成中...</div>');
-
         const character = appState.currentCharacter || getCurrentCharacterData();
         
         if (!character) {
-            statusEl.text('无角色').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            contentEl.html('');
+            contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">无角色</div>';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
             return;
         }
-
+        
         const context = getContext();
         const recentMessages = context.chat?.slice(-5) || [];
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
-        
+        const chatHistory = recentMessages.map(m => m.mes).join('\\n');
         let analysis = '';
         
         try {
-            const prompt = `分析角色${character.name}的性格特点：\n\n角色设定：${character.personality || character.description}\n\n近期对话：${chatHistory}`;
+            const prompt = `分析角色${character.name}的性格特点：\\n\\n角色设定：${character.personality || character.description}\\n\\n近期对话：${chatHistory}`;
             analysis = await callParentApiForSummary(chatHistory, prompt);
         } catch (apiError) {
             logError('API调用失败', apiError);
@@ -583,54 +593,49 @@ async function generateAnalysis() {
         }
         
         appState.analysisText = analysis;
-        
-        contentEl.html(`
-            <div class="toolbox-analysis-item">
-                <div class="toolbox-analysis-name">${character.name}</div>
-                <div class="toolbox-analysis-text">${analysis}</div>
-                <div class="toolbox-summary-actions">
-                    <button id="toolbox-analysis-copy-btn" class="toolbox-copy-btn">复制</button>
+        contentEl.innerHTML = `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(180,130,200,0.2); border-radius: 4px; padding: 6px;">
+                <div style="font-size: 11px; font-weight: 600; color: rgba(168,85,247,0.95); margin-bottom: 4px;">${escapeHtml(character.name)}</div>
+                <div style="font-size: 10px; color: rgba(255,255,255,0.85); line-height: 1.4; margin-bottom: 6px;">${escapeHtml(analysis)}</div>
+                <div style="display: flex;">
+                    <button id="ana-copy-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 3px 8px; font-size: 9px; cursor: pointer; width: 100%;">复</button>
                 </div>
             </div>
-        `);
+        `;
         
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
+        document.getElementById('ana-copy-btn').addEventListener('click', () => copyToClipboard(appState.analysisText));
         
     } catch (e) {
         logError('分析失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
-        contentEl.html('');
+        contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">失败</div>';
     }
+    
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
 async function generateSuggestion() {
-    const statusEl = $('#toolbox-suggestion-status');
-    const contentEl = $('#toolbox-suggestion-content');
-    const btn = $('#toolbox-suggestion-start-btn');
+    const startBtn = document.getElementById('sug-start-btn');
+    const contentEl = document.getElementById('sug-content');
+    
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
     
     try {
-        statusEl.text('构思中...').css('color', 'rgba(255, 165, 0, 0.9)');
-        btn.prop('disabled', true);
-        contentEl.html('<div class="toolbox-loading">生成中...</div>');
-
         const context = getContext();
         if (!context.chat || context.chat.length === 0) {
-            statusEl.text('无聊天').css('color', 'rgba(248, 113, 113, 0.9)');
-            btn.prop('disabled', false);
-            contentEl.html('');
+            contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">无聊天</div>';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
             return;
         }
-
-        const character = appState.currentCharacter;
-        const recentMessages = context.chat.slice(-5);
-        const chatHistory = recentMessages.map(m => m.mes).join('\n');
         
+        const recentMessages = context.chat.slice(-5);
+        const chatHistory = recentMessages.map(m => m.mes).join('\\n');
         let suggestion = '';
         
         try {
-            const prompt = `基于以下对话，给出一个情节发展建议（简洁，80字以内）：\n\n${chatHistory}`;
+            const prompt = `基于以下对话，给出一个情节发展建议（简洁，80字以内）：\\n\\n${chatHistory}`;
             suggestion = await callParentApiForSummary(chatHistory, prompt);
         } catch (apiError) {
             logError('API调用失败', apiError);
@@ -638,167 +643,90 @@ async function generateSuggestion() {
         }
         
         appState.suggestionText = suggestion;
-        
-        contentEl.html(`
-            <div class="toolbox-suggestion-item">
-                <div class="toolbox-suggestion-text">${suggestion}</div>
-                <div class="toolbox-summary-actions">
-                    <button id="toolbox-suggestion-use-btn" class="toolbox-use-btn">使用</button>
-                    <button id="toolbox-suggestion-copy-btn" class="toolbox-copy-btn">复制</button>
+        contentEl.innerHTML = `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(180,130,200,0.2); border-radius: 4px; padding: 6px;">
+                <div style="font-size: 10px; color: rgba(255,255,255,0.85); line-height: 1.4; margin-bottom: 6px;">${escapeHtml(suggestion)}</div>
+                <div style="display: flex; gap: 6px;">
+                    <button id="sug-use-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 3px 8px; font-size: 9px; cursor: pointer; flex: 1;">发</button>
+                    <button id="sug-copy-btn" style="background: linear-gradient(135deg, rgba(88,28,135,0.8), rgba(126,34,206,0.8)); color: white; border: 1px solid rgba(180,130,200,0.4); border-radius: 3px; padding: 3px 8px; font-size: 9px; cursor: pointer; flex: 1;">复</button>
                 </div>
             </div>
-        `);
+        `;
         
-        statusEl.text('完成').css('color', 'rgba(74, 222, 128, 0.9)');
-        btn.prop('disabled', false);
+        document.getElementById('sug-use-btn').addEventListener('click', () => sendMessageToChat(appState.suggestionText));
+        document.getElementById('sug-copy-btn').addEventListener('click', () => copyToClipboard(appState.suggestionText));
         
     } catch (e) {
         logError('建议失败', e);
-        statusEl.text('失败').css('color', 'rgba(248, 113, 113, 0.9)');
-        btn.prop('disabled', false);
-        contentEl.html('');
+        contentEl.innerHTML = '<div style="font-size: 11px; color: rgba(248,113,113,0.9);">失败</div>';
     }
+    
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        if (typeof toastr !== 'undefined') {
-            toastr.success('已复制');
-        }
-    }).catch(err => {
-        console.error('复制失败:', err);
-    });
-}
-
-function sendMessageToChat(message) {
-    const input = getMessageInput();
-    if (input.length) {
-        input.val(message);
-        
-        const sendButton = $('#send_but');
-        if (sendButton.length) {
-            sendButton.click();
-        } else {
-            const event = new KeyboardEvent('keydown', {
-                key: 'Enter',
-                bubbles: true,
-                cancelable: true,
-                code: 'Enter'
+function bindOverlayEvents(tab) {
+    switch(tab) {
+        case 'gen3':
+            document.getElementById('gen-start-btn').addEventListener('click', generate3Replies);
+            document.getElementById('gen-count-select').value = extension_settings[extensionName].genCount || 3;
+            document.getElementById('gen-count-select').addEventListener('change', (e) => {
+                extension_settings[extensionName].genCount = parseInt(e.target.value);
+                saveSettingsDebounced();
             });
-            input[0].dispatchEvent(event);
-        }
-        
-        goBack();
+            break;
+        case 'worldbook':
+            document.getElementById('wb-start-btn').addEventListener('click', generateWorldbookEntry);
+            document.getElementById('wb-save-btn').addEventListener('click', saveToWorldbook);
+            break;
+        case 'summary':
+            document.getElementById('sum-start-btn').addEventListener('click', generateSummary);
+            break;
+        case 'analysis':
+            document.getElementById('ana-start-btn').addEventListener('click', generateAnalysis);
+            break;
+        case 'suggestion':
+            document.getElementById('sug-start-btn').addEventListener('click', generateSuggestion);
+            break;
     }
 }
 
-function bindContentEvents() {
-    $('#toolbox-gen3-count').on('change', function() {
-        extension_settings[extensionName].genCount = parseInt($(this).val());
-        saveSettingsDebounced();
+function bindSVGEvents() {
+    document.getElementById('btn-gen3').addEventListener('click', () => {
+        appState.expandedTab = 'gen3';
+        renderDetailView('gen3');
     });
-    
-    $('#toolbox-gen3-start-btn').off('click').on('click', function() {
-        generate3Replies();
+    document.getElementById('btn-worldbook').addEventListener('click', () => {
+        appState.expandedTab = 'worldbook';
+        renderDetailView('worldbook');
     });
-    
-    $(document).off('click', '.toolbox-use-btn').on('click', '.toolbox-use-btn', function() {
-        const index = $(this).data('index');
-        const reply = appState.gen3Replies[index];
-        
-        if (reply) {
-            sendMessageToChat(reply);
-        }
+    document.getElementById('btn-summary').addEventListener('click', () => {
+        appState.expandedTab = 'summary';
+        renderDetailView('summary');
     });
-    
-    $(document).off('click', '.toolbox-copy-btn').on('click', '.toolbox-copy-btn', function() {
-        const index = $(this).data('index');
-        const text = $(this).closest('.toolbox-result-item, .toolbox-summary-item, .toolbox-analysis-item, .toolbox-suggestion-item').find('.toolbox-result-text, .toolbox-summary-text, .toolbox-analysis-text, .toolbox-suggestion-text').text();
-        copyToClipboard(text);
+    document.getElementById('btn-analysis').addEventListener('click', () => {
+        appState.expandedTab = 'analysis';
+        renderDetailView('analysis');
     });
-    
-    $('#toolbox-worldbook-start-btn').off('click').on('click', function() {
-        generateWorldbookEntry();
+    document.getElementById('btn-suggestion').addEventListener('click', () => {
+        appState.expandedTab = 'suggestion';
+        renderDetailView('suggestion');
     });
-    
-    $(document).off('click', '#toolbox-worldbook-save-btn').on('click', '#toolbox-worldbook-save-btn', function() {
-        saveToWorldbook();
+    document.getElementById('btn-back').addEventListener('click', () => {
+        appState.expandedTab = null;
+        renderMainView();
     });
-    
-    $('#toolbox-summary-start-btn').off('click').on('click', function() {
-        generateSummary();
-    });
-    
-    $(document).off('click', '#toolbox-summary-use-btn').on('click', '#toolbox-summary-use-btn', function() {
-        if (appState.summaryText) {
-            sendMessageToChat(appState.summaryText);
-        }
-    });
-    
-    $(document).off('click', '#toolbox-summary-copy-btn').on('click', '#toolbox-summary-copy-btn', function() {
-        copyToClipboard(appState.summaryText);
-    });
-    
-    $('#toolbox-analysis-start-btn').off('click').on('click', function() {
-        generateAnalysis();
-    });
-    
-    $(document).off('click', '#toolbox-analysis-copy-btn').on('click', '#toolbox-analysis-copy-btn', function() {
-        copyToClipboard(appState.analysisText);
-    });
-    
-    $('#toolbox-suggestion-start-btn').off('click').on('click', function() {
-        generateSuggestion();
-    });
-    
-    $(document).off('click', '#toolbox-suggestion-use-btn').on('click', '#toolbox-suggestion-use-btn', function() {
-        if (appState.suggestionText) {
-            sendMessageToChat(appState.suggestionText);
-        }
-    });
-    
-    $(document).off('click', '#toolbox-suggestion-copy-btn').on('click', '#toolbox-suggestion-copy-btn', function() {
-        copyToClipboard(appState.suggestionText);
-    });
-}
-
-async function loadSettings() {
-    extension_settings[extensionName] = extension_settings[extensionName] || {};
-    if (Object.keys(extension_settings[extensionName]).length === 0) {
-        Object.assign(extension_settings[extensionName], defaultSettings);
-    }
-
-    const settings = extension_settings[extensionName];
-    $('#enable_toolbox').prop('checked', settings.enabled).trigger('input');
-    updateToolVisibility();
-}
-
-function updateToolVisibility() {
-    const settings = extension_settings[extensionName];
-
-    if (!settings.enabled) {
-        $('#toolbox-toolbar').hide();
-    } else {
-        $('#toolbox-toolbar').show();
-    }
-}
-
-function onEnableInput(event) {
-    const value = Boolean($(event.target).prop('checked'));
-    extension_settings[extensionName].enabled = value;
-    saveSettingsDebounced();
-    updateToolVisibility();
 }
 
 function updateToolbarStatus() {
-    const statusEl = $('#toolbox-char-name');
-    if (statusEl.length) {
+    const statusText = document.getElementById('char-status');
+    if (statusText) {
         if (appState.currentCharacter) {
-            statusEl.text(`✓ ${appState.currentCharacter.name}`);
-            statusEl.css('color', 'rgba(74, 222, 128, 0.95)');
+            statusText.textContent = `✓ ${appState.currentCharacter.name}`;
+            statusText.setAttribute('fill', 'rgba(74,222,128,0.95)');
         } else {
-            statusEl.text('未加载');
-            statusEl.css('color', 'rgba(148, 163, 184, 0.7)');
+            statusText.textContent = '未加载';
+            statusText.setAttribute('fill', 'rgba(148,163,184,0.7)');
         }
     }
 }
@@ -810,9 +738,6 @@ function tryLoadCharacter() {
         appState.currentCharacter = character;
         logInfo('Character loaded successfully:', character.name);
         updateToolbarStatus();
-        if (appState.expandedTab) {
-            renderExpandedContent();
-        }
         return true;
     } else {
         logInfo('Failed to load character');
@@ -821,75 +746,63 @@ function tryLoadCharacter() {
     }
 }
 
-function handleChatChanged(chatId) {
-    logInfo('CHAT_CHANGED event received!', chatId);
+function handleChatChanged() {
+    logInfo('Chat changed');
     setTimeout(() => tryLoadCharacter(), 100);
 }
 
 function handleCharacterChanged() {
-    logInfo('CHARACTER_CHANGED event received!');
+    logInfo('Character changed');
     setTimeout(() => tryLoadCharacter(), 100);
+}
+
+async function loadSettings() {
+    extension_settings[extensionName] = extension_settings[extensionName] || {};
+    if (Object.keys(extension_settings[extensionName]).length === 0) {
+        Object.assign(extension_settings[extensionName], defaultSettings);
+    }
+}
+
+function updateToolVisibility() {
+    const toolbar = document.getElementById('toolbox-svg-container');
+    if (toolbar) {
+        toolbar.style.display = extension_settings[extensionName].enabled ? 'block' : 'none';
+    }
 }
 
 jQuery(async function() {
     logInfo('Extension initializing...');
-
+    
     try {
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
         $('#extensions_settings').append(settingsHtml);
-        logInfo('Settings panel loaded');
+        
+        $('#enable_toolbox').on('input', function() {
+            const value = Boolean($(this).prop('checked'));
+            extension_settings[extensionName].enabled = value;
+            saveSettingsDebounced();
+            updateToolVisibility();
+        });
     } catch (e) {
         logError('Settings panel load error', e);
-        return;
     }
-
-    const toolbarHtml = `
-        <div id="toolbox-toolbar" style="display: none;">
-            <div id="toolbox-status" class="toolbox-status">
-                <span id="toolbox-char-name" class="toolbox-char-status">未加载</span>
-            </div>
-            <div class="toolbox-buttons">
-                <button id="toolbox-gen3-btn" class="toolbox-main-btn">生成</button>
-                <button id="toolbox-worldbook-btn" class="toolbox-main-btn">世界书</button>
-                <button id="toolbox-summary-btn" class="toolbox-main-btn">总结</button>
-                <button id="toolbox-analysis-btn" class="toolbox-main-btn">分析</button>
-                <button id="toolbox-suggestion-btn" class="toolbox-main-btn">建议</button>
-            </div>
-            <div id="toolbox-content" class="toolbox-content"></div>
-        </div>
-    `;
-
+    
     const sendForm = $('#send_form');
     if (sendForm.length) {
-        sendForm.before(toolbarHtml);
+        sendForm.before(createSVG());
+        bindSVGEvents();
         logInfo('Toolbar added to DOM');
     } else {
         logError('#send_form not found');
         return;
     }
-
-    $('#toolbox-gen3-btn').on('click', () => toggleTab('gen3'));
-    $('#toolbox-worldbook-btn').on('click', () => toggleTab('worldbook'));
-    $('#toolbox-summary-btn').on('click', () => toggleTab('summary'));
-    $('#toolbox-analysis-btn').on('click', () => toggleTab('analysis'));
-    $('#toolbox-suggestion-btn').on('click', () => toggleTab('suggestion'));
-
-    $('#enable_toolbox').on('input', onEnableInput);
-
+    
     await loadSettings();
-
+    
     try {
         if (typeof eventSource !== 'undefined' && typeof event_types !== 'undefined') {
             logInfo('eventSource is available');
-            
-            const events = [
-                'CHAT_CHANGED',
-                'MESSAGE_RECEIVED',
-                'CHARACTER_CHANGED',
-                'CHARACTER_LOADED',
-                'CHARACTER_SELECTED',
-                'GROUP_CHANGED'
-            ];
+            const events = ['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'CHARACTER_CHANGED', 'CHARACTER_LOADED', 'CHARACTER_SELECTED', 'GROUP_CHANGED'];
             
             events.forEach(eventName => {
                 if (event_types[eventName]) {
@@ -904,17 +817,13 @@ jQuery(async function() {
     } catch (e) {
         logError('Event registration error', e);
     }
-
-    window.toggleTab = toggleTab;
-    window.goBack = goBack;
-
+    
     logInfo('Checking initial character...');
     tryLoadCharacter();
-
     setTimeout(() => tryLoadCharacter(), 500);
     setTimeout(() => tryLoadCharacter(), 1500);
     setTimeout(() => tryLoadCharacter(), 3000);
-    setTimeout(() => tryLoadCharacter(), 5000);
-
+    
+    updateToolVisibility();
     logInfo('Extension initialized successfully');
 });
