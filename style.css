@@ -1,11 +1,13 @@
 /* ==================== 工具栏包装器 ==================== */
 #smart-toolbar-wrapper {
     position: relative;
-    z-index: 9999;
-    margin-bottom: 10px;
+    z-index: 99999;
+    margin-bottom: 70px;
     width: 100%;
     overflow: visible;
     -webkit-tap-highlight-color: transparent;
+    padding-bottom: 0;
+    clear: both;
 }
 
 /* ==================== 主容器优化 - 增加高度确保显示完全 ==================== */
@@ -15,7 +17,7 @@
     min-height: 165px;
     max-height: 165px;
     position: relative;
-    z-index: 9999;
+    z-index: 99999;
     margin-bottom: 0;
     display: flex;
     flex-direction: column;

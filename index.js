@@ -1336,9 +1336,11 @@ jQuery(async () => {
         toolbarWrapper.id = 'smart-toolbar-wrapper';
         toolbarWrapper.style.cssText = `
             position: relative;
-            z-index: 9999;
-            margin-bottom: 10px;
+            z-index: 99999;
+            margin-bottom: 70px;
             width: 100%;
+            padding-bottom: 0;
+            clear: both;
         `;
         toolbarWrapper.innerHTML = ui.createToolbar();
         
