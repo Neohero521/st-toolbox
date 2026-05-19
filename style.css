@@ -11,12 +11,12 @@
     display: block;
 }
 
-/* ==================== 主容器优化 - 增加高度确保显示完全 ==================== */
+/* ==================== 主容器优化 - 确保完整显示 ==================== */
 #smart-toolbar-container {
     width: 100%;
-    height: 170px;
-    min-height: 170px;
-    max-height: 170px;
+    height: auto;
+    min-height: 200px;
+    max-height: none;
     position: relative;
     z-index: 99999;
     margin-bottom: 0;
@@ -42,7 +42,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(145deg, #1a0f2e 0%, #2d1b44 45%, #3d1f5c 100%);
+    background: linear-gradient(145deg, #1a0f2e 0%, #2d1b4e 45%, #3d1f6c 100%);
     border-radius: 20px;
     z-index: 0;
     overflow: hidden;
@@ -218,7 +218,8 @@
     display: none;
     flex-direction: column;
     width: 100%;
-    height: 100%;
+    height: auto;
+    min-height: 200px;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
 }
@@ -232,10 +233,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 18px;
+    padding: 12px 18px;
     background: rgba(0, 0, 0, 0.55);
     border-bottom: 1px solid rgba(180, 130, 200, 0.22);
-    height: 42px;
+    height: auto;
+    min-height: 50px;
     flex-shrink: 0;
 }
 
@@ -247,8 +249,8 @@
 
 .brand-icon-wrapper {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,8 +267,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     background: radial-gradient(circle, rgba(168, 85, 247, 0.75) 0%, transparent 70%);
     border-radius: 50%;
     animation: brand-pulse-animation 2.8s ease-in-out infinite;
@@ -283,7 +285,7 @@
 }
 
 .brand-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.98);
     letter-spacing: 0.7px;
@@ -291,7 +293,7 @@
 }
 
 .brand-subtitle {
-    font-size: 9.5px;
+    font-size: 10px;
     color: rgba(148, 163, 184, 0.6);
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -308,7 +310,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 14px;
+    padding: 8px 14px;
     background: rgba(0, 0, 0, 0.38);
     border-radius: 24px;
     border: 1px solid rgba(180, 130, 200, 0.18);
@@ -321,8 +323,8 @@
 }
 
 .status-ring {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     border: 2px solid rgba(148, 163, 184, 0.5);
     display: flex;
@@ -364,8 +366,8 @@
 }
 
 .status-dot {
-    width: 7.5px;
-    height: 7.5px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: rgba(148, 163, 184, 0.6);
     transition: all 0.45s ease;
@@ -377,7 +379,7 @@
 }
 
 .status-text {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: rgba(148, 163, 184, 0.78);
     transition: all 0.45s ease;
@@ -396,8 +398,8 @@
     color: #a855f7;
     border: 1px solid rgba(180, 130, 200, 0.45);
     border-radius: 50%;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -417,12 +419,12 @@
 /* ==================== 内容区域优化 ==================== */
 .toolbar-content {
     flex: 1;
-    padding: 9px 16px;
+    padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 16px;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* ==================== 主功能卡片优化 ==================== */
@@ -435,8 +437,8 @@
 .action-card {
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.92), rgba(236, 72, 153, 0.75));
     border: 1px solid rgba(180, 130, 200, 0.6);
-    border-radius: 14px;
-    padding: 11px 24px;
+    border-radius: 18px;
+    padding: 18px 24px;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -446,8 +448,8 @@
         0 6px 24px rgba(168, 85, 247, 0.5),
         0 0 35px rgba(236, 72, 153, 0.35),
         inset 0 1px 0 rgba(255, 255, 255, 0.22);
-    min-width: 220px;
-    max-width: 340px;
+    min-width: 260px;
+    max-width: 400px;
     width: auto;
     position: relative;
     overflow: hidden;
@@ -483,8 +485,8 @@
 
 .action-icon-wrapper {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -501,8 +503,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     background: radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, transparent 70%);
     border-radius: 50%;
     animation: icon-glow-pulse 3s ease-in-out infinite;
@@ -520,20 +522,20 @@
 }
 
 .action-title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: #ffffff;
-    text-shadow: 0 0 15px rgba(168, 85, 247, 0.65);
+    text-shadow: 0 0 18px rgba(168, 85, 247, 0.65);
 }
 
 .action-desc {
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.82);
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
 .action-arrow {
-    font-size: 24px;
+    font-size: 26px;
     color: rgba(255, 255, 255, 0.7);
     transition: all 0.4s ease;
 }
@@ -547,12 +549,12 @@
 /* ==================== 功能网格优化 - 苹果手表风格 ==================== */
 .action-grid {
     display: flex;
-    gap: 16px;
+    gap: 18px;
     justify-content: flex-start;
     flex-wrap: nowrap;
     overflow-x: scroll;
     overflow-y: hidden;
-    padding: 12px 16px;
+    padding: 14px 16px;
     flex-shrink: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -582,10 +584,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-width: 80px;
-    width: 80px;
-    height: 80px;
+    gap: 8px;
+    min-width: 90px;
+    width: 90px;
+    height: 90px;
     flex-shrink: 0;
     scroll-snap-align: center;
     box-shadow: 
@@ -648,13 +650,13 @@
 }
 
 .mini-icon {
-    font-size: 22px;
+    font-size: 24px;
     transition: all 0.25s ease;
     filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
 }
 
 .mini-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.92);
     text-align: center;
@@ -666,10 +668,11 @@
 .function-header {
     display: flex;
     align-items: center;
-    padding: 7px 16px;
+    padding: 12px 18px;
     background: rgba(0, 0, 0, 0.55);
     border-bottom: 1px solid rgba(180, 130, 200, 0.22);
-    height: 42px;
+    height: auto;
+    min-height: 50px;
     flex-shrink: 0;
     gap: 12px;
 }
@@ -679,15 +682,15 @@
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.5);
     border-radius: 12px;
-    padding: 8px 14px;
+    padding: 10px 16px;
     cursor: pointer;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 5px 14px rgba(76, 29, 149, 0.4);
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
     touch-action: manipulation;
 }
 
@@ -699,15 +702,15 @@
 }
 
 .function-title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.96);
     letter-spacing: 0.5px;
 }
 
 .function-loader {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 2.5px solid rgba(168, 85, 247, 0.4);
     border-top-color: #a855f7;
     border-radius: 50%;
@@ -721,7 +724,7 @@
 
 .function-content {
     flex: 1;
-    padding: 10px 16px;
+    padding: 16px 18px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
@@ -730,24 +733,10 @@
     -webkit-overflow-scrolling: touch;
 }
 
-.function-content::-webkit-scrollbar {
-    width: 7px;
-}
-
-.function-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.32);
-    border-radius: 4px;
-}
-
-.function-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(168, 85, 247, 0.7), rgba(236, 72, 153, 0.6));
-    border-radius: 4px;
-}
-
 /* ==================== 面板容器优化 ==================== */
 .panel-container {
     background: rgba(0, 0, 0, 0.48);
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid rgba(180, 130, 200, 0.25);
     overflow: hidden;
 }
@@ -756,30 +745,30 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 11px 16px;
+    padding: 14px 18px;
     background: rgba(0, 0, 0, 0.38);
     border-bottom: 1px solid rgba(180, 130, 200, 0.2);
 }
 
 .panel-icon {
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .panel-title {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.95);
 }
 
 .panel-body {
-    padding: 14px;
+    padding: 18px;
 }
 
 /* ==================== 控制面板优化 ==================== */
 .control-row {
     display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 14px;
+    margin-bottom: 16px;
     align-items: center;
     flex-wrap: wrap;
 }
@@ -788,14 +777,14 @@
     background: rgba(76, 29, 149, 0.92);
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.55);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 12px 16px;
     font-size: 14px;
     cursor: pointer;
     transition: all 0.35s ease;
-    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35),
+    box-shadow: 0 4px 14px rgba(76, 29, 149, 0.35),
                 inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    min-height: 44px;
+    min-height: 48px;
     touch-action: manipulation;
 }
 
@@ -811,9 +800,9 @@
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.92), rgba(236, 72, 153, 0.75));
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.6);
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 14px;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -822,7 +811,7 @@
     justify-content: center;
     gap: 8px;
     box-shadow: 0 5px 16px rgba(168, 85, 247, 0.45);
-    min-height: 44px;
+    min-height: 48px;
     touch-action: manipulation;
 }
 
@@ -849,14 +838,14 @@
     background: rgba(76, 29, 149, 0.75);
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 10px;
-    padding: 10px 18px;
-    font-size: 14px;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.35s ease;
-    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
-    min-height: 44px;
+    box-shadow: 0 4px 14px rgba(76, 29, 149, 0.35);
+    min-height: 48px;
     touch-action: manipulation;
 }
 
@@ -873,8 +862,8 @@
 }
 
 .btn-spinner {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 2.5px solid rgba(255, 255, 255, 0.45);
     border-top-color: #ffffff;
     border-radius: 50%;
@@ -883,7 +872,7 @@
 
 /* ==================== 结果列表优化 ==================== */
 .results-list {
-    max-height: 80px;
+    max-height: 120px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
@@ -907,9 +896,9 @@
 .result-item {
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(180, 130, 200, 0.22);
-    border-radius: 11px;
-    padding: 12px;
-    margin-bottom: 8px;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -923,7 +912,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 5px;
     height: 100%;
     background: linear-gradient(180deg, #a855f7, #ec4899);
 }
@@ -937,7 +926,7 @@
 }
 
 .result-number {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
     color: #a855f7;
     min-width: 26px;
@@ -946,15 +935,15 @@
 
 .result-content {
     flex: 1;
-    font-size: 12px;
+    font-size: 13px;
     color: rgba(255, 255, 255, 0.94);
-    line-height: 1.5;
+    line-height: 1.6;
     word-break: break-word;
 }
 
 .result-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
@@ -962,13 +951,13 @@
     background: rgba(109, 40, 217, 0.8);
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 8px;
-    padding: 8px 14px;
+    border-radius: 10px;
+    padding: 10px 16px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.28s ease;
-    min-height: 36px;
+    min-height: 40px;
     touch-action: manipulation;
 }
 
@@ -992,7 +981,7 @@
 
 /* ==================== 结果卡片优化 ==================== */
 .result-card-container {
-    max-height: 80px;
+    max-height: 140px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
@@ -1003,8 +992,8 @@
 .worldbook-card {
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(180, 130, 200, 0.25);
-    border-radius: 14px;
-    padding: 14px;
+    border-radius: 16px;
+    padding: 18px;
     transition: all 0.35s ease;
 }
 
@@ -1020,53 +1009,53 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 9px;
+    margin-bottom: 10px;
 }
 
 .card-icon {
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.95);
 }
 
 .card-badge {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: rgba(168, 85, 247, 0.3);
     color: rgba(168, 85, 247, 0.95);
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid rgba(168, 85, 247, 0.4);
     margin-left: auto;
 }
 
 .card-time {
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(148, 163, 184, 0.68);
     margin-left: auto;
 }
 
 .card-keywords {
-    font-size: 12px;
+    font-size: 13px;
     color: rgba(200, 150, 255, 0.88);
-    margin-bottom: 9px;
+    margin-bottom: 10px;
 }
 
 .card-content {
-    font-size: 12px;
+    font-size: 13px;
     color: rgba(255, 255, 255, 0.94);
-    line-height: 1.55;
+    line-height: 1.6;
     word-break: break-word;
 }
 
 .card-actions {
     display: flex;
-    gap: 12px;
-    margin-top: 11px;
+    gap: 14px;
+    margin-top: 14px;
     flex-wrap: wrap;
 }
 
@@ -1074,13 +1063,13 @@
     background: rgba(76, 29, 149, 0.8);
     color: #ffffff;
     border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 8px;
-    padding: 10px 16px;
+    border-radius: 10px;
+    padding: 12px 18px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-height: 40px;
+    min-height: 44px;
     touch-action: manipulation;
 }
 
@@ -1095,105 +1084,101 @@
 .empty-state {
     text-align: center;
     color: rgba(148, 163, 184, 0.65);
-    font-size: 13px;
-    padding: 16px;
+    font-size: 14px;
+    padding: 20px;
 }
 
 .error-message {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px;
+    padding: 16px;
     background: rgba(248, 113, 113, 0.22);
-    border-radius: 11px;
+    border-radius: 14px;
     border: 1px solid rgba(248, 113, 113, 0.4);
     color: rgba(248, 113, 113, 0.95);
-    font-size: 13px;
+    font-size: 14px;
 }
 
 /* ==================== 移动端响应式优化 ==================== */
 @media (max-width: 768px) {
     #smart-toolbar-container {
-        height: 170px;
-        min-height: 170px;
-        max-height: 170px;
+        min-height: 220px;
         border-radius: 16px;
     }
     
     .toolbar-header {
-        padding: 6px 14px;
-        height: 40px;
+        padding: 10px 14px;
+        min-height: 48px;
     }
     
     .brand-title {
-        font-size: 14px;
+        font-size: 15px;
     }
     
     .brand-subtitle {
-        font-size: 8px;
-    }
-    
-    .toolbar-content {
-        padding: 8px 12px;
-        gap: 8px;
-    }
-    
-    .action-card {
-        padding: 10px 18px;
-        min-width: 180px;
-    }
-    
-    .action-title {
-        font-size: 14px;
-    }
-    
-    .action-desc {
-        font-size: 10px;
-    }
-    
-    .action-grid {
-        padding: 10px 12px;
-        gap: 14px;
-    }
-    
-    .action-mini {
-        width: 72px;
-        min-width: 72px;
-        height: 72px;
-    }
-    
-    .mini-icon {
-        font-size: 20px;
-    }
-    
-    .mini-label {
         font-size: 9px;
     }
     
+    .toolbar-content {
+        padding: 14px 14px;
+        gap: 14px;
+    }
+    
+    .action-card {
+        padding: 14px 18px;
+        min-width: 240px;
+    }
+    
+    .action-title {
+        font-size: 15px;
+    }
+    
+    .action-desc {
+        font-size: 11px;
+    }
+    
+    .action-grid {
+        padding: 12px 14px;
+        gap: 16px;
+    }
+    
+    .action-mini {
+        width: 84px;
+        min-width: 84px;
+        height: 84px;
+    }
+    
+    .mini-icon {
+        font-size: 22px;
+    }
+    
+    .mini-label {
+        font-size: 10px;
+    }
+    
     .function-content {
-        padding: 8px 12px;
+        padding: 14px 14px;
     }
     
     .panel-body {
-        padding: 12px;
+        padding: 16px;
     }
     
     .control-row {
-        gap: 10px;
+        gap: 12px;
     }
     
     .primary-btn,
     .secondary-btn {
-        padding: 10px 16px;
+        padding: 12px 18px;
         font-size: 14px;
     }
 }
 
 @media (max-width: 480px) {
     #smart-toolbar-container {
-        height: 175px;
-        min-height: 175px;
-        max-height: 175px;
+        min-height: 240px;
     }
     
     .status-text {
@@ -1201,22 +1186,22 @@
     }
     
     .status-indicator-container {
-        padding: 6px 10px;
+        padding: 8px 12px;
     }
     
     .action-grid {
-        gap: 12px;
-        padding: 8px 10px;
+        gap: 14px;
+        padding: 12px 12px;
     }
     
     .action-mini {
-        width: 68px;
-        min-width: 68px;
-        height: 68px;
+        width: 80px;
+        min-width: 80px;
+        height: 80px;
     }
     
     .result-item {
-        padding: 10px;
+        padding: 12px;
     }
     
     .card-actions {
@@ -1243,14 +1228,14 @@
 
 /* ==================== 输入框间距优化 ==================== */
 #send_form {
-    margin-top: 100px !important;
+    margin-top: 80px !important;
     position: relative !important;
     z-index: 9999 !important;
 }
 
 /* 确保工具栏不会被覆盖 */
 #smart-toolbar-wrapper + #send_form {
-    margin-top: 100px !important;
+    margin-top: 80px !important;
 }
 
 /* 强制显示工具栏 */
