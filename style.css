@@ -1,20 +1,20 @@
-/* ==================== 主容器优化 ==================== */
+/* ==================== 主容器优化 - 增加高度确保显示完全 ==================== */
 #smart-toolbar-container {
     width: 100%;
-    height: 148px;
-    min-height: 148px;
-    max-height: 148px;
+    height: 165px;
+    min-height: 165px;
+    max-height: 165px;
     position: relative;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     display: flex;
     flex-direction: column;
     font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border-radius: 18px;
+    border-radius: 20px;
     box-shadow: 
-        0 12px 45px rgba(0, 0, 0, 0.5),
-        0 0 100px rgba(138, 43, 226, 0.12),
-        inset 0 0 60px rgba(138, 43, 226, 0.06);
+        0 15px 50px rgba(0, 0, 0, 0.55),
+        0 0 120px rgba(138, 43, 226, 0.15),
+        inset 0 0 80px rgba(138, 43, 226, 0.08);
     box-sizing: border-box;
 }
 
@@ -26,7 +26,7 @@
     right: 0;
     bottom: 0;
     background: linear-gradient(145deg, #1a0f2e 0%, #2d1b44 45%, #3d1f5c 100%);
-    border-radius: 18px;
+    border-radius: 20px;
     z-index: 0;
     overflow: hidden;
 }
@@ -34,24 +34,23 @@
 .toolbar-bg-layer::before {
     content: '';
     position: absolute;
-    top: -60%;
-    left: -60%;
-    width: 220%;
-    height: 220%;
+    top: -70%;
+    left: -70%;
+    width: 240%;
+    height: 240%;
     background: conic-gradient(
         from 0deg,
         transparent 0deg,
-        rgba(138, 43, 226, 0.15) 40deg,
-        transparent 80deg,
-        transparent 120deg,
-        rgba(236, 72, 153, 0.12) 160deg,
-        transparent 200deg,
-        transparent 240deg,
-        rgba(138, 43, 226, 0.15) 280deg,
-        transparent 320deg,
+        rgba(138, 43, 226, 0.18) 45deg,
+        transparent 90deg,
+        transparent 135deg,
+        rgba(236, 72, 153, 0.15) 180deg,
+        transparent 225deg,
+        transparent 270deg,
+        rgba(138, 43, 226, 0.18) 315deg,
         transparent 360deg
     );
-    animation: tb-rotate 35s linear infinite;
+    animation: tb-rotate 40s linear infinite;
 }
 
 .toolbar-bg-layer::after {
@@ -63,15 +62,15 @@
     bottom: 0;
     background: radial-gradient(
         ellipse at 30% 30%,
-        rgba(138, 43, 226, 0.2) 0%,
+        rgba(138, 43, 226, 0.25) 0%,
         transparent 50%
     ),
     radial-gradient(
         ellipse at 70% 70%,
-        rgba(236, 72, 153, 0.15) 0%,
+        rgba(236, 72, 153, 0.2) 0%,
         transparent 50%
     );
-    animation: tb-bg-shimmer 8s ease-in-out infinite;
+    animation: tb-bg-shimmer 9s ease-in-out infinite;
 }
 
 @keyframes tb-rotate {
@@ -81,28 +80,28 @@
 
 @keyframes tb-bg-shimmer {
     0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.05); }
+    50% { opacity: 1; transform: scale(1.06); }
 }
 
 /* ==================== 光晕层 ==================== */
 .toolbar-glow-layer {
     position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
-    border-radius: 24px;
-    background: radial-gradient(circle at 25% 25%, rgba(138, 43, 226, 0.5) 0%, transparent 40%),
-                radial-gradient(circle at 75% 75%, rgba(236, 72, 153, 0.4) 0%, transparent 40%);
-    filter: blur(25px);
-    opacity: 0.7;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border-radius: 28px;
+    background: radial-gradient(circle at 25% 25%, rgba(138, 43, 226, 0.55) 0%, transparent 40%),
+                radial-gradient(circle at 75% 75%, rgba(236, 72, 153, 0.45) 0%, transparent 40%);
+    filter: blur(30px);
+    opacity: 0.75;
     z-index: -1;
-    animation: tb-glow-pulse 5s ease-in-out infinite;
+    animation: tb-glow-pulse 6s ease-in-out infinite;
 }
 
 @keyframes tb-glow-pulse {
-    0%, 100% { opacity: 0.5; transform: scale(0.97) rotate(-2deg); }
-    50% { opacity: 0.9; transform: scale(1.02) rotate(2deg); }
+    0%, 100% { opacity: 0.55; transform: scale(0.97) rotate(-2deg); }
+    50% { opacity: 0.95; transform: scale(1.03) rotate(2deg); }
 }
 
 /* ==================== 边框动画层 ==================== */
@@ -113,31 +112,31 @@
     right: 0;
     bottom: 0;
     border: 2.5px solid transparent;
-    border-radius: 18px;
+    border-radius: 20px;
     background: linear-gradient(#1a0f2e, #1a0f2e) padding-box,
                 linear-gradient(135deg, #a855f7, #ec4899, #8b5cf6, #a855f7) border-box;
     background-size: 300% 300%;
     pointer-events: none;
     z-index: 1;
-    animation: tb-border-shift 6s ease-in-out infinite;
+    animation: tb-border-shift 7s ease-in-out infinite;
 }
 
 .toolbar-gradient-border::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border-radius: 20px;
-    background: linear-gradient(45deg, transparent 40%, rgba(168, 85, 247, 0.3) 50%, transparent 60%);
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 23px;
+    background: linear-gradient(45deg, transparent 40%, rgba(168, 85, 247, 0.35) 50%, transparent 60%);
     background-size: 200% 200%;
-    animation: tb-border-shine 3s linear infinite;
-    opacity: 0.6;
+    animation: tb-border-shine 3.5s linear infinite;
+    opacity: 0.65;
 }
 
 @keyframes tb-border-shift {
-    0%, 100% { background-position: 0% 50%; opacity: 0.75; }
+    0%, 100% { background-position: 0% 50%; opacity: 0.8; }
     50% { background-position: 100% 50%; opacity: 1; }
 }
 
@@ -161,38 +160,38 @@
 .toolbar-ripple {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, transparent 70%);
     transform: scale(0);
-    animation: tb-ripple-effect 4s ease-out infinite;
+    animation: tb-ripple-effect 5s ease-out infinite;
 }
 
 .toolbar-ripple:nth-child(1) {
-    top: 20%;
+    top: 25%;
     left: 30%;
-    width: 80px;
-    height: 80px;
+    width: 85px;
+    height: 85px;
     animation-delay: 0s;
 }
 
 .toolbar-ripple:nth-child(2) {
-    top: 60%;
-    left: 70%;
-    width: 60px;
-    height: 60px;
-    animation-delay: 1.5s;
+    top: 65%;
+    left: 75%;
+    width: 65px;
+    height: 65px;
+    animation-delay: 1.8s;
 }
 
 .toolbar-ripple:nth-child(3) {
-    top: 40%;
+    top: 45%;
     left: 50%;
-    width: 100px;
-    height: 100px;
-    animation-delay: 3s;
+    width: 110px;
+    height: 110px;
+    animation-delay: 3.5s;
 }
 
 @keyframes tb-ripple-effect {
-    0% { transform: scale(0); opacity: 0.8; }
-    100% { transform: scale(3); opacity: 0; }
+    0% { transform: scale(0); opacity: 0.85; }
+    100% { transform: scale(3.2); opacity: 0; }
 }
 
 /* ==================== 视图切换 ==================== */
@@ -203,8 +202,8 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
 .toolbar-view.active {
@@ -216,32 +215,32 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 5px 16px;
+    padding: 7px 18px;
     background: rgba(0, 0, 0, 0.55);
-    border-bottom: 1px solid rgba(180, 130, 200, 0.2);
-    height: 38px;
+    border-bottom: 1px solid rgba(180, 130, 200, 0.22);
+    height: 42px;
     flex-shrink: 0;
 }
 
 .brand-section {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .brand-icon-wrapper {
     position: relative;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .brand-icon {
-    font-size: 18px;
+    font-size: 20px;
     z-index: 1;
-    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.6));
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.7));
 }
 
 .brand-pulse {
@@ -249,16 +248,16 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
-    background: radial-gradient(circle, rgba(168, 85, 247, 0.7) 0%, transparent 70%);
+    width: 32px;
+    height: 32px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.75) 0%, transparent 70%);
     border-radius: 50%;
-    animation: brand-pulse-animation 2.5s ease-in-out infinite;
+    animation: brand-pulse-animation 2.8s ease-in-out infinite;
 }
 
 @keyframes brand-pulse-animation {
-    0%, 100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.4; }
-    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    0%, 100% { transform: translate(-50%, -50%) scale(0.65); opacity: 0.45; }
+    50% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
 }
 
 .brand-text-section {
@@ -267,58 +266,58 @@
 }
 
 .brand-title {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.97);
-    letter-spacing: 0.6px;
-    text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+    color: rgba(255, 255, 255, 0.98);
+    letter-spacing: 0.7px;
+    text-shadow: 0 0 18px rgba(168, 85, 247, 0.6);
 }
 
 .brand-subtitle {
-    font-size: 9px;
-    color: rgba(148, 163, 184, 0.55);
-    letter-spacing: 1.5px;
+    font-size: 9.5px;
+    color: rgba(148, 163, 184, 0.6);
+    letter-spacing: 1.8px;
     text-transform: uppercase;
-    margin-top: 1px;
+    margin-top: 2px;
 }
 
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
 }
 
 .status-indicator-container {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 12px;
-    background: rgba(0, 0, 0, 0.35);
-    border-radius: 22px;
-    border: 1px solid rgba(180, 130, 200, 0.15);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.38);
+    border-radius: 24px;
+    border: 1px solid rgba(180, 130, 200, 0.18);
+    transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .status-indicator-container.active {
-    background: rgba(74, 222, 128, 0.18);
-    border-color: rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.22);
+    border-color: rgba(74, 222, 128, 0.4);
 }
 
 .status-ring {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 2px solid rgba(148, 163, 184, 0.45);
+    border: 2px solid rgba(148, 163, 184, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.4s ease;
+    transition: all 0.45s ease;
     position: relative;
 }
 
 .status-ring.active {
-    border-color: rgba(74, 222, 128, 0.7);
-    animation: status-ring-pulse 1.8s ease-in-out infinite;
+    border-color: rgba(74, 222, 128, 0.75);
+    animation: status-ring-pulse 2s ease-in-out infinite;
 }
 
 .status-ring::after {
@@ -334,76 +333,76 @@
 }
 
 .status-ring.active::after {
-    animation: status-ring-wave 1.8s ease-out infinite;
+    animation: status-ring-wave 2s ease-out infinite;
 }
 
 @keyframes status-ring-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
-    50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.55); }
+    50% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); }
 }
 
 @keyframes status-ring-wave {
-    0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.3); opacity: 1; }
-    100% { box-shadow: 0 0 0 12px rgba(74, 222, 128, 0); opacity: 0; }
+    0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.35); opacity: 1; }
+    100% { box-shadow: 0 0 0 14px rgba(74, 222, 128, 0); opacity: 0; }
 }
 
 .status-dot {
-    width: 7px;
-    height: 7px;
+    width: 7.5px;
+    height: 7.5px;
     border-radius: 50%;
-    background: rgba(148, 163, 184, 0.55);
-    transition: all 0.4s ease;
+    background: rgba(148, 163, 184, 0.6);
+    transition: all 0.45s ease;
 }
 
 .status-dot.active {
-    background: rgba(74, 222, 128, 0.98);
-    box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
+    background: rgba(74, 222, 128, 1);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
 }
 
 .status-text {
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 600;
-    color: rgba(148, 163, 184, 0.75);
-    transition: all 0.4s ease;
-    max-width: 80px;
+    color: rgba(148, 163, 184, 0.78);
+    transition: all 0.45s ease;
+    max-width: 90px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .status-indicator-container.active .status-text {
-    color: rgba(74, 222, 128, 0.98);
+    color: rgba(74, 222, 128, 1);
 }
 
 .settings-btn {
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.38);
     color: #a855f7;
-    border: 1px solid rgba(180, 130, 200, 0.4);
+    border: 1px solid rgba(180, 130, 200, 0.45);
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
     cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
 .settings-btn:hover {
-    background: rgba(109, 40, 217, 0.35);
-    border-color: rgba(180, 130, 200, 0.6);
-    transform: rotate(45deg) scale(1.1);
-    box-shadow: 0 6px 18px rgba(109, 40, 217, 0.4), 0 0 15px rgba(168, 85, 247, 0.3);
+    background: rgba(109, 40, 217, 0.42);
+    border-color: rgba(180, 130, 200, 0.65);
+    transform: rotate(50deg) scale(1.15);
+    box-shadow: 0 7px 20px rgba(109, 40, 217, 0.5), 0 0 18px rgba(168, 85, 247, 0.35);
 }
 
 /* ==================== 内容区域优化 ==================== */
 .toolbar-content {
     flex: 1;
-    padding: 7px 14px;
+    padding: 9px 16px;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 9px;
     min-height: 0;
     overflow: hidden;
 }
@@ -416,21 +415,21 @@
 }
 
 .action-card {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.88), rgba(236, 72, 153, 0.7));
-    border: 1px solid rgba(180, 130, 200, 0.55);
-    border-radius: 12px;
-    padding: 9px 20px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.92), rgba(236, 72, 153, 0.75));
+    border: 1px solid rgba(180, 130, 200, 0.6);
+    border-radius: 14px;
+    padding: 11px 24px;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 
-        0 5px 20px rgba(168, 85, 247, 0.45),
-        0 0 30px rgba(236, 72, 153, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18);
-    min-width: 200px;
-    max-width: 300px;
+        0 6px 24px rgba(168, 85, 247, 0.5),
+        0 0 35px rgba(236, 72, 153, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    min-width: 220px;
+    max-width: 340px;
     width: auto;
     position: relative;
     overflow: hidden;
@@ -440,40 +439,40 @@
     content: '';
     position: absolute;
     top: 0;
-    left: -110%;
-    width: 110%;
+    left: -120%;
+    width: 120%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.6s ease;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transition: left 0.7s ease;
 }
 
 .action-card:hover {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.98), rgba(236, 72, 153, 0.8));
-    transform: translateY(-4px) scale(1.02);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(236, 72, 153, 0.85));
+    transform: translateY(-5px) scale(1.03);
     box-shadow: 
-        0 12px 35px rgba(168, 85, 247, 0.55),
-        0 0 45px rgba(236, 72, 153, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    border-color: rgba(180, 130, 200, 0.7);
+        0 14px 40px rgba(168, 85, 247, 0.6),
+        0 0 50px rgba(236, 72, 153, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    border-color: rgba(180, 130, 200, 0.75);
 }
 
 .action-card:hover::before {
-    left: 110%;
+    left: 120%;
 }
 
 .action-icon-wrapper {
     position: relative;
-    width: 46px;
-    height: 46px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .action-icon {
-    font-size: 26px;
+    font-size: 28px;
     z-index: 1;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.45));
 }
 
 .icon-glow {
@@ -481,16 +480,16 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 46px;
-    height: 46px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, transparent 70%);
     border-radius: 50%;
-    animation: icon-glow-pulse 2.5s ease-in-out infinite;
+    animation: icon-glow-pulse 3s ease-in-out infinite;
 }
 
 @keyframes icon-glow-pulse {
-    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.85); }
-    50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.15); }
+    0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.82); }
+    50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.18); }
 }
 
 .action-info {
@@ -500,71 +499,73 @@
 }
 
 .action-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: #ffffff;
-    text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    text-shadow: 0 0 15px rgba(168, 85, 247, 0.65);
 }
 
 .action-desc {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.82);
     margin-top: 3px;
 }
 
 .action-arrow {
-    font-size: 22px;
-    color: rgba(255, 255, 255, 0.65);
-    transition: all 0.35s ease;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.4s ease;
 }
 
 .action-card:hover .action-arrow {
-    color: rgba(255, 255, 255, 0.95);
-    transform: translateX(7px);
+    color: rgba(255, 255, 255, 0.98);
+    transform: translateX(8px);
 }
 
 /* ==================== 功能网格优化 ==================== */
 .action-grid {
     display: flex;
-    gap: 9px;
+    gap: 10px;
     justify-content: center;
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 3px;
+    padding-bottom: 4px;
     flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.3);
 }
 
 .action-grid::-webkit-scrollbar {
-    height: 5px;
+    height: 6px;
 }
 
 .action-grid::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 3px;
 }
 
 .action-grid::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, rgba(180, 130, 200, 0.5), rgba(236, 72, 153, 0.4));
+    background: linear-gradient(90deg, rgba(180, 130, 200, 0.6), rgba(236, 72, 153, 0.5));
     border-radius: 3px;
 }
 
 .action-mini {
-    background: linear-gradient(145deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
-    border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 10px;
-    padding: 7px 12px;
+    background: linear-gradient(145deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    border-radius: 12px;
+    padding: 8px 14px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    min-width: 58px;
+    gap: 4px;
+    min-width: 62px;
     flex-shrink: 0;
     box-shadow: 
-        0 4px 12px rgba(76, 29, 149, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        0 5px 16px rgba(76, 29, 149, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
     position: relative;
     overflow: hidden;
 }
@@ -576,85 +577,85 @@
     left: 50%;
     width: 0;
     height: 0;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    transition: all 0.4s ease;
+    transition: all 0.5s ease;
     opacity: 0;
 }
 
 .action-mini:hover {
-    background: linear-gradient(145deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
-    transform: translateY(-3px) scale(1.08);
+    background: linear-gradient(145deg, rgba(109, 40, 217, 1), rgba(168, 85, 247, 0.8));
+    transform: translateY(-4px) scale(1.1);
     box-shadow: 
-        0 8px 22px rgba(109, 40, 217, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18);
-    border-color: rgba(180, 130, 200, 0.6);
+        0 9px 26px rgba(109, 40, 217, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(180, 130, 200, 0.7);
 }
 
 .action-mini:hover::after {
-    width: 120%;
-    height: 120%;
+    width: 130%;
+    height: 130%;
     opacity: 1;
 }
 
 .mini-icon {
-    font-size: 17px;
-    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4));
+    font-size: 18px;
+    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
 }
 
 .mini-label {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.92);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 /* ==================== 功能视图优化 ==================== */
 .function-header {
     display: flex;
     align-items: center;
-    padding: 5px 14px;
+    padding: 7px 16px;
     background: rgba(0, 0, 0, 0.55);
-    border-bottom: 1px solid rgba(180, 130, 200, 0.2);
-    height: 38px;
+    border-bottom: 1px solid rgba(180, 130, 200, 0.22);
+    height: 42px;
     flex-shrink: 0;
-    gap: 10px;
+    gap: 12px;
 }
 
 .back-btn {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 10px;
-    padding: 7px 12px;
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    border-radius: 12px;
+    padding: 8px 14px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
+    box-shadow: 0 5px 14px rgba(76, 29, 149, 0.4);
 }
 
 .back-btn:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
-    transform: translateX(-4px);
-    box-shadow: 0 6px 18px rgba(109, 40, 217, 0.45);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 1), rgba(168, 85, 247, 0.8));
+    transform: translateX(-5px);
+    box-shadow: 0 8px 22px rgba(109, 40, 217, 0.5);
 }
 
 .function-title {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
-    letter-spacing: 0.4px;
+    color: rgba(255, 255, 255, 0.96);
+    letter-spacing: 0.5px;
 }
 
 .function-loader {
-    width: 17px;
-    height: 17px;
-    border: 2.5px solid rgba(168, 85, 247, 0.35);
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(168, 85, 247, 0.4);
     border-top-color: #a855f7;
     border-radius: 50%;
-    animation: tb-spin 0.75s linear infinite;
+    animation: tb-spin 0.8s linear infinite;
     margin-left: auto;
 }
 
@@ -664,112 +665,114 @@
 
 .function-content {
     flex: 1;
-    padding: 9px 14px;
+    padding: 10px 16px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(168, 85, 247, 0.65) rgba(0, 0, 0, 0.3);
 }
 
 .function-content::-webkit-scrollbar {
-    width: 6px;
+    width: 7px;
 }
 
 .function-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.32);
+    border-radius: 4px;
 }
 
 .function-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(168, 85, 247, 0.65), rgba(236, 72, 153, 0.55));
-    border-radius: 3px;
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.7), rgba(236, 72, 153, 0.6));
+    border-radius: 4px;
 }
 
 /* ==================== 面板容器优化 ==================== */
 .panel-container {
-    background: rgba(0, 0, 0, 0.45);
-    border-radius: 12px;
-    border: 1px solid rgba(180, 130, 200, 0.2);
+    background: rgba(0, 0, 0, 0.48);
+    border-radius: 14px;
+    border: 1px solid rgba(180, 130, 200, 0.25);
     overflow: hidden;
 }
 
 .panel-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: rgba(0, 0, 0, 0.35);
-    border-bottom: 1px solid rgba(180, 130, 200, 0.18);
+    gap: 12px;
+    padding: 11px 16px;
+    background: rgba(0, 0, 0, 0.38);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.2);
 }
 
 .panel-icon {
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .panel-title {
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.94);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .panel-body {
-    padding: 12px;
+    padding: 14px;
 }
 
 /* ==================== 控制面板优化 ==================== */
 .control-row {
     display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 14px;
+    margin-bottom: 14px;
     align-items: center;
 }
 
 .styled-select {
-    background: rgba(76, 29, 149, 0.88);
+    background: rgba(76, 29, 149, 0.92);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 9px;
-    padding: 7px 12px;
-    font-size: 11.5px;
+    border: 1px solid rgba(180, 130, 200, 0.55);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.35s ease;
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .styled-select:focus {
     outline: none;
-    border-color: rgba(168, 85, 247, 0.75);
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2),
-                0 0 15px rgba(168, 85, 247, 0.3);
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.25),
+                0 0 18px rgba(168, 85, 247, 0.35);
 }
 
 .primary-btn {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.88), rgba(236, 72, 153, 0.7));
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.92), rgba(236, 72, 153, 0.75));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.55);
-    border-radius: 9px;
-    padding: 7px 18px;
-    font-size: 12px;
+    border: 1px solid rgba(180, 130, 200, 0.6);
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);
+    gap: 8px;
+    box-shadow: 0 5px 16px rgba(168, 85, 247, 0.45);
 }
 
 .primary-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.98), rgba(236, 72, 153, 0.8));
-    transform: translateY(-3px);
-    box-shadow: 0 8px 22px rgba(168, 85, 247, 0.5),
-                0 0 18px rgba(236, 72, 153, 0.3);
-    border-color: rgba(180, 130, 200, 0.7);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(236, 72, 153, 0.85));
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(168, 85, 247, 0.55),
+                0 0 22px rgba(236, 72, 153, 0.35);
+    border-color: rgba(180, 130, 200, 0.78);
 }
 
 .primary-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.55;
     cursor: not-allowed;
     transform: none;
 }
@@ -779,68 +782,70 @@
 }
 
 .secondary-btn {
-    background: rgba(76, 29, 149, 0.7);
+    background: rgba(76, 29, 149, 0.75);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 9px;
-    padding: 7px 16px;
-    font-size: 12px;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.3);
+    transition: all 0.35s ease;
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
 }
 
 .secondary-btn:hover:not(:disabled) {
-    background: rgba(76, 29, 149, 0.9);
-    border-color: rgba(180, 130, 200, 0.6);
-    box-shadow: 0 5px 14px rgba(76, 29, 149, 0.4);
+    background: rgba(76, 29, 149, 0.95);
+    border-color: rgba(180, 130, 200, 0.65);
+    box-shadow: 0 6px 18px rgba(76, 29, 149, 0.45);
 }
 
 .secondary-btn:disabled {
-    opacity: 0.45;
+    opacity: 0.48;
     cursor: not-allowed;
 }
 
 .btn-spinner {
-    width: 15px;
-    height: 15px;
-    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(255, 255, 255, 0.45);
     border-top-color: #ffffff;
     border-radius: 50%;
-    animation: tb-spin 0.7s linear infinite;
+    animation: tb-spin 0.75s linear infinite;
 }
 
 /* ==================== 结果列表优化 ==================== */
 .results-list {
-    max-height: 70px;
+    max-height: 80px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
 }
 
 .results-list::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
 }
 
 .results-list::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: 3px;
 }
 
 .results-list::-webkit-scrollbar-thumb {
-    background: rgba(180, 130, 200, 0.45);
+    background: rgba(180, 130, 200, 0.55);
     border-radius: 3px;
 }
 
 .result-item {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(180, 130, 200, 0.18);
-    border-radius: 9px;
-    padding: 9px;
-    margin-bottom: 7px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(180, 130, 200, 0.22);
+    border-radius: 11px;
+    padding: 10px;
+    margin-bottom: 8px;
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    transition: all 0.3s ease;
+    gap: 14px;
+    transition: all 0.35s ease;
     position: relative;
     overflow: hidden;
 }
@@ -856,170 +861,172 @@
 }
 
 .result-item:hover {
-    background: rgba(0, 0, 0, 0.55);
-    border-color: rgba(180, 130, 200, 0.35);
-    transform: translateX(5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(180, 130, 200, 0.4);
+    transform: translateX(6px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
 .result-number {
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 800;
     color: #a855f7;
-    min-width: 24px;
-    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+    min-width: 26px;
+    text-shadow: 0 0 12px rgba(168, 85, 247, 0.55);
 }
 
 .result-content {
     flex: 1;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.92);
-    line-height: 1.45;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.94);
+    line-height: 1.5;
     word-break: break-word;
 }
 
 .result-actions {
     display: flex;
-    gap: 6px;
+    gap: 7px;
     flex-shrink: 0;
 }
 
 .result-btn {
-    background: rgba(109, 40, 217, 0.75);
+    background: rgba(109, 40, 217, 0.8);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 6px;
-    padding: 4px 9px;
-    font-size: 10px;
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-size: 10.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.28s ease;
 }
 
 .result-btn:hover {
-    background: rgba(168, 85, 247, 0.92);
-    border-color: rgba(180, 130, 200, 0.65);
-    transform: scale(1.1);
+    background: rgba(168, 85, 247, 0.95);
+    border-color: rgba(180, 130, 200, 0.7);
+    transform: scale(1.12);
 }
 
 .result-btn.send {
-    background: rgba(74, 222, 128, 0.65);
+    background: rgba(74, 222, 128, 0.7);
     border-color: rgba(74, 222, 128, 0.45);
 }
 
 .result-btn.send:hover {
-    background: rgba(74, 222, 128, 0.9);
-    border-color: rgba(74, 222, 128, 0.65);
+    background: rgba(74, 222, 128, 0.92);
+    border-color: rgba(74, 222, 128, 0.7);
 }
 
 /* ==================== 结果卡片优化 ==================== */
 .result-card-container {
-    max-height: 70px;
+    max-height: 80px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 130, 200, 0.55) rgba(0, 0, 0, 0.25);
 }
 
 .result-card,
 .worldbook-card {
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(180, 130, 200, 0.2);
-    border-radius: 12px;
-    padding: 12px;
-    transition: all 0.3s ease;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(180, 130, 200, 0.25);
+    border-radius: 14px;
+    padding: 14px;
+    transition: all 0.35s ease;
 }
 
 .result-card:hover,
 .worldbook-card:hover {
-    border-color: rgba(180, 130, 200, 0.4);
-    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.35);
+    border-color: rgba(180, 130, 200, 0.45);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.42);
 }
 
 .card-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 9px;
 }
 
 .card-icon {
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .card-title {
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.94);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .card-badge {
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 3px 7px;
-    background: rgba(168, 85, 247, 0.28);
-    color: rgba(168, 85, 247, 0.92);
-    border-radius: 5px;
-    border: 1px solid rgba(168, 85, 247, 0.35);
+    padding: 4px 8px;
+    background: rgba(168, 85, 247, 0.3);
+    color: rgba(168, 85, 247, 0.95);
+    border-radius: 6px;
+    border: 1px solid rgba(168, 85, 247, 0.4);
     margin-left: auto;
 }
 
 .card-time {
     font-size: 10.5px;
-    color: rgba(148, 163, 184, 0.65);
+    color: rgba(148, 163, 184, 0.68);
     margin-left: auto;
 }
 
 .card-keywords {
-    font-size: 10.5px;
-    color: rgba(200, 150, 255, 0.85);
-    margin-bottom: 8px;
+    font-size: 11px;
+    color: rgba(200, 150, 255, 0.88);
+    margin-bottom: 9px;
 }
 
 .card-content {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.92);
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.94);
     line-height: 1.55;
     word-break: break-word;
 }
 
 .card-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
+    gap: 12px;
+    margin-top: 11px;
 }
 
 .card-actions button {
-    background: rgba(76, 29, 149, 0.75);
+    background: rgba(76, 29, 149, 0.8);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.45);
-    border-radius: 7px;
-    padding: 5px 12px;
-    font-size: 10.5px;
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.3s ease;
 }
 
 .card-actions button:hover {
-    background: rgba(109, 40, 217, 0.92);
-    border-color: rgba(180, 130, 200, 0.65);
-    transform: scale(1.08);
+    background: rgba(109, 40, 217, 0.95);
+    border-color: rgba(180, 130, 200, 0.7);
+    transform: scale(1.1);
 }
 
 /* ==================== 空状态和错误优化 ==================== */
 .empty-state {
     text-align: center;
-    color: rgba(148, 163, 184, 0.55);
-    font-size: 11.5px;
-    padding: 12px;
+    color: rgba(148, 163, 184, 0.65);
+    font-size: 12px;
+    padding: 14px;
 }
 
 .error-message {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px;
-    background: rgba(248, 113, 113, 0.18);
-    border-radius: 9px;
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    color: rgba(248, 113, 113, 0.92);
-    font-size: 11.5px;
+    gap: 12px;
+    padding: 14px;
+    background: rgba(248, 113, 113, 0.22);
+    border-radius: 11px;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    color: rgba(248, 113, 113, 0.95);
+    font-size: 12px;
 }

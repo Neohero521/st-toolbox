@@ -16,6 +16,13 @@ const DEFAULT_SETTINGS = {
     maxHistoryLength: 50
 };
 
+// ==================== 动画配置 ====================
+const ANIMATION_CONFIG = {
+    rippleDelay: 5000,
+    pulseDuration: 2000,
+    hoverTransition: 300
+};
+
 // ==================== 状态管理 ====================
 let appState = {
     currentCharacter: null,
@@ -113,6 +120,71 @@ const api = {
             .map(s => s.trim())
             .filter(s => s.length > 3)
             .slice(0, count);
+    }
+};
+
+// ==================== 动画控制器 ====================
+const animationController = {
+    createDynamicRipple() {
+        const container = document.querySelector('.toolbar-ripple-container');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        for (let i = 0; i < 3; i++) {
+            const ripple = document.createElement('div');
+            ripple.className = 'toolbar-ripple';
+            ripple.style.animationDelay = `${i * 1.8}s`;
+            
+            const top = 20 + Math.random() * 60;
+            const left = 20 + Math.random() * 60;
+            ripple.style.top = `${top}%`;
+            ripple.style.left = `${left}%`;
+            
+            container.appendChild(ripple);
+        }
+    },
+
+    addButtonHoverEffects() {
+        const buttons = document.querySelectorAll('.action-card, .action-mini, .primary-btn, .secondary-btn');
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02) translateY(-2px)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = '';
+            });
+            
+            btn.addEventListener('mousedown', function() {
+                this.style.transform = 'scale(0.98)';
+            });
+            
+            btn.addEventListener('mouseup', function() {
+                this.style.transform = 'scale(1.02) translateY(-2px)';
+            });
+        });
+    },
+
+    animateViewTransition(fromView, toView) {
+        if (fromView) {
+            fromView.classList.remove('active');
+            fromView.style.opacity = '0';
+            fromView.style.transform = 'translateX(-20px)';
+        }
+        
+        if (toView) {
+            toView.style.opacity = '0';
+            toView.style.transform = 'translateX(20px)';
+            toView.classList.add('active');
+            
+            void toView.offsetWidth;
+            
+            toView.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            toView.style.opacity = '1';
+            toView.style.transform = 'translateX(0)';
+        }
     }
 };
 
@@ -1178,6 +1250,9 @@ jQuery(async () => {
         setTimeout(() => {
             events.bindMainButtons();
             events.bindChatEvents();
+            
+            animationController.createDynamicRipple();
+            animationController.addButtonHoverEffects();
             
             const char = chatManager.getCharacter();
             if (char) {
