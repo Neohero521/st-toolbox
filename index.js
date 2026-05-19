@@ -241,46 +241,57 @@ const ui = {
                 <!-- 主视图 -->
                 <div id="smart-toolbar-main" class="smart-toolbar-view active">
                     <div class="smart-toolbar-header">
-                        <span class="toolbar-label">🎯 智慧触控屏</span>
-                        <span id="smart-toolbar-status" class="smart-toolbar-status">
-                            <span class="status-dot"></span>
-                            <span class="status-text">就绪</span>
+                        <span class="toolbar-brand">
+                            <span class="brand-icon">🎯</span>
+                            <span class="brand-text">智慧触控屏</span>
                         </span>
+                        <div class="header-right">
+                            <span id="smart-toolbar-status" class="toolbar-status">
+                                <span class="status-indicator"></span>
+                                <span class="status-label">就绪</span>
+                            </span>
+                            <div class="header-divider"></div>
+                            <button id="toolbar-settings-btn" class="header-settings-btn" title="设置">⚙️</button>
+                        </div>
                     </div>
                     <div class="smart-toolbar-buttons">
-                        <button class="main-btn primary-action" data-action="quick-reply" title="快速回复">
-                            <span class="btn-icon">💬</span>
-                            <span class="btn-text">快速回复</span>
-                        </button>
-                        <button class="main-btn" data-action="polish" title="对话润色">
-                            <span class="btn-icon">✨</span>
-                            <span class="btn-text">润色</span>
-                        </button>
-                        <button class="main-btn" data-action="continue" title="续写故事">
-                            <span class="btn-icon">📖</span>
-                            <span class="btn-text">续写</span>
-                        </button>
-                        <button class="main-btn" data-action="worldbook" title="世界书管理">
-                            <span class="btn-icon">📚</span>
-                            <span class="btn-text">世界书</span>
-                        </button>
-                        <button class="main-btn" data-action="summary" title="对话总结">
-                            <span class="btn-icon">📊</span>
-                            <span class="btn-text">总结</span>
-                        </button>
-                        <button class="main-btn" data-action="analysis" title="角色分析">
-                            <span class="btn-icon">🔍</span>
-                            <span class="btn-text">分析</span>
-                        </button>
-                        <button class="main-btn" data-action="suggestion" title="剧情建议">
-                            <span class="btn-icon">💡</span>
-                            <span class="btn-text">建议</span>
-                        </button>
-                        <button class="main-btn" data-action="memory" title="记忆管理">
-                            <span class="btn-icon">🧠</span>
-                            <span class="btn-text">记忆</span>
-                        </button>
-                        <button id="toolbar-settings-btn" class="settings-btn" title="设置">⚙️</button>
+                        <div class="button-row primary-row">
+                            <button class="feature-btn main-feature" data-action="quick-reply" title="快速回复">
+                                <span class="feature-icon">💬</span>
+                                <span class="feature-label">快速回复</span>
+                                <span class="feature-hint">生成多条回复</span>
+                            </button>
+                        </div>
+                        <div class="button-row secondary-row">
+                            <button class="feature-btn" data-action="polish" title="对话润色">
+                                <span class="feature-icon">✨</span>
+                                <span class="feature-label">润色</span>
+                            </button>
+                            <button class="feature-btn" data-action="continue" title="续写故事">
+                                <span class="feature-icon">📖</span>
+                                <span class="feature-label">续写</span>
+                            </button>
+                            <button class="feature-btn" data-action="worldbook" title="世界书管理">
+                                <span class="feature-icon">📚</span>
+                                <span class="feature-label">世界书</span>
+                            </button>
+                            <button class="feature-btn" data-action="summary" title="对话总结">
+                                <span class="feature-icon">📊</span>
+                                <span class="feature-label">总结</span>
+                            </button>
+                            <button class="feature-btn" data-action="analysis" title="角色分析">
+                                <span class="feature-icon">🔍</span>
+                                <span class="feature-label">分析</span>
+                            </button>
+                            <button class="feature-btn" data-action="suggestion" title="剧情建议">
+                                <span class="feature-icon">💡</span>
+                                <span class="feature-label">建议</span>
+                            </button>
+                            <button class="feature-btn" data-action="memory" title="记忆管理">
+                                <span class="feature-icon">🧠</span>
+                                <span class="feature-label">记忆</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -315,15 +326,17 @@ const ui = {
         const statusEl = document.getElementById('smart-toolbar-status');
         if (!statusEl) return;
         
-        const dot = statusEl.querySelector('.status-dot');
-        const text = statusEl.querySelector('.status-text');
+        const indicator = statusEl.querySelector('.status-indicator');
+        const label = statusEl.querySelector('.status-label');
         
         if (loaded && charName) {
-            dot.className = 'status-dot status-loaded';
-            text.textContent = charName;
+            statusEl.classList.add('loaded');
+            indicator.className = 'status-indicator';
+            label.textContent = charName;
         } else {
-            dot.className = 'status-dot';
-            text.textContent = '就绪';
+            statusEl.classList.remove('loaded');
+            indicator.className = 'status-indicator';
+            label.textContent = '就绪';
         }
     },
     
@@ -1028,7 +1041,7 @@ const features = {
 // ==================== 事件绑定 ====================
 const events = {
     bindMainButtons() {
-        document.querySelectorAll('.main-btn').forEach(btn => {
+        document.querySelectorAll('.feature-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const action = e.currentTarget.dataset.action;
                 this.handleMainAction(action);

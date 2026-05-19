@@ -1,3 +1,4 @@
+/* ==================== 主容器 ==================== */
 #smart-toolbar-container {
     width: 100%;
     height: 133px;
@@ -7,11 +8,33 @@
     margin-bottom: 0;
     display: flex;
     flex-direction: column;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 0 60px rgba(168, 85, 247, 0.05);
+    border-radius: 16px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 80px rgba(168, 85, 247, 0.08);
+}
+
+/* ==================== 背景和边框 ==================== */
+.smart-toolbar-glow {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 20px;
+    background: radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.5) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.4) 0%, transparent 50%);
+    filter: blur(20px);
+    opacity: 0.7;
+    z-index: -1;
+    animation: smart-glow-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes smart-glow-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.98); }
+    50% { opacity: 0.9; transform: scale(1); }
 }
 
 .smart-toolbar-bg {
@@ -20,8 +43,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #1a0f2e 0%, #2d1b44 30%, #3d1f5c 60%, #2d1b44 100%);
-    border-radius: 12px;
+    background: linear-gradient(135deg, #1a0f2e 0%, #2d1b44 40%, #3d1f5c 100%);
+    border-radius: 16px;
     z-index: 0;
     overflow: hidden;
 }
@@ -36,23 +59,23 @@
     background: conic-gradient(
         from 0deg,
         transparent 0deg,
-        rgba(168, 85, 247, 0.1) 30deg,
+        rgba(168, 85, 247, 0.15) 30deg,
         transparent 60deg,
         transparent 90deg,
-        rgba(236, 72, 153, 0.08) 120deg,
+        rgba(236, 72, 153, 0.12) 120deg,
         transparent 150deg,
         transparent 180deg,
-        rgba(168, 85, 247, 0.1) 210deg,
+        rgba(168, 85, 247, 0.15) 210deg,
         transparent 240deg,
         transparent 270deg,
-        rgba(236, 72, 153, 0.08) 300deg,
+        rgba(236, 72, 153, 0.12) 300deg,
         transparent 330deg,
         transparent 360deg
     );
-    animation: smart-toolbar-rotate 20s linear infinite;
+    animation: smart-rotate 25s linear infinite;
 }
 
-@keyframes smart-toolbar-rotate {
+@keyframes smart-rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
@@ -64,206 +87,304 @@
     right: 0;
     bottom: 0;
     border: 2px solid transparent;
-    border-radius: 12px;
+    border-radius: 16px;
     background: linear-gradient(#1a0f2e, #1a0f2e) padding-box,
                 linear-gradient(135deg, #a855f7, #ec4899, #8b5cf6, #a855f7) border-box;
-    background-size: 200% 200%;
+    background-size: 250% 250%;
     pointer-events: none;
     z-index: 1;
-    animation: smart-toolbar-border-shift 4s ease-in-out infinite;
+    animation: smart-border-shift 4.5s ease-in-out infinite;
 }
 
-@keyframes smart-toolbar-border-shift {
-    0%, 100% { 
-        background-position: 0% 50%;
-        opacity: 0.7;
-    }
-    50% { 
-        background-position: 100% 50%;
-        opacity: 1;
-    }
+@keyframes smart-border-shift {
+    0%, 100% { background-position: 0% 50%; opacity: 0.7; }
+    50% { background-position: 100% 50%; opacity: 1; }
 }
 
-.smart-toolbar-glow {
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border-radius: 14px;
-    background: radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
-    filter: blur(15px);
-    opacity: 0.6;
-    z-index: -1;
-    animation: smart-toolbar-glow-pulse 4s ease-in-out infinite;
-}
-
-@keyframes smart-toolbar-glow-pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.8; }
-}
-
+/* ==================== 视图切换 ==================== */
 .smart-toolbar-view {
     position: relative;
     z-index: 2;
-    display: flex;
+    display: none;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
+.smart-toolbar-view.active {
+    display: flex;
+}
+
+/* ==================== 头部区域 ==================== */
 .smart-toolbar-header {
     display: flex;
     align-items: center;
-    padding: 6px 14px;
-    background: rgba(0, 0, 0, 0.4);
-    border-bottom: 1px solid rgba(180, 130, 200, 0.15);
-    height: 28px;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.2);
+    height: 36px;
     flex-shrink: 0;
 }
 
-.smart-toolbar-status {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(148, 163, 184, 0.6);
+.toolbar-brand {
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
+    gap: 8px;
 }
 
-.smart-toolbar-status::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(148, 163, 184, 0.5);
-    transition: all 0.3s ease;
+.brand-icon {
+    font-size: 16px;
 }
 
-.smart-toolbar-status-loaded {
-    color: rgba(74, 222, 128, 0.95);
+.brand-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.96);
+    letter-spacing: 0.4px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
-.smart-toolbar-status-loaded::before {
-    background: rgba(74, 222, 128, 0.95);
-    box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
-}
-
-.smart-toolbar-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    margin-left: 10px;
-    letter-spacing: 0.5px;
-}
-
-.smart-toolbar-buttons {
+.header-right {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    flex: 1;
 }
 
-.smart-toolbar-btn {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
-    color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 8px;
-    padding: 7px 16px;
+.toolbar-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     font-size: 12px;
+    font-weight: 600;
+    color: rgba(148, 163, 184, 0.7);
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.5);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 6px rgba(148, 163, 184, 0.3);
+}
+
+.toolbar-status.loaded .status-indicator {
+    background: rgba(74, 222, 128, 0.95);
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
+
+.toolbar-status.loaded .status-label {
+    color: rgba(74, 222, 128, 0.95);
+}
+
+.header-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(180, 130, 200, 0.3);
+}
+
+.header-settings-btn {
+    background: rgba(0, 0, 0, 0.3);
+    color: #a855f7;
+    border: 1px solid rgba(180, 130, 200, 0.4);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header-settings-btn:hover {
+    background: rgba(109, 40, 217, 0.35);
+    border-color: rgba(180, 130, 200, 0.55);
+    transform: rotate(35deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.35);
+}
+
+/* ==================== 按钮区域 ==================== */
+.smart-toolbar-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 14px;
+    flex: 1;
+    justify-content: center;
+}
+
+.button-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.button-row.secondary-row {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ==================== 功能按钮 ==================== */
+.feature-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 60px;
     position: relative;
     overflow: hidden;
 }
 
-.smart-toolbar-btn::before {
+.feature-btn::before {
     content: '';
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
     transition: left 0.4s ease;
 }
 
-.smart-toolbar-btn:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 20px rgba(109, 40, 217, 0.4),
-                0 0 15px rgba(168, 85, 247, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    border-color: rgba(180, 130, 200, 0.6);
+.feature-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.45),
+                0 0 18px rgba(168, 85, 247, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    border-color: rgba(180, 130, 200, 0.65);
 }
 
-.smart-toolbar-btn:hover::before {
+.feature-btn:hover::before {
     left: 100%;
 }
 
-.smart-toolbar-btn:active {
+.feature-btn:active {
     transform: translateY(0) scale(0.98);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
 }
 
-.smart-toolbar-btn-icon {
-    background: rgba(0, 0, 0, 0.3);
-    color: #a855f7;
-    border: 1px solid rgba(180, 130, 200, 0.3);
-    border-radius: 50%;
-    width: 34px;
-    height: 34px;
+.feature-icon {
     font-size: 16px;
+    line-height: 1;
+}
+
+.feature-label {
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.feature-hint {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==================== 主功能按钮 ==================== */
+.feature-btn.main-feature {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.7));
+    border-color: rgba(180, 130, 200, 0.6);
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.5),
+                0 0 20px rgba(236, 72, 153, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    min-width: 100px;
+    padding: 8px 16px;
+}
+
+.feature-btn.main-feature:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(236, 72, 153, 0.8));
+    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.6),
+                0 0 25px rgba(236, 72, 153, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px) scale(1.08);
+}
+
+.feature-btn.main-feature .feature-icon {
+    font-size: 20px;
+}
+
+.feature-btn.main-feature .feature-label {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ==================== 功能视图头部 ==================== */
+.function-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(180, 130, 200, 0.2);
+    height: 36px;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.back-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
+    color: #ffffff;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: auto;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
 }
 
-.smart-toolbar-btn-icon:hover {
-    background: rgba(109, 40, 217, 0.3);
-    border-color: rgba(180, 130, 200, 0.5);
-    transform: rotate(30deg) scale(1.1);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+.back-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateX(-3px);
+    box-shadow: 0 5px 16px rgba(109, 40, 217, 0.45);
 }
 
-.smart-toolbar-btn-back {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
-    color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 6px;
-    padding: 5px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
+.function-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.94);
+    letter-spacing: 0.3px;
 }
 
-.smart-toolbar-btn-back:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
-    border-color: rgba(180, 130, 200, 0.6);
+.toolbar-loading {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: smart-spin 0.7s linear infinite;
+    margin-left: auto;
 }
 
+@keyframes smart-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== 内容区域 ==================== */
 .smart-toolbar-content {
     position: relative;
     z-index: 2;
     flex: 1;
-    padding: 8px 14px;
+    padding: 10px 14px;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -282,133 +403,118 @@
     border-radius: 3px;
 }
 
-.smart-toolbar-gen-controls,
-.smart-toolbar-wb-controls {
+/* ==================== 控制面板 ==================== */
+.control-bar {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
+    align-items: center;
 }
 
-.smart-toolbar-select {
-    background: rgba(76, 29, 149, 0.8);
+.select-input {
+    background: rgba(76, 29, 149, 0.85);
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 7px;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 8px;
     padding: 6px 10px;
-    font-size: 11px;
+    font-size: 11.5px;
     cursor: pointer;
-    min-width: 65px;
+    min-width: 55px;
     transition: all 0.25s ease;
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-.smart-toolbar-select:focus {
+.select-input:focus {
     outline: none;
     border-color: rgba(168, 85, 247, 0.8);
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2),
-                0 0 10px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25),
+                0 0 14px rgba(168, 85, 247, 0.3);
 }
 
-.smart-toolbar-btn-primary {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
+.action-btn {
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.5);
-    border-radius: 7px;
-    padding: 6px 16px;
-    font-size: 11px;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 11.5px;
     font-weight: 600;
     cursor: pointer;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
 }
 
-.smart-toolbar-btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.8));
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4),
-                0 0 10px rgba(168, 85, 247, 0.2);
-    border-color: rgba(180, 130, 200, 0.7);
-}
-
-.smart-toolbar-btn-primary:disabled {
-    opacity: 0.5;
+.action-btn:disabled {
+    opacity: 0.45;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-.smart-toolbar-btn-primary.smart-toolbar-btn-loading {
-    position: relative;
-    color: transparent;
+.action-btn.primary {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(126, 34, 206, 0.7));
+    border: 1px solid rgba(180, 130, 200, 0.5);
+    box-shadow: 0 3px 10px rgba(76, 29, 149, 0.35);
 }
 
-.smart-toolbar-btn-primary.smart-toolbar-btn-loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 16px;
-    height: 16px;
-    margin: -8px 0 0 -8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+.action-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(109, 40, 217, 0.45),
+                0 0 14px rgba(168, 85, 247, 0.25);
+    border-color: rgba(180, 130, 200, 0.65);
+}
+
+.action-btn.secondary {
+    background: rgba(76, 29, 149, 0.65);
+    border: 1px solid rgba(180, 130, 200, 0.35);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.25);
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+    background: rgba(76, 29, 149, 0.85);
+    border-color: rgba(180, 130, 200, 0.55);
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.35);
+}
+
+.btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
     border-top-color: #ffffff;
     border-radius: 50%;
-    animation: smart-toolbar-spin 0.6s linear infinite;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    animation: smart-spin 0.65s linear infinite;
 }
 
-.smart-toolbar-btn-secondary {
-    background: rgba(76, 29, 149, 0.6);
-    color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.3);
-    border-radius: 7px;
-    padding: 6px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    flex: 1;
-    transition: all 0.25s ease;
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.2);
-}
-
-.smart-toolbar-btn-secondary:hover:not(:disabled) {
-    background: rgba(76, 29, 149, 0.8);
-    border-color: rgba(180, 130, 200, 0.5);
-    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
-}
-
-.smart-toolbar-btn-secondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.smart-toolbar-results {
-    max-height: 75px;
+/* ==================== 结果容器 ==================== */
+.results-container {
+    max-height: 72px;
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
 }
 
-.smart-toolbar-results::-webkit-scrollbar {
+.results-container::-webkit-scrollbar {
     width: 4px;
 }
 
-.smart-toolbar-results::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.15);
+.results-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.18);
     border-radius: 2px;
 }
 
-.smart-toolbar-results::-webkit-scrollbar-thumb {
-    background: rgba(180, 130, 200, 0.4);
+.results-container::-webkit-scrollbar-thumb {
+    background: rgba(180, 130, 200, 0.45);
     border-radius: 2px;
 }
 
-.smart-toolbar-result-item {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
-    border: 1px solid rgba(180, 130, 200, 0.15);
-    border-radius: 8px;
+/* ==================== 结果卡片 ==================== */
+.result-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.25));
+    border: 1px solid rgba(180, 130, 200, 0.18);
+    border-radius: 10px;
     padding: 8px;
     margin-bottom: 7px;
     display: flex;
@@ -419,224 +525,72 @@
     overflow: hidden;
 }
 
-.smart-toolbar-result-item::before {
+.result-card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 3px;
+    width: 4px;
     height: 100%;
     background: linear-gradient(180deg, #a855f7, #ec4899);
     border-radius: 0 2px 2px 0;
 }
 
-.smart-toolbar-result-item:hover {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
-    border-color: rgba(180, 130, 200, 0.3);
-    transform: translateX(3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.result-card:hover {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.35));
+    border-color: rgba(180, 130, 200, 0.35);
+    transform: translateX(4px);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
 }
 
-.smart-toolbar-result-num {
-    font-size: 10px;
-    font-weight: 700;
+.card-number {
+    font-size: 10.5px;
+    font-weight: 800;
     color: #a855f7;
-    min-width: 20px;
-    padding-top: 1px;
-    text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+    min-width: 24px;
+    padding-top: 2px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
-.smart-toolbar-result-text {
+.card-content {
     flex: 1;
     font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.92);
-    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.93);
+    line-height: 1.5;
     word-break: break-word;
 }
 
-.smart-toolbar-result-actions {
+.card-actions {
     display: flex;
     gap: 5px;
     flex-shrink: 0;
 }
 
-.smart-toolbar-btn-small {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
+.mini-btn {
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(126, 34, 206, 0.65));
     color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 5px;
-    padding: 3px 10px;
+    border: 1px solid rgba(180, 130, 200, 0.45);
+    border-radius: 6px;
+    padding: 4px 10px;
     font-size: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 6px rgba(76, 29, 149, 0.3);
+    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.35);
 }
 
-.smart-toolbar-btn-small:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
-    transform: scale(1.05);
-    box-shadow: 0 3px 10px rgba(109, 40, 217, 0.4);
-    border-color: rgba(180, 130, 200, 0.6);
+.mini-btn:hover {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.95), rgba(168, 85, 247, 0.75));
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.45);
+    border-color: rgba(180, 130, 200, 0.65);
 }
 
-.smart-toolbar-wb-entry {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
-    border: 1px solid rgba(180, 130, 200, 0.15);
-    border-radius: 8px;
-    padding: 10px;
-    transition: all 0.25s ease;
-}
-
-.smart-toolbar-wb-entry:hover {
-    border-color: rgba(180, 130, 200, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.smart-toolbar-wb-name {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #a855f7;
-    margin-bottom: 6px;
-    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
-}
-
-.smart-toolbar-wb-keywords {
-    font-size: 10px;
-    color: rgba(200, 150, 255, 0.8);
-    margin-bottom: 6px;
-    line-height: 1.4;
-}
-
-.smart-toolbar-wb-content {
-    font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.45;
-    word-break: break-word;
-}
-
-.smart-toolbar-analysis-item,
-.smart-toolbar-text-item {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
-    border: 1px solid rgba(180, 130, 200, 0.15);
-    border-radius: 8px;
-    padding: 10px;
-    transition: all 0.25s ease;
-}
-
-.smart-toolbar-analysis-item:hover,
-.smart-toolbar-text-item:hover {
-    border-color: rgba(180, 130, 200, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.smart-toolbar-analysis-name {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #a855f7;
-    margin-bottom: 7px;
-    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
-}
-
-.smart-toolbar-analysis-text,
-.smart-toolbar-text-content {
-    font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.45;
-    margin-bottom: 8px;
-    word-break: break-word;
-}
-
-.smart-toolbar-text-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.smart-toolbar-btn-full {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
-    color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 6px;
-    padding: 5px 12px;
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
-}
-
-.smart-toolbar-btn-full:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
-    border-color: rgba(180, 130, 200, 0.6);
-}
-
-.smart-toolbar-btn-half {
-    background: linear-gradient(135deg, rgba(76, 29, 149, 0.8), rgba(126, 34, 206, 0.6));
-    color: #ffffff;
-    border: 1px solid rgba(180, 130, 200, 0.4);
-    border-radius: 6px;
-    padding: 5px 12px;
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    flex: 1;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
-}
-
-.smart-toolbar-btn-half:hover {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.9), rgba(168, 85, 247, 0.7));
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
-    border-color: rgba(180, 130, 200, 0.6);
-}
-
-.smart-toolbar-error {
-    font-size: 11px;
-    color: rgba(248, 113, 113, 0.95);
-    padding: 10px;
-    background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.05));
-    border-radius: 8px;
-    border: 1px solid rgba(248, 113, 113, 0.3);
-    word-break: break-word;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.smart-toolbar-error::before {
-    content: '⚠';
-    font-size: 14px;
-}
-
-.smart-toolbar-loading-inline {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    color: rgba(168, 85, 247, 0.95);
-    font-size: 11px;
-}
-
-.smart-toolbar-spinner-small {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(168, 85, 247, 0.3);
-    border-top-color: #a855f7;
-    border-radius: 50%;
-    animation: smart-toolbar-spin 0.8s linear infinite;
-    flex-shrink: 0;
-    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
-}
-
-@keyframes smart-toolbar-spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ==================== 新功能卡片样式 ==================== */
+/* ==================== 信息卡片 ==================== */
+.worldbook-card,
+.summary-card,
+.analysis-card,
+.suggestion-card,
 .polish-card,
 .continue-card,
 .memory-card {
@@ -647,6 +601,10 @@
     transition: all 0.25s ease;
 }
 
+.worldbook-card:hover,
+.summary-card:hover,
+.analysis-card:hover,
+.suggestion-card:hover,
 .polish-card:hover,
 .continue-card:hover,
 .memory-card:hover {
@@ -654,6 +612,10 @@
     box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
 }
 
+.wb-header,
+.summary-header,
+.analysis-header,
+.suggestion-header,
 .polish-header,
 .continue-header,
 .memory-header {
@@ -663,20 +625,35 @@
     margin-bottom: 7px;
 }
 
-.polish-icon,
-.continue-icon,
-.memory-icon {
-    font-size: 13px;
-}
-
-.polish-label,
-.continue-label,
-.memory-label {
+.wb-title {
     font-size: 12px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.93);
+    color: #a855f7;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
+.wb-badge,
+.analysis-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    background: rgba(168, 85, 247, 0.25);
+    color: rgba(168, 85, 247, 0.95);
+    border-radius: 4px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.wb-keywords {
+    font-size: 10.5px;
+    color: rgba(200, 150, 255, 0.82);
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.wb-content,
+.summary-text,
+.analysis-content,
+.suggestion-text,
 .polish-text,
 .continue-text {
     font-size: 10.5px;
@@ -685,11 +662,49 @@
     word-break: break-word;
 }
 
+.summary-icon,
+.suggestion-icon,
+.polish-icon,
+.continue-icon,
+.memory-icon {
+    font-size: 13px;
+}
+
+.summary-label,
+.suggestion-label,
+.polish-label,
+.continue-label,
+.memory-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.93);
+}
+
+.summary-time {
+    font-size: 10px;
+    color: rgba(148, 163, 184, 0.65);
+}
+
+.summary-actions,
+.suggestion-actions,
 .polish-actions,
 .continue-actions {
     display: flex;
     gap: 8px;
     margin-top: 8px;
+}
+
+.analysis-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a855f7;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.analysis-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .memory-info {
@@ -707,29 +722,44 @@
     line-height: 1.5;
 }
 
-/* ==================== 主按钮优化 ==================== */
-.main-btn {
-    padding: 8px 10px;
-    min-width: 55px;
+/* ==================== 错误显示 ==================== */
+.error-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.18), rgba(248, 113, 113, 0.08));
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, 0.35);
 }
 
-.main-btn .btn-icon {
-    font-size: 14px;
+.error-icon {
+    font-size: 16px;
 }
 
-.main-btn .btn-text {
-    font-size: 10px;
+.error-text {
+    font-size: 11.5px;
+    color: rgba(248, 113, 113, 0.95);
+    word-break: break-word;
 }
 
-.main-btn.primary-action {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.7));
-    border-color: rgba(180, 130, 200, 0.6);
-    box-shadow: 0 3px 12px rgba(168, 85, 247, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+/* ==================== 加载动画 ==================== */
+.smart-toolbar-loading-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    color: rgba(168, 85, 247, 0.95);
+    font-size: 11.5px;
 }
 
-.main-btn.primary-action:hover {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(236, 72, 153, 0.8));
-    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.55),
-                0 0 20px rgba(236, 72, 153, 0.3);
+.smart-toolbar-spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: smart-spin 0.8s linear infinite;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
 }
