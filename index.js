@@ -206,12 +206,19 @@ const ui = {
                 <div class="toolbar-glow-layer"></div>
                 <div class="toolbar-gradient-border"></div>
                 
+                <!-- 水波纹效果 -->
+                <div class="toolbar-ripple-container">
+                    <div class="toolbar-ripple"></div>
+                    <div class="toolbar-ripple"></div>
+                    <div class="toolbar-ripple"></div>
+                </div>
+                
                 <!-- 主视图 -->
                 <div id="toolbar-main" class="toolbar-view active">
                     <div class="toolbar-header">
                         <div class="brand-section">
                             <div class="brand-icon-wrapper">
-                                <span class="brand-icon">🎯</span>
+                                <span class="brand-icon">&#9679;</span>
                                 <div class="brand-pulse"></div>
                             </div>
                             <div class="brand-text-section">
@@ -239,40 +246,40 @@ const ui = {
                         <div class="main-action-row">
                             <button class="action-card main-action" data-action="quick-reply">
                                 <div class="action-icon-wrapper">
-                                    <span class="action-icon">💬</span>
+                                    <span class="action-icon">&#9654;</span>
                                     <div class="icon-glow"></div>
                                 </div>
                                 <div class="action-info">
                                     <span class="action-title">快速回复</span>
                                     <span class="action-desc">生成多条可选回复</span>
                                 </div>
-                                <div class="action-arrow">→</div>
+                                <div class="action-arrow">&#8594;</div>
                             </button>
                         </div>
                         
                         <div class="action-grid">
                             <button class="action-mini" data-action="polish">
-                                <span class="mini-icon">✨</span>
+                                <span class="mini-icon">&#10022;</span>
                                 <span class="mini-label">润色</span>
                             </button>
                             <button class="action-mini" data-action="continue">
-                                <span class="mini-icon">📖</span>
+                                <span class="mini-icon">&#9998;</span>
                                 <span class="mini-label">续写</span>
                             </button>
                             <button class="action-mini" data-action="worldbook">
-                                <span class="mini-icon">📚</span>
+                                <span class="mini-icon">&#128218;</span>
                                 <span class="mini-label">世界书</span>
                             </button>
                             <button class="action-mini" data-action="summary">
-                                <span class="mini-icon">📊</span>
+                                <span class="mini-icon">&#9776;</span>
                                 <span class="mini-label">总结</span>
                             </button>
                             <button class="action-mini" data-action="analysis">
-                                <span class="mini-icon">🔍</span>
+                                <span class="mini-icon">&#9673;</span>
                                 <span class="mini-label">分析</span>
                             </button>
                             <button class="action-mini" data-action="suggestion">
-                                <span class="mini-icon">💡</span>
+                                <span class="mini-icon">&#9888;</span>
                                 <span class="mini-label">建议</span>
                             </button>
                         </div>
@@ -344,7 +351,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">💬</span>
+                    <span class="panel-icon">&#9654;</span>
                     <span class="panel-title">快速回复</span>
                 </div>
                 <div class="panel-body">
@@ -387,7 +394,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">✨</span>
+                    <span class="panel-icon">&#10022;</span>
                     <span class="panel-title">对话润色</span>
                 </div>
                 <div class="panel-body">
@@ -416,7 +423,7 @@ const ui = {
         container.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
-                    <span class="card-icon">✨</span>
+                    <span class="card-icon">&#10022;</span>
                     <span class="card-title">润色结果</span>
                 </div>
                 <div class="card-content">${utils.escapeHtml(text)}</div>
@@ -432,7 +439,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">📖</span>
+                    <span class="panel-icon">&#9998;</span>
                     <span class="panel-title">续写故事</span>
                 </div>
                 <div class="panel-body">
@@ -460,7 +467,7 @@ const ui = {
         container.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
-                    <span class="card-icon">📖</span>
+                    <span class="card-icon">&#9998;</span>
                     <span class="card-title">续写内容</span>
                 </div>
                 <div class="card-content">${utils.escapeHtml(text)}</div>
@@ -476,7 +483,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">📚</span>
+                    <span class="panel-icon">&#128218;</span>
                     <span class="panel-title">世界书管理</span>
                 </div>
                 <div class="panel-body">
@@ -500,11 +507,11 @@ const ui = {
         container.innerHTML = `
             <div class="worldbook-card">
                 <div class="card-header">
-                    <span class="card-icon">📚</span>
+                    <span class="card-icon">&#128218;</span>
                     <span class="card-title">${utils.escapeHtml(entry.name)}</span>
                     <span class="card-badge">自动生成</span>
                 </div>
-                <div class="card-keywords">🏷️ ${utils.escapeHtml(entry.keywords.join(' · '))}</div>
+                <div class="card-keywords">&#128278; ${utils.escapeHtml(entry.keywords.join(' · '))}</div>
                 <div class="card-content">${utils.escapeHtml(entry.content)}</div>
                 <div class="card-actions">
                     <button id="save-worldbook-entry">保存到世界书</button>
@@ -518,7 +525,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">📊</span>
+                    <span class="panel-icon">&#9776;</span>
                     <span class="panel-title">对话总结</span>
                 </div>
                 <div class="panel-body">
@@ -539,7 +546,7 @@ const ui = {
         container.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
-                    <span class="card-icon">📊</span>
+                    <span class="card-icon">&#9776;</span>
                     <span class="card-title">对话总结</span>
                     <span class="card-time">${utils.getTimestamp()}</span>
                 </div>
@@ -556,7 +563,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">🔍</span>
+                    <span class="panel-icon">&#9673;</span>
                     <span class="panel-title">角色分析</span>
                 </div>
                 <div class="panel-body">
@@ -577,7 +584,7 @@ const ui = {
         container.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
-                    <span class="card-icon">🔍</span>
+                    <span class="card-icon">&#9673;</span>
                     <span class="card-title">${utils.escapeHtml(char.name)}</span>
                     <span class="card-badge">AI分析</span>
                 </div>
@@ -593,7 +600,7 @@ const ui = {
         return `
             <div class="panel-container">
                 <div class="panel-header">
-                    <span class="panel-icon">💡</span>
+                    <span class="panel-icon">&#9888;</span>
                     <span class="panel-title">剧情建议</span>
                 </div>
                 <div class="panel-body">
@@ -614,7 +621,7 @@ const ui = {
         container.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
-                    <span class="card-icon">💡</span>
+                    <span class="card-icon">&#9888;</span>
                     <span class="card-title">剧情建议</span>
                 </div>
                 <div class="card-content">${utils.escapeHtml(text)}</div>
@@ -627,7 +634,7 @@ const ui = {
     },
     
     renderError(msg) {
-        return `<div class="error-message">⚠️ ${utils.escapeHtml(msg)}</div>`;
+        return `<div class="error-message">&#9888; ${utils.escapeHtml(msg)}</div>`;
     }
 };
 
@@ -989,13 +996,13 @@ const events = {
     
     getActionTitle(action) {
         const titles = {
-            'quick-reply': '💬 快速回复',
-            'polish': '✨ 对话润色',
-            'continue': '📖 续写故事',
-            'worldbook': '📚 世界书',
-            'summary': '📊 对话总结',
-            'analysis': '🔍 角色分析',
-            'suggestion': '💡 剧情建议'
+            'quick-reply': '快速回复',
+            'polish': '对话润色',
+            'continue': '续写故事',
+            'worldbook': '世界书',
+            'summary': '对话总结',
+            'analysis': '角色分析',
+            'suggestion': '剧情建议'
         };
         return titles[action] || action;
     },
