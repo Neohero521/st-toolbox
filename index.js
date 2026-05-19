@@ -146,7 +146,7 @@ const animationController = {
     },
 
     addButtonHoverEffects() {
-        const buttons = document.querySelectorAll('.action-card, .action-mini, .primary-btn, .secondary-btn');
+        const buttons = document.querySelectorAll('.action-card, .primary-btn, .secondary-btn');
         
         buttons.forEach(btn => {
             btn.addEventListener('mouseenter', function() {
@@ -185,6 +185,92 @@ const animationController = {
             toView.style.opacity = '1';
             toView.style.transform = 'translateX(0)';
         }
+    },
+
+    initAppleWatchScrollEffect() {
+        const grid = document.querySelector('.action-grid');
+        if (!grid) return;
+        
+        let isDragging = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        
+        const updateActiveButton = () => {
+            const buttons = grid.querySelectorAll('.action-mini');
+            const gridRect = grid.getBoundingClientRect();
+            const centerX = gridRect.left + gridRect.width / 2;
+            
+            let closestButton = null;
+            let closestDistance = Infinity;
+            
+            buttons.forEach(btn => {
+                const rect = btn.getBoundingClientRect();
+                const btnCenterX = rect.left + rect.width / 2;
+                const distance = Math.abs(centerX - btnCenterX);
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestButton = btn;
+                }
+                
+                const opacity = Math.max(0.7, 1 - distance / 200);
+                const scale = Math.max(0.9, 1.2 - distance / 400);
+                
+                btn.style.transform = `scale(${scale})`;
+                btn.style.opacity = opacity;
+                btn.classList.remove('active');
+            });
+            
+            if (closestButton) {
+                closestButton.classList.add('active');
+            }
+        };
+        
+        grid.addEventListener('scroll', utils.debounce(updateActiveButton, 10));
+        
+        grid.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.pageX - grid.offsetLeft;
+            scrollLeft = grid.scrollLeft;
+            grid.style.cursor = 'grabbing';
+        });
+        
+        grid.addEventListener('mouseleave', () => {
+            isDragging = false;
+            grid.style.cursor = 'grab';
+        });
+        
+        grid.addEventListener('mouseup', () => {
+            isDragging = false;
+            grid.style.cursor = 'grab';
+        });
+        
+        grid.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - grid.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            grid.scrollLeft = scrollLeft - walk;
+        });
+        
+        grid.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startX = e.touches[0].pageX - grid.offsetLeft;
+            scrollLeft = grid.scrollLeft;
+        });
+        
+        grid.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+        
+        grid.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const x = e.touches[0].pageX - grid.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            grid.scrollLeft = scrollLeft - walk;
+        });
+        
+        setTimeout(updateActiveButton, 100);
     }
 };
 
@@ -1264,6 +1350,7 @@ jQuery(async () => {
             
             animationController.createDynamicRipple();
             animationController.addButtonHoverEffects();
+            animationController.initAppleWatchScrollEffect();
             
             const char = chatManager.getCharacter();
             if (char) {
