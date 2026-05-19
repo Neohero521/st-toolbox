@@ -1,3 +1,12 @@
+/* ==================== 工具栏包装器 ==================== */
+#smart-toolbar-wrapper {
+    position: relative;
+    z-index: 9999;
+    margin-bottom: 10px;
+    width: 100%;
+    overflow: visible;
+}
+
 /* ==================== 主容器优化 - 增加高度确保显示完全 ==================== */
 #smart-toolbar-container {
     width: 100%;
@@ -5,11 +14,12 @@
     min-height: 165px;
     max-height: 165px;
     position: relative;
-    margin-bottom: 8px;
+    z-index: 9999;
+    margin-bottom: 0;
     display: flex;
     flex-direction: column;
     font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 20px;
     box-shadow: 
         0 15px 50px rgba(0, 0, 0, 0.55),

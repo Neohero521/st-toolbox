@@ -1245,7 +1245,18 @@ jQuery(async () => {
     
     const sendForm = document.querySelector('#send_form');
     if (sendForm) {
-        sendForm.insertAdjacentHTML('beforebegin', ui.createToolbar());
+        // 在发送表单之前插入工具栏容器
+        const toolbarWrapper = document.createElement('div');
+        toolbarWrapper.id = 'smart-toolbar-wrapper';
+        toolbarWrapper.style.cssText = `
+            position: relative;
+            z-index: 9999;
+            margin-bottom: 10px;
+            width: 100%;
+        `;
+        toolbarWrapper.innerHTML = ui.createToolbar();
+        
+        sendForm.parentNode.insertBefore(toolbarWrapper, sendForm);
         
         setTimeout(() => {
             events.bindMainButtons();
